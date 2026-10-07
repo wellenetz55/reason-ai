@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 const FONTS =
-  "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Shippori+Mincho:wght@500;700&family=Inter:wght@400;500&display=swap";
+  "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@400;500;600&display=swap";
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

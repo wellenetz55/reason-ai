@@ -30,7 +30,7 @@
   --color-hypo: var(--hypo);
   --color-grey-row: var(--grey-row);
   --font-sans: "Noto Sans JP", system-ui, sans-serif;
-  --font-serif: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-serif: "Noto Sans JP", system-ui, sans-serif;
   --font-num: "Inter", "Noto Sans JP", sans-serif;
 }
 
@@ -55,7 +55,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.serif { font-family: var(--font-serif); }
+.serif { font-family: var(--font-serif); font-weight: 700; letter-spacing: -0.01em; }
 .num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 
 .hairline { border-color: var(--hair); }

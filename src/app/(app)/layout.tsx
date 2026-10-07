@@ -42,7 +42,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <Link href="/ask" className="hover:text-ink">ベレネッツに質問を残す</Link>
           </p>
           <form action={signOut}>
-            <button className="text-ink-3 hover:text-ink" type="submit">{profile.display_name ?? "サインアウト"}</button>
+            <p className="text-ink-2 mb-1">{profile.display_name}</p>
+            <button className="text-ink-3 hover:text-ink" type="submit">サインアウト</button>
           </form>
           <OperatedBy className="pt-4" />
         </div>

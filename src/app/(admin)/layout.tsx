@@ -17,7 +17,8 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
         </nav>
         <div className="mt-auto space-y-4">
           <form action={signOut}>
-            <button className="text-xs text-ink-3 hover:text-ink">{profile.display_name ?? "サインアウト"}</button>
+            <p className="text-xs text-ink-2 mb-1">{profile.display_name}</p>
+            <button className="text-xs text-ink-3 hover:text-ink">サインアウト</button>
           </form>
           <OperatedBy />
         </div>
