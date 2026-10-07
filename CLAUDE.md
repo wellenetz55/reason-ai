@@ -16,6 +16,9 @@
 5. 状態遷移（`companies.status`）は operator 操作かスケジューラのみ。顧客からは変えられない
 6. UIは `docs/spec/07-design.md` の原則に従う。チャット窓を主役にしない。白紙を見せない
 
+## バージョン
+- 表示は `v<major>.<minor>`（`src/lib/version.ts` が `package.json` の version から作る）。**修正をpushするたびに minor を +1**（1.1 → 1.2 …）。大きな構造変更で major を上げる
+
 ## 開発
 - `npm run dev` / `npm run build` / `npm run lint`
 - 環境変数: `.env.example` を参照。`ANTHROPIC_API_KEY` は Vercel の環境変数に手で入れる（リポジトリに書かない）
