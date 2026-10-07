@@ -4,6 +4,7 @@ import { requireCustomer } from "@/lib/session";
 import { STAGES, STATUS_LABEL, isStageOpen } from "@/lib/stages";
 import { signOut } from "@/app/login/actions";
 import { NavRail } from "@/components/NavRail";
+import { ReasonLogo, OperatedBy } from "@/components/Brand";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const { company, profile, supabase } = await requireCustomer();
@@ -24,7 +25,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex-1 flex min-h-screen">
       <aside className="w-[232px] shrink-0 border-r hairline px-6 py-8 flex flex-col">
-        <Link href="/" className="serif text-[17px] leading-snug">{company.name}</Link>
+        <Link href="/" className="block"><ReasonLogo width={150} /></Link>
+        <p className="serif text-[15px] leading-snug mt-6">{company.name}</p>
         <p className="text-xs text-ink-3 mt-1">{STATUS_LABEL[company.status] ?? company.status}</p>
         <NavRail stages={stages} />
         <div className="mt-auto pt-8 text-xs text-ink-2 space-y-2">
@@ -42,6 +44,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <form action={signOut}>
             <button className="text-ink-3 hover:text-ink" type="submit">{profile.display_name ?? "サインアウト"}</button>
           </form>
+          <OperatedBy className="pt-4" />
         </div>
       </aside>
       <main className="flex-1 min-w-0 px-10 py-10">
