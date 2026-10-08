@@ -35,6 +35,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <aside className="print:hidden w-[260px] shrink-0 border-r hairline px-6 py-8 flex flex-col">
         <Link href="/" className="block"><ReasonLogo width={212} /></Link>
         <p className="serif text-[16px] leading-snug mt-6">{company.name}</p>
+        <p className="text-[13px] text-ink-2 mt-1">{profile.display_name} <span className="text-ink-3">さん</span></p>
         <div className="mt-3 rounded-[var(--radius)] border hairline px-3.5 py-2.5">
           <p className="text-[11px] text-ink-3 tracking-wide">現在のフェーズ</p>
           <p className="text-[13px] text-ink mt-0.5">{STATUS_LABEL[company.status] ?? company.status}</p>
@@ -72,7 +73,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <Link href="/report" className="inline-flex items-center gap-1.5 hover:text-ink"><Bug size={14} strokeWidth={1.75} aria-hidden className="text-ink-3" />エラーレポート</Link>
           </p>
           <form action={signOut} className="pt-2">
-            <p className="text-ink-2 mb-1">{profile.display_name}</p>
             <button className="text-ink-3 hover:text-ink" type="submit">サインアウト</button>
           </form>
           <OperatedBy className="pt-4" />
