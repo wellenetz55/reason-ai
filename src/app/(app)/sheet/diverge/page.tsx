@@ -32,7 +32,7 @@ export default async function DivergePage() {
             <span className="text-[56px]">{count}</span>
             <span className="text-[20px] text-ink-3"> / 30</span>
           </div>
-          <FacetBars facets={FACETS.map((f) => ({ key: f.key, label: f.label, n: byFacet[f.key] ?? 0 }))} />
+          <FacetBars facets={FACETS.map((f) => ({ key: f.key, label: f.label, short: f.short, n: byFacet[f.key] ?? 0 }))} />
         </div>
       </header>
 
