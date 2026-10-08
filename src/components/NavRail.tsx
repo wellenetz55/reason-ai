@@ -5,21 +5,36 @@ import clsx from "clsx";
 
 type S = { key: string; step: string; label: string; href: string; open: boolean; now: boolean };
 
-/** 左の進捗レール。STEP 0〜7・FINAL のラベル、現在地の印、未到達は薄字で「順番に進む」ことを見せる */
+/**
+ * 左の進捗レール。
+ * STEP バッジ: 現在地＝紺地に白抜き／到達済み＝紺の枠線／未到達＝点線グレー。
+ * バッジの色だけで「順番に進む」「いまどこか」を伝え、文字の注記は置かない。
+ */
 export function NavRail({ stages }: { stages: S[] }) {
   const path = usePathname();
   return (
     <nav className="mt-8">
-      <ol className="space-y-0.5">
+      <ol className="space-y-1">
         {stages.map((s) => {
           const active = path.startsWith(s.href);
+          const badge = (
+            <span
+              className={clsx(
+                "num inline-block rounded-full px-2 py-[3px] text-[10px] font-semibold tracking-[0.12em] leading-none border",
+                s.now
+                  ? "bg-navy border-navy text-white"
+                  : s.open
+                    ? "border-navy text-navy"
+                    : "border-dashed border-ink-3 text-ink-3"
+              )}
+            >
+              {s.step}
+            </span>
+          );
           const inner = (
             <>
-              <span className="num block text-[10px] tracking-[0.12em] leading-none">{s.step}</span>
-              <span className="block text-[15px] leading-snug mt-1">
-                {s.label}
-                {s.now && <span className="ml-2 text-[11px] text-navy align-middle">いまここ</span>}
-              </span>
+              {badge}
+              <span className="block text-[15px] leading-snug mt-1.5">{s.label}</span>
             </>
           );
           const base = "block py-2 pl-3 -ml-3 border-l-2 transition-colors";
