@@ -4,6 +4,7 @@ import { loadFixedText } from "@/server/ai/client";
 import { addRow, requestDraft } from "./actions";
 import { RowList } from "@/components/RowList";
 import { FacetBars } from "@/components/FacetBars";
+import { StepGuide } from "@/components/StepGuide";
 
 export default async function DivergePage() {
   const { supabase, company } = await requireCustomer();
@@ -34,6 +35,8 @@ export default async function DivergePage() {
           <FacetBars facets={FACETS.map((f) => ({ key: f.key, label: f.label, n: byFacet[f.key] ?? 0 }))} />
         </div>
       </header>
+
+      <StepGuide stageKey="diverge" />
 
       {fixed && <p className="mt-8 text-sm text-ink-2 leading-relaxed border-l-2 hairline pl-4 max-w-[64ch] whitespace-pre-line">{fixed}</p>}
 
