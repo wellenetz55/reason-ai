@@ -6,6 +6,7 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { NavRail } from "@/components/NavRail";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
 import { APP_VERSION } from "@/lib/version";
+import { PendingBar } from "@/components/PendingBar";
 import { Bug } from "lucide-react";
 import { MEETING_LABEL, fmtMeeting } from "@/lib/meetings";
 
@@ -32,6 +33,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="flex-1 flex min-h-screen">
+      <PendingBar stamp={Date.now()} />
       <aside className="print:hidden w-[260px] shrink-0 border-r hairline px-6 py-8 flex flex-col">
         <Link href="/" className="block"><ReasonLogo width={212} /></Link>
         <p className="serif text-[16px] leading-snug mt-6">{company.name}</p>

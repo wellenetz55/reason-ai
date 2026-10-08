@@ -110,6 +110,9 @@ textarea:focus-visible, input:focus-visible { box-shadow: 0 1px 0 0 var(--navy);
   100% { transform: scale(1.6); opacity: 0; }
 }
 
+.pending-bar { background: linear-gradient(90deg, var(--navy) 0%, #8fa0e6 50%, var(--navy) 100%); background-size: 200% 100%; animation: pending-slide 1.2s linear infinite; }
+@keyframes pending-slide { from { background-position: 200% 0; } to { background-position: 0 0; } }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
