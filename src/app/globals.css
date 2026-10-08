@@ -98,6 +98,18 @@ input, textarea {
 }
 textarea:focus-visible, input:focus-visible { box-shadow: 0 1px 0 0 var(--navy); }
 
+/* 「いま進める段階」の点。静かに脈打つ（状態を伝えるためだけの動き） */
+.now-dot { position: relative; display: inline-block; width: 8px; height: 8px; border-radius: 999px; background: var(--warm); }
+.now-dot::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 999px; border: 2px solid var(--warm);
+  opacity: 0; animation: now-pulse 2s ease-out infinite;
+}
+@keyframes now-pulse {
+  0%   { transform: scale(0.6); opacity: .8; }
+  70%  { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }

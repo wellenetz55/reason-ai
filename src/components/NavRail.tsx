@@ -33,7 +33,7 @@ export function NavRail({ stages }: { stages: S[] }) {
               {badge}
               <span className="text-[14px] leading-tight flex items-center gap-1.5">
                 {s.label}
-                {s.now && <span className="inline-block w-1.5 h-1.5 rounded-full bg-warm" title="いま進める段階" aria-label="いま進める段階" />}
+                {s.now && <span className="now-dot ml-1" title="いま進める段階" aria-label="いま進める段階" />}
               </span>
             </>
           );
@@ -53,7 +53,7 @@ export function NavRail({ stages }: { stages: S[] }) {
           );
         })}
       </ol>
-      <p className="mt-3 text-[11px] text-ink-3 flex items-center gap-1.5"><span className="inline-block w-1.5 h-1.5 rounded-full bg-warm" />いま進める段階</p>
+      <p className="mt-3 text-[11px] text-ink-3 flex items-center gap-2"><span className="now-dot" />いま進める段階</p>
     </nav>
   );
 }
