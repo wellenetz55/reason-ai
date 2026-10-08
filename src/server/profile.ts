@@ -1,4 +1,5 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { complete, parseJson, loadFixedText } from "@/server/ai/client";
 import { extractCompanyDocs } from "@/server/extract";
 import { PROFILE_ITEMS } from "@/lib/profileItems";
@@ -38,4 +39,27 @@ JSONのみで返す: [{"key":"a1","draft":"...","tag":"fact","source":"資料1 �
   const text = await complete({ promptKey: "step0_summary", user, maxTokens: 3000 });
   const items = (parseJson<DraftItem[]>(text) ?? []).filter((x) => x && typeof x.key === "string" && PROFILE_ITEMS.some((i) => i.key === x.key && !i.fixed));
   return { items, skipped, docCount: docs.length };
+}
+
+/**
+ * AI下書き用の会社コンテキスト。
+ * 「御社の説明」（承認・直した項目を優先、無ければAI下書き）＋ B の回答 ＋ 資料テキストの冒頭。
+ */
+export async function loadProfileContext(supabase: { from: SupabaseClient["from"] }, companyId: string): Promise<Record<string, string>> {
+  const [{ data: items }, { data: docs }, { data: sum }] = await Promise.all([
+    supabase.from("profile_items").select("key, draft, value, status").eq("company_id", companyId),
+    supabase.from("company_documents").select("title, text_content").eq("company_id", companyId).not("text_content", "is", null).order("created_at").limit(5),
+    supabase.from("company_profile_summary").select("q1_before").eq("company_id", companyId).maybeSingle(),
+  ]);
+  const ctx: Record<string, string> = {};
+  if (sum?.q1_before) ctx["一言で言うと"] = sum.q1_before;
+  for (const it of items ?? []) {
+    const def = PROFILE_ITEMS.find((d) => d.key === it.key);
+    if (!def) continue;
+    const text = ["approved", "fixed"].includes(it.status) ? it.value : it.status === "draft" ? it.draft : null;
+    if (text) ctx[def.label + (it.status === "draft" ? "（AI下書き・未承認）" : "")] = text;
+  }
+  const docText = (docs ?? []).map((d) => `[${d.title}] ${(d.text_content ?? "").slice(0, 1500)}`).join("\n");
+  if (docText) ctx["資料の抜粋"] = docText.slice(0, 6000);
+  return ctx;
 }

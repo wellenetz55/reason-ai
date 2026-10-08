@@ -8,7 +8,7 @@ export type Diagnosis = { id: string; vague_score: number; issues: string[]; sug
 export async function diagnoseRows(opts: { companyName: string; summary: unknown; rows: RowForCheck[] }): Promise<Diagnosis[]> {
   if (opts.rows.length === 0) return [];
   const user = `会社: ${opts.companyName}
-自社理解サマリー(承認済): ${JSON.stringify(opts.summary ?? {}, null, 0).slice(0, 5000)}
+御社の説明（承認済みを優先）: ${JSON.stringify(opts.summary ?? {}, null, 0).slice(0, 7000)}
 
 次の提供価値・体験価値の組を点検する。
 観点:
