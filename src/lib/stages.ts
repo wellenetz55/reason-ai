@@ -3,7 +3,7 @@ export type Stage = {
   step: string; // "STEP 1" など。左メニューのラベル
   label: string;
   href: string;
-  guide: { lead: string; body: string }; // 各段階の画面に必ず出す平易な説明（ELI5）
+  guide: { lead: string; body: string; items?: { name: string; body: string; example: string }[] }; // 各段階の画面に必ず出す平易な説明（ELI5）
   statuses: string[]; // company statuses in which this stage is open
 };
 
@@ -11,7 +11,16 @@ export const STAGES: Stage[] = [
   { key: "step0", guide: { lead: "まず、御社のことをAIに教える段階です。", body: "会社案内やWebサイトを登録すると、AIが「御社はこういう会社です」という説明を下書きします。合っているところは残し、違うところを直してください。ここが土台になるので、丁寧に直すほど後の段階がラクになります。" }, step: "STEP 0", label: "会社を知る", href: "/step0", statuses: ["onboarding", "week1_2", "week3_5", "week6_8", "extended", "grace", "advisor"] },
   { key: "diverge", guide: { lead: "御社の「特徴」と、お客様が「感じること」を、対にして全部書き出す段階です。", body: "御社は〜できる（提供価値）。だから、お客様は〜と感じることができる（体験価値）。この2つを1組にして書きます。たった数個で終わらず、光の当て方を変え、気づかれていないこと、小さいこと、当たり前だと思うことも全部出します。とにかく細分化して下さい。機能面のほか情緒面など全て。同じ特徴から別の感じ方が出たら、もう1組。目標は30組。毎日ちがう角度の問いが出るので、それに答えるだけで増えていきます。詰まったらAIに下書きを頼めます。" }, step: "STEP 1", label: "提供価値・体験価値を出す", href: "/sheet/diverge", statuses: ["week1_2", "week3_5", "week6_8", "extended", "grace", "advisor"] },
   { key: "merge", guide: { lead: "たくさん出した組を、まず診断し、似たものどうしでまとめて、残す言葉を選ぶ段階です。", body: "最初に2つの診断をします。「偏り診断」は、特定の角度ばかり多くなっていないかを見ます。「ふわっと診断」は、提供価値・体験価値が、どの会社でも言える日本語特有のふわっとした言葉になっていないかを見て、言い直し案を出します。そのあと「同じことを言っている組」を一つにして、本当に御社らしいものだけを残します。消すのではなく「保留」にするので、あとで戻せます。最後に2つの簡単な質問で、絞り方が合っているか確かめます。" }, step: "STEP 2", label: "まとめて絞る", href: "/sheet/merge", statuses: ["week1_2", "week3_5", "week6_8", "extended", "grace", "advisor"] },
-  { key: "brakes", guide: { lead: "お客様が御社を選ぶ直前に「やっぱりやめようかな」と思う理由を書き出す段階です。", body: "人は買う前に、必ず何かが引っかかります。「本当かな」「うちには必要ないかも」「合わないかも」「今じゃなくていいか」。この引っかかり＝ブレーキを先に全部出しておくと、次の段階で先回りの答えが作れます。" }, step: "STEP 3", label: "お客様のブレーキ", href: "/sheet/brakes", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
+  { key: "brakes", guide: {
+      lead: "お客様が御社を選ぶ直前に「やっぱりやめようかな」と思う理由を書き出す段階です。",
+      body: "人は買う前に、必ず何かが引っかかります。この引っかかり＝ブレーキは、次の4つのどれかです。提供価値・体験価値の組ごとに、お客様の言葉でブレーキを書き出しておくと、次の段階で先回りの答えが作れます。",
+      items: [
+        { name: "不信", body: "「本当にそうなの？」と、言っていることを疑う。", example: "「実績があると言うけど、うちの業界でも通用するの？」" },
+        { name: "不要", body: "「うちには要らないかも」と、必要性を感じない。", example: "「今のやり方でも、そこまで困っていない」" },
+        { name: "不適", body: "「うちには合わないかも」と、自分に当てはまらないと思う。", example: "「大きい会社向けでしょ。うちの規模だと持て余しそう」" },
+        { name: "不急", body: "「今じゃなくていい」と、急ぐ理由が見つからない。", example: "「いい話だけど、来期の予算で考えよう」" },
+      ],
+    }, step: "STEP 3", label: "お客様のブレーキ", href: "/sheet/brakes", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
   { key: "counter", guide: { lead: "書き出したブレーキを、一つずつ外していく段階です。", body: "ブレーキごとに「それならこう答えます」という言葉を用意します。前の段階で出した「できること」が、ここで答えの材料になります。答えには「事実」「要確認」「仮説」の印をつけて、どこまで確かかを分けておきます。" }, step: "STEP 4", label: "ブレーキを外す", href: "/sheet/counter", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
   { key: "trust", guide: { lead: "STEP 1 で書いた体験価値を、お客様が「それいいね」と感じる言葉に磨く段階です。", body: "「だから、お客様は〜と感じられる」の部分を、お客様の欲求の型に当てはめて言い直します。特徴→だから→体験価値、と読んで自然かをもう一度確かめます。競合と並べて、御社だけが言える部分も確かめます。" }, step: "STEP 5", label: "体験価値を磨く", href: "/sheet/trust", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
   { key: "litmus", guide: { lead: "できあがった言葉が、本当に市場で通用するかを試す段階です。", body: "リトマス試験紙にひたすように、いくつかの決まった質問に答えて点数をつけます。点が低い言葉は、まだ磨き足りないか、思い込みが入っているサインです。ここで気づけば、あとで大きく直さずに済みます。" }, step: "STEP 6", label: "リトマス試験紙", href: "/sheet/litmus", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },

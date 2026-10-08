@@ -12,6 +12,17 @@ export function StepGuide({ stageKey }: { stageKey: string }) {
       <p className="num text-[10px] font-semibold tracking-[0.12em] text-navy">{s.step} · この段階でやること</p>
       <p className="serif text-[17px] leading-snug mt-2 text-ink">{s.guide.lead}</p>
       <p className="text-sm text-ink-2 leading-relaxed mt-2">{s.guide.body}</p>
+      {s.guide.items && (
+        <dl className="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+          {s.guide.items.map((it) => (
+            <div key={it.name} className="rounded-[var(--radius)] bg-paper/70 px-4 py-3">
+              <dt className="serif text-[15px] text-navy">{it.name}</dt>
+              <dd className="text-[13px] text-ink-2 leading-relaxed mt-0.5">{it.body}</dd>
+              <dd className="text-[13px] text-ink mt-1">例：{it.example}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </aside>
   );
 }
