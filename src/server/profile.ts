@@ -35,7 +35,7 @@ ${itemList}
 ${corpus}
 
 JSONのみで返す: [{"key":"a1","draft":"...","tag":"fact","source":"資料1 会社概要"}, ...]`;
-  const text = await complete({ promptKey: "step0_summary", user, maxTokens: 4000 });
+  const text = await complete({ promptKey: "step0_summary", user, maxTokens: 3000 });
   const items = (parseJson<DraftItem[]>(text) ?? []).filter((x) => x && typeof x.key === "string" && PROFILE_ITEMS.some((i) => i.key === x.key && !i.fixed));
   return { items, skipped, docCount: docs.length };
 }

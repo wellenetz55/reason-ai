@@ -105,7 +105,15 @@ export async function removeDocument(formData: FormData) {
 /** 資料から AI が下書きを作る。承認済み・直した・保留の項目は上書きしない */
 export async function requestProfileDraft() {
   const { supabase, company, user } = await requireCustomer();
-  const { items } = await draftProfile(company.id, company.name);
+  let items: Awaited<ReturnType<typeof draftProfile>>["items"] = [];
+  try {
+    ({ items } = await draftProfile(company.id, company.name));
+  } catch (e) {
+    const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "profile.draft.error", payload: { msg: msg.slice(0, 500) } });
+    revalidatePath("/step0");
+    return;
+  }
   const { data: existing } = await supabase.from("profile_items").select("key, status").eq("company_id", company.id);
   const locked = new Set((existing ?? []).filter((e) => ["approved", "fixed", "held"].includes(e.status)).map((e) => e.key));
   const rows = items.filter((i) => !locked.has(i.key)).map((i) => ({
