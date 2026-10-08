@@ -9,9 +9,11 @@ export const VAGUE_WORDS = [
   "トータル", "幅広", "さまざま", "様々", "各種", "多彩", "きちんと", "ちゃんと", "いつでも", "何でも", "なんでも",
 ];
 
+import { PROMISE_ONLY } from "@/lib/because";
+
 export function findVague(text: string | null | undefined): string[] {
   if (!text) return [];
-  return VAGUE_WORDS.filter((w) => text.includes(w));
+  return [...VAGUE_WORDS, ...PROMISE_ONLY].filter((w) => text.includes(w));
 }
 
 /** 数字・固有名詞らしきものが含まれるか（簡易） */

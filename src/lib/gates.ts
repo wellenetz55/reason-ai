@@ -49,7 +49,7 @@ export function stepGate(key: string, c: GateCtx): Gate {
         ? { next, ready: true, note: "すべてのブレーキに先回りの答えがつきました。" }
         : { next, ready: false, note: `答えがまだないブレーキが${c.brakesOpen}件あります。全部につけると進めます。` };
     case "trust":
-      return { next, ready: true, note: "体験価値を見直し終えたら、リトマス試験紙に進んでください。あとから戻って磨き直せます。" };
+      return { next, ready: true, note: "三連（御社は／だから、お客様は／なぜなら）を一通り見終えたら、リトマス試験紙に進んでください。あとから戻って磨き直せます。" };
     case "litmus":
       return atLeast(c.status, "week6_8")
         ? { next, ready: true, note: "確認セッション②を終えています。証拠集めに進めます。" }

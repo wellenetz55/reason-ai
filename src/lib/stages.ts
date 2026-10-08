@@ -22,9 +22,9 @@ export const STAGES: Stage[] = [
       ],
     }, step: "STEP 3", label: "お客様のブレーキ", href: "/sheet/brakes", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
   { key: "counter", guide: { lead: "書き出したブレーキを、一つずつ外していく段階です。", body: "ブレーキごとに「それならこう答えます」という言葉を用意します。前の段階で出した「できること」が、ここで答えの材料になります。答えには「事実」「要確認」「仮説」の印をつけて、どこまで確かかを分けておきます。" }, step: "STEP 4", label: "ブレーキを外す", href: "/sheet/counter", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
-  { key: "trust", guide: { lead: "STEP 1 で書いた体験価値を、お客様が「それいいね」と感じる言葉に磨く段階です。", body: "「だから、お客様は〜と感じられる」の部分を、お客様の欲求の型に当てはめて言い直します。特徴→だから→体験価値、と読んで自然かをもう一度確かめます。競合と並べて、御社だけが言える部分も確かめます。" }, step: "STEP 5", label: "体験価値を磨く", href: "/sheet/trust", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
+  { key: "trust", guide: { lead: "STEP 1 の組に「なぜなら」を足して、三連にする段階です。", body: "御社は〜できる。だから、お客様は〜と感じられる。なぜなら、〜だから。ここまで言い切って1組です。「なぜなら」は、御社がどうやってそれを実現しているかの根拠（プロセス・数字・資格・体制・保証など）。根拠がない約束は、どんなに良い言葉でも浮ついて聞こえます。体験価値も、お客様の気持ちの変化になっているか、ここでもう一度磨きます。「当社しかありません」と言える根拠には印をつけます。" }, step: "STEP 5", label: "体験価値を磨く", href: "/sheet/trust", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
   { key: "litmus", guide: { lead: "できあがった言葉が、本当に市場で通用するかを試す段階です。", body: "リトマス試験紙にひたすように、いくつかの決まった質問に答えて点数をつけます。点が低い言葉は、まだ磨き足りないか、思い込みが入っているサインです。ここで気づけば、あとで大きく直さずに済みます。" }, step: "STEP 6", label: "リトマス試験紙", href: "/sheet/litmus", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
-  { key: "evidence", guide: { lead: "言葉の「裏づけ」を集める段階です。", body: "「お客様の声」「数字」「実績」など、その言葉が本当だと示せるものを探して、行ごとにつけていきます。裏づけがつくと「仮説」が「事実」に変わり、営業やWebで安心して使える言葉になります。" }, step: "STEP 7", label: "証拠を集める", href: "/sheet/evidence", statuses: ["week6_8", "extended", "grace", "advisor"] },
+  { key: "evidence", guide: { lead: "「なぜなら」の裏づけを集める段階です。", body: "STEP 5 で書いた「なぜなら」が本当だと示せるもの（お客様の声・数字・実績・第三者の評価）を探して、組ごとにつけていきます。裏づけがつくと「仮説」が「事実」に変わり、営業やWebで安心して使える言葉になります。" }, step: "STEP 7", label: "証拠を集める", href: "/sheet/evidence", statuses: ["week6_8", "extended", "grace", "advisor"] },
   { key: "deploy", guide: { lead: "完成した言葉を、営業トーク・価格の説明・Webなど、実際に使う場面の形に変える段階です。", body: "ここまでで作った提供価値シートが材料です。場面を選ぶと、その場面に合った文章の下書きが出ます。それを御社の言葉に直して、すぐ使える形にします。" }, step: "FINAL", label: "接点に展開する", href: "/deploy", statuses: ["week6_8", "extended", "grace", "advisor"] },
 ];
 

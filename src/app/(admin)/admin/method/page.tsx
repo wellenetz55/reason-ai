@@ -8,6 +8,7 @@ const PROMPT_KEYS: { key: string; label: string }[] = [
   { key: "step0_summary", label: "STEP 0 御社の説明の下書き" },
   { key: "diverge", label: "STEP 1 提供価値・体験価値の下書き" },
   { key: "vague_check", label: "STEP 2 ふわっと診断（点検と言い直し案）" },
+  { key: "because_draft", label: "STEP 5 なぜなら（根拠）の下書き" },
 ];
 const FIXED_KEYS: { key: string; label: string }[] = [
   { key: "round1_intro", label: "STEP 1 冒頭の固定文（提供価値／体験価値の書き方）" },
@@ -63,7 +64,7 @@ export default async function MethodPage() {
 
       <dl className="mt-16 text-sm space-y-2 text-ink-2">
         <div><dt className="inline text-xs text-ink-3">面の問い　</dt><dd className="inline num">{(facets ?? []).length}件（SQLで管理）</dd></div>
-        <div><dt className="inline text-xs text-ink-3">行動喚起の手法　</dt><dd className="inline num">{techniques ?? 0}件（SQLで管理）</dd></div>
+        <div><dt className="inline text-xs text-ink-3">行動喚起の手法　</dt><dd className="inline num">{techniques ?? 0}件（SQLで管理。kind=because は STEP 5 の根拠の作り方）</dd></div>
       </dl>
     </div>
   );
