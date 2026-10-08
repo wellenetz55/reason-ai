@@ -10,7 +10,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex-1 flex min-h-screen">
       <aside className="w-[260px] shrink-0 border-r hairline px-6 py-8 flex flex-col">
-        <Link href="/admin" className="block"><ReasonLogo width={150} /></Link>
+        <Link href="/admin" className="block"><ReasonLogo width={212} /></Link>
         <p className="text-xs text-ink-3 mt-3">ベレネッツ管理</p>
         <nav className="mt-8 space-y-0.5 text-[15px]">
           <Link href="/admin" className="block py-2 text-ink-2 hover:text-ink">全社一覧</Link>

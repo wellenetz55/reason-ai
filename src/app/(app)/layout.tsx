@@ -29,7 +29,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex-1 flex min-h-screen">
       <aside className="w-[260px] shrink-0 border-r hairline px-6 py-8 flex flex-col">
-        <Link href="/" className="block"><ReasonLogo width={150} /></Link>
+        <Link href="/" className="block"><ReasonLogo width={212} /></Link>
         <p className="serif text-[16px] leading-snug mt-6">{company.name}</p>
         <p className="text-[13px] text-ink-3 mt-1">{STATUS_LABEL[company.status] ?? company.status}</p>
         <NavRail stages={stages} />
