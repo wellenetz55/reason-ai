@@ -5,6 +5,7 @@ import { requireCustomer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LIMITS } from "@/lib/limits";
 import { draftProfile } from "@/server/profile";
+import { aiGuard } from "@/server/aiGuard";
 
 const KINDS = ["brochure", "sales_deck", "website", "recruit", "exhibition", "testimonial", "presentation", "other"] as const;
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -105,15 +106,9 @@ export async function removeDocument(formData: FormData) {
 /** 資料から AI が下書きを作る。承認済み・直した・保留の項目は上書きしない */
 export async function requestProfileDraft() {
   const { supabase, company, user } = await requireCustomer();
-  let items: Awaited<ReturnType<typeof draftProfile>>["items"] = [];
-  try {
-    ({ items } = await draftProfile(company.id, company.name));
-  } catch (e) {
-    const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "profile.draft.error", payload: { msg: msg.slice(0, 500) } });
-    revalidatePath("/step0");
-    return;
-  }
+  const res = await aiGuard(supabase, company.id, user.id, "profile.draft", () => draftProfile(company.id, company.name));
+  if (!res) { revalidatePath("/step0"); return; }
+  const { items } = res;
   const { data: existing } = await supabase.from("profile_items").select("key, status").eq("company_id", company.id);
   const locked = new Set((existing ?? []).filter((e) => ["approved", "fixed", "held"].includes(e.status)).map((e) => e.key));
   const rows = items.filter((i) => !locked.has(i.key)).map((i) => ({

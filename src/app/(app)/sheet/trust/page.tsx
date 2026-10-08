@@ -8,6 +8,8 @@ import { requireCustomer } from "@/lib/session";
 import { loadFixedText } from "@/server/ai/client";
 import { BECAUSE_TYPES } from "@/lib/because";
 import { requestBecauseDrafts } from "./actions";
+import { lastAiError } from "@/server/aiGuard";
+import { AiNotice } from "@/components/AiNotice";
 
 export const maxDuration = 60;
 
@@ -19,6 +21,7 @@ export default async function Page() {
     loadFixedText("round2_trust_intro"),
   ]);
   const gate = stepGate("trust", ctx);
+  const aiErr = await lastAiError(supabase, company.id, "because.draft");
   const list = (rows ?? []).map((r) => ({ ...r, because_only_us: !!r.because_only_us }));
   const withB = list.filter((r) => r.because_phrase).length;
   const onlyUs = list.filter((r) => r.because_only_us).length;
@@ -63,6 +66,7 @@ export default async function Page() {
           ))}
         </dl>
         <p className="text-[12px] text-ink-3 mt-3 max-w-[72ch]">いちばん強いのは「〜するのは、当社しかありません」と言える根拠です。言えそうな組には印をつけてください。無い場合は、お客様が避けたいと感じていることを御社が引き受ける約束を新しく作る（生み出された根拠）ことも検討します。</p>
+        <AiNotice message={aiErr} />
         <form action={requestBecauseDrafts} className="mt-4">
           <button className="btn-text -ml-1.5" type="submit" disabled={missing === 0}>「なぜなら」が空の{Math.min(missing, 10)}組に、AIの下書きを付ける（御社の説明から根拠を拾います）</button>
         </form>

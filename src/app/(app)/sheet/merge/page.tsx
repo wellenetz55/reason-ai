@@ -8,6 +8,8 @@ import { loadGateCtx } from "@/server/gates";
 import { requireCustomer } from "@/lib/session";
 import { runVagueCheck } from "./actions";
 import { fmtMeeting } from "@/lib/meetings";
+import { lastAiError } from "@/server/aiGuard";
+import { AiNotice } from "@/components/AiNotice";
 
 export const maxDuration = 60;
 
@@ -19,6 +21,7 @@ export default async function Page() {
     loadGateCtx(supabase, company.id, company.status),
   ]);
   const gate = stepGate("merge", ctx);
+  const aiErr = await lastAiError(supabase, company.id, "vague_check.run");
   const active = rows ?? [];
   const dlist = (diags ?? []).map((d) => ({ ...d, issues: (d.issues ?? []) as string[] }));
   const lastChecked = dlist.map((d) => d.checked_at).sort().at(-1);
@@ -43,6 +46,7 @@ export default async function Page() {
               <button className="btn-primary" type="submit" disabled={active.length === 0}>{lastChecked ? "AIにもう一度点検させる" : "AIに点検させる"}</button>
             </form>
           </div>
+          <AiNotice message={aiErr} />
           {lastChecked && <p className="text-[12px] text-ink-3 mt-2 num">最終点検 {fmtMeeting(lastChecked)}　未対応 {open} 組</p>}
           <VagueList rows={active} diags={dlist} />
         </section>

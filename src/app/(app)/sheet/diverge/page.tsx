@@ -9,6 +9,8 @@ import { addRow, requestDraft, requestExperienceDrafts } from "./actions";
 import { RowList } from "@/components/RowList";
 import { FacetBars } from "@/components/FacetBars";
 import { StepGuide } from "@/components/StepGuide";
+import { lastAiError } from "@/server/aiGuard";
+import { AiNotice } from "@/components/AiNotice";
 
 export default async function DivergePage() {
   const { supabase, company } = await requireCustomer();
@@ -25,6 +27,7 @@ export default async function DivergePage() {
   const { facet, round } = facetForToday(byFacet, progress?.max_round ?? 1);
   const tpl = await loadFacetPrompt(facet.key, round);
   const gate = stepGate("diverge", await loadGateCtx(supabase, company.id, company.status));
+  const aiErr = await lastAiError(supabase, company.id, "row.draft");
 
   return (
     <div>
@@ -80,6 +83,7 @@ export default async function DivergePage() {
           </div>
         </form>
 
+        <AiNotice message={aiErr} />
         <div className="mt-3 flex flex-wrap gap-1">
           <form action={requestDraft}>
             <input type="hidden" name="facet" value={facet.key} />

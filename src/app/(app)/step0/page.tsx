@@ -9,6 +9,8 @@ import { LIMITS } from "@/lib/limits";
 import { requestProfileDraft, reviewProfileItem } from "./actions";
 import { ProfileItems } from "@/components/ProfileItems";
 import { loadBQuestions } from "@/server/profile";
+import { lastAiError } from "@/server/aiGuard";
+import { AiNotice } from "@/components/AiNotice";
 
 export const maxDuration = 60;
 
@@ -29,10 +31,12 @@ export default async function Page() {
     loadBQuestions(),
   ]);
   const drafted = (items ?? []).some((i) => i.status !== "empty");
+  const aiErr = await lastAiError(supabase, company.id, "profile.draft");
   const gate = stepGate("step0", ctx);
   const u = await getUsage();
   const left = { files: LIMITS.files - u.files, urls: LIMITS.urls - u.urls, texts: LIMITS.texts - u.texts };
-  const mbLeft = Math.max(0, (LIMITS.totalBytes - u.bytes) / 1e6);
+  const MB = 1024 * 1024;
+  const mbLeft = Math.max(0, (LIMITS.totalBytes - u.bytes) / MB);
   const full = (n: number) => n <= 0;
   const kindSelect = (
     <select name="kind" className="border-b hairline py-2 text-sm" defaultValue="brochure">
@@ -88,7 +92,7 @@ export default async function Page() {
 
       <section className="mt-12">
         <h2 className="serif text-[18px]">登録した資料 <span className="num text-ink-3 text-[14px]">{docs?.length ?? 0}</span></h2>
-        <p className="text-[12px] text-ink-3 mt-1 num">ファイル {u.files}/{LIMITS.files}（{(u.bytes / 1e6).toFixed(0)}/{LIMITS.totalBytes / 1e6} MB）・URL {u.urls}/{LIMITS.urls}・テキスト {u.texts}/{LIMITS.texts}</p>
+        <p className="text-[12px] text-ink-3 mt-1 num">ファイル {u.files}/{LIMITS.files}（{(u.bytes / MB).toFixed(0)}/{Math.round(LIMITS.totalBytes / MB)} MB）・URL {u.urls}/{LIMITS.urls}・テキスト {u.texts}/{LIMITS.texts}</p>
         {!docs?.length ? (
           <p className="text-sm text-ink-2 mt-3">まだ資料がありません。まず会社案内かWebサイトを1つ上げると、AIが御社の説明の下書きを作れます。</p>
         ) : (
@@ -121,6 +125,7 @@ export default async function Page() {
           </form>
         </div>
         {!docs?.length && <p className="text-[12px] text-warm mt-2">まず資料を1つ以上登録してください。</p>}
+        <AiNotice message={aiErr} />
         {drafted && <p className="text-[12px] text-ink-3 mt-2">作り直しても、承認済み・直した・保留の項目は変わりません。画像の資料は読めないので、文字はテキストで貼ってください。</p>}
         <div className="mt-6 max-w-[760px]">
           <ProfileItems items={items ?? []} bq={bq} oneLiner={summary?.q1_before ?? null} review={reviewProfileItem} />

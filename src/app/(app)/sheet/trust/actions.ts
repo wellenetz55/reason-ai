@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireCustomer } from "@/lib/session";
 import { draftBecause } from "@/server/because";
 import { PROFILE_ITEMS } from "@/lib/profileItems";
+import { aiGuard } from "@/server/aiGuard";
 
 /** なぜならが空の行（最大10）に AI の下書きを付ける */
 export async function requestBecauseDrafts() {
@@ -14,7 +15,8 @@ export async function requestBecauseDrafts() {
   const profile: Record<string, string> = {};
   for (const it of items ?? []) { const def = PROFILE_ITEMS.find((d) => d.key === it.key); if (def && it.value) profile[def.label] = it.value; }
   const targets = (rows ?? []).filter((r) => r.value_raw).map((r) => ({ id: r.id, value: r.value_raw as string, experience: r.experience_value ?? r.experience_value_v1 }));
-  const drafts = await draftBecause({ companyName: company.name, profile, rows: targets });
+  const drafts = await aiGuard(supabase, company.id, user.id, "because.draft", () => draftBecause({ companyName: company.name, profile, rows: targets }));
+  if (!drafts) { revalidatePath("/sheet/trust"); return; }
   for (const d of drafts) {
     if (!targets.some((t) => t.id === d.id)) continue;
     const patch: Record<string, unknown> = { because_phrase: d.because, because_tag: d.tag ?? "hypothesis", because_only_us: !!d.only_us, because_by: "ai", trust_axis: d.type ?? null };

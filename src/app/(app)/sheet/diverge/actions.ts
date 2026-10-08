@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { requireCustomer } from "@/lib/session";
 import { draftRows, draftExperiences, FACETS, type FacetKey } from "@/server/sheet";
+import { aiGuard } from "@/server/aiGuard";
 
 async function nextSeq(supabase: Awaited<ReturnType<typeof requireCustomer>>["supabase"], companyId: string) {
   const { data } = await supabase.from("sheet_rows").select("seq").eq("company_id", companyId).order("seq", { ascending: false }).limit(1).maybeSingle();
@@ -56,7 +57,7 @@ export async function reviewRow(formData: FormData) {
 }
 
 export async function requestDraft(formData: FormData) {
-  const { supabase, company } = await requireCustomer();
+  const { supabase, company, user } = await requireCustomer();
   const facet = String(formData.get("facet") || "functional") as FacetKey;
   const round = Number(formData.get("round") || 1);
   if (!FACETS.some((f) => f.key === facet)) return;
@@ -64,13 +65,15 @@ export async function requestDraft(formData: FormData) {
     supabase.from("company_profile_summary").select("approved_json, draft_json").eq("company_id", company.id).maybeSingle(),
     supabase.from("sheet_rows").select("value_raw, experience_value_v1").eq("company_id", company.id).in("status", ["active", "held"]),
   ]);
-  const drafts = await draftRows({
+  const drafts = await aiGuard(supabase, company.id, user.id, "row.draft", () => draftRows({
     companyName: company.name,
     summary: summary?.approved_json ?? summary?.draft_json ?? null,
     facet,
     round,
     existing: (rows ?? []).map((r) => [r.value_raw, r.experience_value_v1].filter(Boolean).join(" → ")).filter(Boolean) as string[],
-  });
+  }));
+  if (!drafts) { revalidatePath("/sheet/diverge"); return; }
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "row.draft", payload: { n: drafts.length } });
   let seq = await nextSeq(supabase, company.id);
   for (const d of drafts.slice(0, 5)) {
     if (!d.value) continue;
@@ -83,13 +86,15 @@ export async function requestDraft(formData: FormData) {
 
 /** 体験価値が空の行に AI の下書きを付ける（顧客が直す／承認するまで「AIの下書き」表示） */
 export async function requestExperienceDrafts() {
-  const { supabase, company } = await requireCustomer();
+  const { supabase, company, user } = await requireCustomer();
   const [{ data: summary }, { data: rows }] = await Promise.all([
     supabase.from("company_profile_summary").select("approved_json, draft_json").eq("company_id", company.id).maybeSingle(),
     supabase.from("sheet_rows").select("id, value_raw, target").eq("company_id", company.id).eq("status", "active").or("experience_value_v1.is.null,experience_value_v1.eq.").limit(10),
   ]);
   const targets = (rows ?? []).filter((r) => r.value_raw).map((r) => ({ id: r.id, value: r.value_raw as string, target: r.target }));
-  const drafts = await draftExperiences({ companyName: company.name, summary: summary?.approved_json ?? summary?.draft_json ?? null, rows: targets });
+  const drafts = await aiGuard(supabase, company.id, user.id, "row.draft", () => draftExperiences({ companyName: company.name, summary: summary?.approved_json ?? summary?.draft_json ?? null, rows: targets }));
+  if (!drafts) { revalidatePath("/sheet/diverge"); return; }
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "row.draft", payload: { n: drafts.length, kind: "experience" } });
   for (const d of drafts) {
     if (!d.experience || !targets.some((t) => t.id === d.id)) continue;
     await supabase.from("sheet_rows").update({ experience_value_v1: d.experience, target_tag: "仮説（体験価値はAI下書き）" }).eq("id", d.id).eq("company_id", company.id);
