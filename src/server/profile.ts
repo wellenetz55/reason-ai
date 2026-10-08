@@ -13,9 +13,9 @@ export async function loadBQuestions() {
 }
 
 /** 資料から「御社の説明」の下書きを作る */
-export async function draftProfile(companyId: string, companyName: string): Promise<{ items: DraftItem[]; skipped: string[]; docCount: number }> {
-  const { docs, skipped } = await extractCompanyDocs(companyId);
-  if (docs.length === 0) return { items: [], skipped, docCount: 0 };
+export async function draftProfile(companyId: string, companyName: string): Promise<{ items: DraftItem[]; skipped: string[]; errors: string[]; docCount: number }> {
+  const { docs, skipped, errors } = await extractCompanyDocs(companyId);
+  if (docs.length === 0) return { items: [], skipped, errors, docCount: 0 };
   const bq = await loadBQuestions();
   const corpus = docs.map((d, i) => `### 資料${i + 1}: ${d.title}（${d.kind}）\n${d.text}`).join("\n\n").slice(0, 120_000);
   const itemList = PROFILE_ITEMS.filter((i) => !i.fixed)
@@ -38,7 +38,7 @@ ${corpus}
 JSONのみで返す: [{"key":"a1","draft":"...","tag":"fact","source":"資料1 会社概要"}, ...]`;
   const text = await complete({ promptKey: "step0_summary", user, maxTokens: 3000 });
   const items = (parseJson<DraftItem[]>(text) ?? []).filter((x) => x && typeof x.key === "string" && PROFILE_ITEMS.some((i) => i.key === x.key && !i.fixed));
-  return { items, skipped, docCount: docs.length };
+  return { items, skipped, errors, docCount: docs.length };
 }
 
 /**

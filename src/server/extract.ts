@@ -21,7 +21,7 @@ async function fetchUrlText(url: string) {
     const res = await fetch(url, { signal: ctrl.signal, headers: { "user-agent": "Mozilla/5.0 (compatible; reason-ai/1.0)" } });
     if (!res.ok) return "";
     const ct = res.headers.get("content-type") ?? "";
-    if (ct.includes("pdf")) return await pdfText(Buffer.from(await res.arrayBuffer()));
+    if (ct.includes("pdf")) return (await pdfText(Buffer.from(await res.arrayBuffer()))).text;
     return htmlToText(await res.text());
   } catch {
     return "";
@@ -30,14 +30,14 @@ async function fetchUrlText(url: string) {
   }
 }
 
-async function pdfText(buf: Buffer) {
-  const mod = await import("pdf-parse/lib/pdf-parse.js");
-  const pdfParse = (mod as unknown as { default?: (b: Buffer) => Promise<{ text: string }> }).default ?? (mod as unknown as (b: Buffer) => Promise<{ text: string }>);
+async function pdfText(buf: Buffer): Promise<{ text: string; error?: string }> {
   try {
-    const r = await pdfParse(buf);
-    return (r.text ?? "").trim();
-  } catch {
-    return "";
+    const { extractText, getDocumentProxy } = await import("unpdf");
+    const pdf = await getDocumentProxy(new Uint8Array(buf));
+    const { text } = await extractText(pdf, { mergePages: true });
+    return { text: (text ?? "").trim() };
+  } catch (e) {
+    return { text: "", error: e instanceof Error ? e.message : String(e) };
   }
 }
 
@@ -47,18 +47,20 @@ type Doc = { id: string; title: string; kind: string; storage_path: string | nul
  * 会社の資料をテキスト化して返す。抽出結果は company_documents.text_content にキャッシュ。
  * 画像は読まない（note に残す）。
  */
-export async function extractCompanyDocs(companyId: string): Promise<{ docs: { title: string; kind: string; text: string }[]; skipped: string[] }> {
+export async function extractCompanyDocs(companyId: string): Promise<{ docs: { title: string; kind: string; text: string }[]; skipped: string[]; errors: string[] }> {
   const admin = createAdminClient();
   const { data } = await admin.from("company_documents").select("id, title, kind, storage_path, url, text_content, mime_type").eq("company_id", companyId).order("created_at");
   const out: { title: string; kind: string; text: string }[] = [];
   const skipped: string[] = [];
+  const errors: string[] = [];
   for (const d of (data ?? []) as Doc[]) {
     let text = d.text_content ?? "";
     if (!text) {
       if (d.url) text = await fetchUrlText(d.url);
       else if (d.storage_path && d.mime_type === "application/pdf") {
-        const { data: f } = await admin.storage.from("company-docs").download(d.storage_path);
-        if (f) text = await pdfText(Buffer.from(await f.arrayBuffer()));
+        const { data: f, error: dlErr } = await admin.storage.from("company-docs").download(d.storage_path);
+        if (dlErr) errors.push(`${d.title}: download ${dlErr.message}`);
+        if (f) { const r = await pdfText(Buffer.from(await f.arrayBuffer())); text = r.text; if (r.error) errors.push(`${d.title}: ${r.error}`); }
       } else if (d.storage_path && d.mime_type === "text/plain") {
         const { data: f } = await admin.storage.from("company-docs").download(d.storage_path);
         if (f) text = (await f.text()).trim();
@@ -68,5 +70,5 @@ export async function extractCompanyDocs(companyId: string): Promise<{ docs: { t
     if (text) out.push({ title: d.title, kind: d.kind, text: text.slice(0, MAX_PER_DOC) });
     else skipped.push(d.title);
   }
-  return { docs: out, skipped };
+  return { docs: out, skipped, errors };
 }
