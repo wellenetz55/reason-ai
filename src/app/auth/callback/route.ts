@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const FAIL = (origin: string) => NextResponse.redirect(`${origin}/login?error=${encodeURIComponent("リンクが無効か、期限切れです。もう一度メールアドレスを入力してください。")}`);
+const FAIL = (origin: string, detail?: string) => NextResponse.redirect(`${origin}/login?error=${encodeURIComponent("リンクが無効か、期限切れです。もう一度メールアドレスを入力してください。" + (detail ? `（${detail}）` : ""))}`);
 
 /**
  * GET: code（PKCE）ならその場で交換。token_hash なら「サインインする」ボタンの画面を返す。
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    return error ? FAIL(origin) : NextResponse.redirect(`${origin}/`);
+    return error ? FAIL(origin, error.message) : NextResponse.redirect(`${origin}/`);
   }
   if (!tokenHash) return FAIL(origin);
   const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
@@ -36,5 +36,5 @@ export async function POST(request: Request) {
   if (!tokenHash) return FAIL(origin);
   const supabase = await createClient();
   const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as "magiclink" });
-  return error ? FAIL(origin) : NextResponse.redirect(`${origin}/`, { status: 303 });
+  return error ? FAIL(origin, error.message) : NextResponse.redirect(`${origin}/`, { status: 303 });
 }
