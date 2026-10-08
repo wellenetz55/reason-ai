@@ -22,9 +22,9 @@ export const STAGES: Stage[] = [
 export const STATUS_LABEL: Record<string, string> = {
   diagnosed: "適合診断済み",
   onboarding: "キックオフ前",
-  week1_2: "第1塗り（骨格）",
-  week3_5: "第2塗り（肉付け）",
-  week6_8: "第3塗り（仕上げ）",
+  week1_2: "骨格をつくる（1〜2週目）",
+  week3_5: "肉付けする（3〜5週目）",
+  week6_8: "仕上げる（6〜8週目）",
   extended: "延長中",
   grace: "猶予期間",
   locked: "閲覧のみ",
