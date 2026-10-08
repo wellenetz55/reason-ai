@@ -12,6 +12,8 @@
   --fact: #2e7d5b;
   --verify: #2f6fde;
   --hypo: #c98a00;
+  --warm: #b85c00;        /* 面談など「予定」の強調（暖色） */
+  --warm-soft: #fff1e0;
   --grey-row: #f1f1ef;
   --radius: 10px;
 }
@@ -28,6 +30,8 @@
   --color-fact: var(--fact);
   --color-verify: var(--verify);
   --color-hypo: var(--hypo);
+  --color-warm: var(--warm);
+  --color-warm-soft: var(--warm-soft);
   --color-grey-row: var(--grey-row);
   --font-sans: "Noto Sans JP", system-ui, sans-serif;
   --font-serif: "Noto Sans JP", system-ui, sans-serif;
@@ -43,6 +47,8 @@
   --hair: #2a2a2e;
   --navy: #aab4e8;
   --navy-soft: #1f2440;
+  --warm: #f0a35a;
+  --warm-soft: #2a2016;
   --grey-row: #1c1c20;
 }
 

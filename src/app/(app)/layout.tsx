@@ -36,15 +36,15 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <Link href="/ask" className="btn-primary mt-8 block text-center">ベレネッツに質問を残す</Link>
         <div className="mt-auto pt-8 text-[13px] text-ink-2 space-y-2">
           {nextMeeting && (
-            <div>
-              <p className="text-ink-3 text-[12px]">次の面談 · {MEETING_LABEL[nextMeeting.kind] ?? nextMeeting.kind}</p>
-              <p className="num text-ink mt-0.5">{fmtMeeting(nextMeeting.scheduled_at)}</p>
+            <div className="rounded-[var(--radius)] bg-warm-soft px-4 py-3 -mx-1">
+              <p className="text-[11px] font-semibold tracking-wide text-warm">次の面談 · {MEETING_LABEL[nextMeeting.kind] ?? nextMeeting.kind}</p>
+              <p className="num text-[17px] font-semibold text-ink mt-1 leading-tight">{fmtMeeting(nextMeeting.scheduled_at)}</p>
               {nextMeeting.meeting_url ? (
-                <a href={nextMeeting.meeting_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-navy underline underline-offset-4 hover:opacity-80">
+                <a href={nextMeeting.meeting_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[13px] font-medium text-warm underline underline-offset-4 hover:opacity-80">
                   会議に参加する ↗
                 </a>
               ) : (
-                <p className="text-ink-3 text-[12px] mt-1">会議URL未設定</p>
+                <p className="text-[12px] text-ink-3 mt-2">会議URL未設定</p>
               )}
             </div>
           )}
