@@ -1,7 +1,7 @@
 export const instant = false;
 import Link from "next/link";
 import { requireCustomer } from "@/lib/session";
-import { STAGES, STATUS_LABEL, isStageOpen } from "@/lib/stages";
+import { STAGES, STATUS_LABEL, isStageOpen, currentStep } from "@/lib/stages";
 import { signOut } from "@/app/login/actions";
 import { NavRail } from "@/components/NavRail";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
@@ -9,7 +9,7 @@ import { APP_VERSION } from "@/lib/version";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const { company, profile, supabase } = await requireCustomer();
-  const [{ count: openHomework }, { data: nextMeeting }] = await Promise.all([
+  const [{ count: openHomework }, { data: nextMeeting }, { data: progress }] = await Promise.all([
     supabase.from("homeworks").select("id", { count: "exact", head: true }).eq("company_id", company.id).eq("status", "open"),
     supabase
       .from("company_meetings")
@@ -19,9 +19,11 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       .order("scheduled_at")
       .limit(1)
       .maybeSingle(),
+    supabase.from("v_divergence_progress").select("row_count").eq("company_id", company.id).maybeSingle(),
   ]);
 
-  const stages = STAGES.map((s) => ({ ...s, open: isStageOpen(s, company.status) }));
+  const nowKey = currentStep(company.status, progress?.row_count ?? 0).key;
+  const stages = STAGES.map((s) => ({ ...s, open: isStageOpen(s, company.status), now: s.key === nowKey }));
 
   return (
     <div className="flex-1 flex min-h-screen">
