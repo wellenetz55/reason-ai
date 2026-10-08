@@ -6,6 +6,7 @@ import { signOut } from "@/app/login/actions";
 import { NavRail } from "@/components/NavRail";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
 import { APP_VERSION } from "@/lib/version";
+import { Bug } from "lucide-react";
 import { MEETING_LABEL, fmtMeeting } from "@/lib/meetings";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
@@ -65,7 +66,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <p><Link href="/homework" className="hover:text-ink">宿題 <span className="num">0</span></Link></p>
           )}
           <p>
-            <Link href="/report" className="hover:text-ink">エラーレポート</Link>
+            <Link href="/report" className="inline-flex items-center gap-1.5 hover:text-ink"><Bug size={14} strokeWidth={1.75} aria-hidden className="text-ink-3" />エラーレポート</Link>
           </p>
           <form action={signOut} className="pt-2">
             <p className="text-ink-2 mb-1">{profile.display_name}</p>
