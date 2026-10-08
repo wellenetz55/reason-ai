@@ -36,8 +36,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <Link href="/" className="block"><ReasonLogo width={212} /></Link>
         <p className="serif text-[16px] leading-snug mt-6">{company.name}</p>
         <p className="text-[13px] text-ink-2 mt-1">{profile.display_name} <span className="text-ink-3">さん</span></p>
-        <div className="mt-3 rounded-[var(--radius)] border hairline px-3.5 py-2.5">
-          <p className="text-[11px] text-ink-3 tracking-wide">現在のフェーズ</p>
+        <div className="mt-3 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-3.5 py-2.5">
+          <p className="text-[11px] font-semibold text-navy tracking-wide">現在のフェーズ</p>
           <p className="text-[13px] text-ink mt-0.5">{STATUS_LABEL[company.status] ?? company.status}</p>
         </div>
         {company.status === "diagnosed" ? (
