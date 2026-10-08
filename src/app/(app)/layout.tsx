@@ -6,6 +6,7 @@ import { signOut } from "@/app/login/actions";
 import { NavRail } from "@/components/NavRail";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
 import { APP_VERSION } from "@/lib/version";
+import { MEETING_LABEL, fmtMeeting } from "@/lib/meetings";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const { company, profile, supabase } = await requireCustomer();
@@ -13,7 +14,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     supabase.from("homeworks").select("id", { count: "exact", head: true }).eq("company_id", company.id).eq("status", "open"),
     supabase
       .from("company_meetings")
-      .select("kind, scheduled_at")
+      .select("kind, scheduled_at, meeting_url")
       .eq("company_id", company.id)
       .gte("scheduled_at", new Date().toISOString())
       .order("scheduled_at")
@@ -35,9 +36,17 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <Link href="/ask" className="btn-primary mt-8 block text-center">ベレネッツに質問を残す</Link>
         <div className="mt-auto pt-8 text-[13px] text-ink-2 space-y-2">
           {nextMeeting && (
-            <p>
-              次の面談 <span className="num">{new Date(nextMeeting.scheduled_at).toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })}</span>
-            </p>
+            <div>
+              <p className="text-ink-3 text-[12px]">次の面談 · {MEETING_LABEL[nextMeeting.kind] ?? nextMeeting.kind}</p>
+              <p className="num text-ink mt-0.5">{fmtMeeting(nextMeeting.scheduled_at)}</p>
+              {nextMeeting.meeting_url ? (
+                <a href={nextMeeting.meeting_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-navy underline underline-offset-4 hover:opacity-80">
+                  会議に参加する ↗
+                </a>
+              ) : (
+                <p className="text-ink-3 text-[12px] mt-1">会議URL未設定</p>
+              )}
+            </div>
           )}
           <p>
             <Link href="/homework" className="hover:text-ink">宿題 <span className="num">{openHomework ?? 0}</span></Link>

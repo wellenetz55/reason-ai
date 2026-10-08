@@ -18,3 +18,39 @@ export async function setStatus(formData: FormData) {
   revalidatePath(`/admin/${id}`);
   revalidatePath("/admin");
 }
+
+const MEETING_KINDS = ["kickoff", "session1", "midcheck", "session2", "session3", "advisor_monthly", "internal"] as const;
+
+/** 面談を登録。日時はJSTで入力されたものをUTCに変換して保存 */
+export async function createMeeting(formData: FormData) {
+  const { supabase, user } = await requireOperator();
+  const companyId = String(formData.get("company_id"));
+  const kind = String(formData.get("kind"));
+  const local = String(formData.get("scheduled_at") || ""); // "2026-10-13T14:00"（JST）
+  const url = String(formData.get("meeting_url") || "").trim();
+  if (!companyId || !local || !(MEETING_KINDS as readonly string[]).includes(kind)) return;
+  const scheduledAt = new Date(`${local}:00+09:00`).toISOString();
+  await supabase.from("company_meetings").insert({
+    company_id: companyId,
+    kind,
+    scheduled_at: scheduledAt,
+    meeting_url: url || null,
+    created_by: user.id,
+  });
+  revalidatePath(`/admin/${companyId}`);
+  revalidatePath("/");
+}
+
+export async function updateMeeting(formData: FormData) {
+  const { supabase } = await requireOperator();
+  const id = String(formData.get("id"));
+  const companyId = String(formData.get("company_id"));
+  const local = String(formData.get("scheduled_at") || "");
+  const url = String(formData.get("meeting_url") || "").trim();
+  const patch: Record<string, unknown> = { meeting_url: url || null };
+  if (local) patch.scheduled_at = new Date(`${local}:00+09:00`).toISOString();
+  if (formData.get("held") === "1") patch.held_at = new Date().toISOString();
+  await supabase.from("company_meetings").update(patch).eq("id", id);
+  revalidatePath(`/admin/${companyId}`);
+  revalidatePath("/");
+}

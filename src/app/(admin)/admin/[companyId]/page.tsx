@@ -1,17 +1,19 @@
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
-import { setStatus } from "../actions";
+import { setStatus, createMeeting, updateMeeting } from "../actions";
+import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
 
 export default async function CompanyAdmin({ params }: PageProps<"/admin/[companyId]">) {
   const { companyId } = await params;
   const { supabase } = await requireOperator();
-  const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }] = await Promise.all([
+  const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }, { data: meetings }] = await Promise.all([
     supabase.from("companies").select("*").eq("id", companyId).single(),
     supabase.from("sheet_rows").select("id, seq, value_raw, status, created_by, target_tag").eq("company_id", companyId).order("seq"),
     supabase.from("sheet_row_reviews").select("action, dwell_ms, before_text, after_text, created_at").order("created_at", { ascending: false }).limit(200),
     supabase.from("homeworks").select("title, status, priority").eq("company_id", companyId),
     supabase.from("questions_to_operator").select("*").eq("company_id", companyId).order("created_at", { ascending: false }),
     supabase.from("v_divergence_progress").select("*").eq("company_id", companyId).maybeSingle(),
+    supabase.from("company_meetings").select("id, kind, scheduled_at, held_at, meeting_url").eq("company_id", companyId).order("scheduled_at"),
   ]);
   if (!c) return null;
   const approves = (reviews ?? []).filter((r) => r.action === "approve").length;
@@ -56,6 +58,38 @@ export default async function CompanyAdmin({ params }: PageProps<"/admin/[compan
           </select>
           <button className="btn-text" type="submit">変更</button>
         </form>
+      </section>
+
+
+      <section className="mt-10">
+        <h2 className="text-sm text-ink-2">面談</h2>
+        <ul className="mt-2 divide-y hairline text-sm">
+          {(meetings ?? []).map((m) => (
+            <li key={m.id} className={`py-3 ${m.held_at ? "text-ink-3" : ""}`}>
+              <form action={updateMeeting} className="flex flex-wrap gap-3 items-center">
+                <input type="hidden" name="id" value={m.id} />
+                <input type="hidden" name="company_id" value={c.id} />
+                <span className="w-32">{MEETING_LABEL[m.kind] ?? m.kind}</span>
+                <input type="datetime-local" name="scheduled_at" defaultValue={toLocalInput(m.scheduled_at)} className="border-b hairline py-1 num" />
+                <input type="url" name="meeting_url" defaultValue={m.meeting_url ?? ""} placeholder="会議URL（Zoom / Meet など）" className="border-b hairline py-1 flex-1 min-w-[260px]" />
+                <button className="btn-text" type="submit">保存</button>
+                {m.held_at ? <span className="text-xs">実施済 {fmtMeeting(m.held_at)}</span> : (
+                  <button className="btn-text" type="submit" name="held" value="1">実施済にする</button>
+                )}
+              </form>
+            </li>
+          ))}
+        </ul>
+        <form action={createMeeting} className="mt-4 flex flex-wrap gap-3 items-center text-sm">
+          <input type="hidden" name="company_id" value={c.id} />
+          <select name="kind" className="border-b hairline py-1">
+            {Object.entries(MEETING_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+          <input type="datetime-local" name="scheduled_at" required className="border-b hairline py-1 num" />
+          <input type="url" name="meeting_url" placeholder="会議URL（任意・後から追加可）" className="border-b hairline py-1 flex-1 min-w-[260px]" />
+          <button className="btn-primary" type="submit">面談を追加</button>
+        </form>
+        <p className="text-xs text-ink-3 mt-2">日時は日本時間。URLが空のままだと顧客側に「会議URL未設定」と出ます。</p>
       </section>
 
       <section className="mt-10">
