@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { complete, parseJson } from "@/server/ai/client";
 
 export { FACETS, type FacetKey } from "@/lib/facets";
-import { FACETS } from "@/lib/facets";
+import { FACETS, type FacetKey } from "@/lib/facets";
 
 /** Today's facet by day index within the divergence period and the current round. */
 export function facetForToday(rowsByFacet: Record<string, number>, maxRound: number) {
