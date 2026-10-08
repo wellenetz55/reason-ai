@@ -31,7 +31,7 @@ async function fetchUrlText(url: string) {
 }
 
 async function pdfText(buf: Buffer) {
-  const mod = await import("pdf-parse");
+  const mod = await import("pdf-parse/lib/pdf-parse.js");
   const pdfParse = (mod as unknown as { default?: (b: Buffer) => Promise<{ text: string }> }).default ?? (mod as unknown as (b: Buffer) => Promise<{ text: string }>);
   try {
     const r = await pdfParse(buf);
