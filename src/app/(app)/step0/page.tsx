@@ -6,6 +6,11 @@ import { loadGateCtx } from "@/server/gates";
 import { requireCustomer } from "@/lib/session";
 import { uploadDocument, addUrl, addText, removeDocument, getUsage } from "./actions";
 import { LIMITS } from "@/lib/limits";
+import { requestProfileDraft, reviewProfileItem } from "./actions";
+import { ProfileItems } from "@/components/ProfileItems";
+import { loadBQuestions } from "@/server/profile";
+
+export const maxDuration = 60;
 
 const KIND_LABEL: Record<string, string> = {
   brochure: "会社案内・製品パンフ", sales_deck: "営業資料", website: "Webサイト", recruit: "採用ページ",
@@ -16,10 +21,14 @@ const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("ja-JP", { tim
 
 export default async function Page() {
   const { supabase, company } = await requireCustomer();
-  const [{ data: docs }, ctx] = await Promise.all([
+  const [{ data: docs }, ctx, { data: items }, { data: summary }, bq] = await Promise.all([
     supabase.from("company_documents").select("id, kind, title, storage_path, url, text_content, mime_type, size_bytes, created_at").eq("company_id", company.id).order("created_at", { ascending: false }),
     loadGateCtx(supabase, company.id, company.status),
+    supabase.from("profile_items").select("key, draft, value, status, tag, source").eq("company_id", company.id),
+    supabase.from("company_profile_summary").select("q1_before").eq("company_id", company.id).maybeSingle(),
+    loadBQuestions(),
   ]);
+  const drafted = (items ?? []).some((i) => i.status !== "empty");
   const gate = stepGate("step0", ctx);
   const u = await getUsage();
   const left = { files: LIMITS.files - u.files, urls: LIMITS.urls - u.urls, texts: LIMITS.texts - u.texts };
@@ -99,6 +108,23 @@ export default async function Page() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="mt-16">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="serif text-[22px]">御社の説明</h2>
+            <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">上の資料をAIが読んで下書きします。項目ごとに「直す／承認／保留」してください。一括承認はありません。</p>
+          </div>
+          <form action={requestProfileDraft}>
+            <button className="btn-primary" type="submit" disabled={!docs?.length}>{drafted ? "資料から下書きを作り直す" : "資料から下書きを作る"}</button>
+          </form>
+        </div>
+        {!docs?.length && <p className="text-[12px] text-warm mt-2">まず資料を1つ以上登録してください。</p>}
+        {drafted && <p className="text-[12px] text-ink-3 mt-2">作り直しても、承認済み・直した・保留の項目は変わりません。画像の資料は読めないので、文字はテキストで貼ってください。</p>}
+        <div className="mt-6 max-w-[760px]">
+          <ProfileItems items={items ?? []} bq={bq} oneLiner={summary?.q1_before ?? null} review={reviewProfileItem} />
+        </div>
       </section>
 
       <NextStepBar gate={gate} />

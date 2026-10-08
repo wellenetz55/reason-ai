@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { requireCustomer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LIMITS } from "@/lib/limits";
+import { draftProfile } from "@/server/profile";
 
 const KINDS = ["brochure", "sales_deck", "website", "recruit", "exhibition", "testimonial", "presentation", "other"] as const;
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -96,5 +97,38 @@ export async function removeDocument(formData: FormData) {
   if (!doc) return;
   if (doc.storage_path) await createAdminClient().storage.from("company-docs").remove([doc.storage_path]);
   await supabase.from("company_documents").delete().eq("id", doc.id);
+  revalidatePath("/step0");
+}
+
+// ---------- 御社の説明（profile_items） ----------
+
+/** 資料から AI が下書きを作る。承認済み・直した・保留の項目は上書きしない */
+export async function requestProfileDraft() {
+  const { supabase, company, user } = await requireCustomer();
+  const { items } = await draftProfile(company.id, company.name);
+  const { data: existing } = await supabase.from("profile_items").select("key, status").eq("company_id", company.id);
+  const locked = new Set((existing ?? []).filter((e) => ["approved", "fixed", "held"].includes(e.status)).map((e) => e.key));
+  const rows = items.filter((i) => !locked.has(i.key)).map((i) => ({
+    company_id: company.id, key: i.key, draft: i.draft || null, tag: i.tag || "hypothesis", source: i.source || null,
+    status: i.draft ? "draft" : "empty", updated_at: new Date().toISOString(),
+  }));
+  if (rows.length) await supabase.from("profile_items").upsert(rows, { onConflict: "company_id,key" });
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "profile.draft", payload: { n: rows.length } });
+  revalidatePath("/step0");
+}
+
+/** 項目ごとの 直す／承認／保留、B の回答 */
+export async function reviewProfileItem(formData: FormData) {
+  const { supabase, company } = await requireCustomer();
+  const key = String(formData.get("key"));
+  const action = String(formData.get("action")); // approve | fix | hold | answer | reopen
+  const after = String(formData.get("after") || "").trim();
+  const { data: cur } = await supabase.from("profile_items").select("*").eq("company_id", company.id).eq("key", key).maybeSingle();
+  const patch: Record<string, unknown> = { company_id: company.id, key, updated_at: new Date().toISOString() };
+  if (action === "approve") { patch.value = cur?.draft ?? null; patch.status = "approved"; }
+  else if (action === "fix" || action === "answer") { if (!after) return; patch.value = after; patch.status = "fixed"; if (action === "answer") patch.tag = "fact"; }
+  else if (action === "hold") { patch.status = "held"; }
+  else if (action === "reopen") { patch.status = cur?.draft ? "draft" : "empty"; patch.value = null; }
+  await supabase.from("profile_items").upsert({ ...(cur ?? {}), ...patch }, { onConflict: "company_id,key" });
   revalidatePath("/step0");
 }
