@@ -7,8 +7,9 @@ type S = { key: string; step: string; label: string; href: string; open: boolean
 
 /**
  * 左の進捗レール。
- * STEP バッジ: 現在地＝紺地に白抜き／到達済み＝紺の枠線／未到達＝点線グレー。
- * バッジの色だけで「順番に進む」「いまどこか」を伝え、文字の注記は置かない。
+ * バッジ: 開いているページ＝紺地に白抜き／開ける段階＝紺の枠線／未到達＝点線グレー。
+ * プログラム上「いま進める段階」は、段階名の右に小さなオレンジの点（ホバーで説明）。
+ * 「開いているページ」と「いまの段階」を混ぜない。
  */
 export function NavRail({ stages }: { stages: S[] }) {
   const path = usePathname();
@@ -21,11 +22,7 @@ export function NavRail({ stages }: { stages: S[] }) {
             <span
               className={clsx(
                 "num inline-block shrink-0 w-[60px] text-center rounded-full py-[3px] text-[9px] font-semibold tracking-[0.1em] leading-none border",
-                s.now
-                  ? "bg-navy border-navy text-white"
-                  : s.open
-                    ? "border-navy text-navy"
-                    : "border-dashed border-ink-3 text-ink-3"
+                active ? "bg-navy border-navy text-white" : s.open ? "border-navy text-navy" : "border-dashed border-ink-3 text-ink-3"
               )}
             >
               {s.step}
@@ -34,17 +31,17 @@ export function NavRail({ stages }: { stages: S[] }) {
           const inner = (
             <>
               {badge}
-              <span className="text-[14px] leading-tight">{s.label}</span>
+              <span className="text-[14px] leading-tight flex items-center gap-1.5">
+                {s.label}
+                {s.now && <span className="inline-block w-1.5 h-1.5 rounded-full bg-warm" title="いま進める段階" aria-label="いま進める段階" />}
+              </span>
             </>
           );
-          const base = "flex items-center gap-2.5 py-[7px] pl-3 -ml-3 border-l-2 transition-colors";
+          const base = "flex items-center gap-2.5 py-[7px] pl-3 -ml-3 border-l-2 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-navy rounded-sm";
           return (
             <li key={s.key}>
               {s.open ? (
-                <Link
-                  href={s.href}
-                  className={clsx(base, active ? "border-navy text-ink" : "border-transparent text-ink-2 hover:text-ink")}
-                >
+                <Link href={s.href} className={clsx(base, active ? "border-navy text-ink" : "border-transparent text-ink-2 hover:text-ink")}>
                   {inner}
                 </Link>
               ) : (
@@ -56,6 +53,7 @@ export function NavRail({ stages }: { stages: S[] }) {
           );
         })}
       </ol>
+      <p className="mt-3 text-[11px] text-ink-3 flex items-center gap-1.5"><span className="inline-block w-1.5 h-1.5 rounded-full bg-warm" />いま進める段階</p>
     </nav>
   );
 }
