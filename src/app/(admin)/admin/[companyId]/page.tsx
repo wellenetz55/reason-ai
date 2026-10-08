@@ -12,7 +12,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const { supabase } = await requireOperator();
   const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }, { data: meetings }, { data: errs }] = await Promise.all([
     supabase.from("companies").select("*").eq("id", companyId).single(),
-    supabase.from("sheet_rows").select("id, seq, value_raw, status, created_by, target_tag").eq("company_id", companyId).order("seq"),
+    supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, because_phrase, status, created_by, target_tag, confirmed_at").eq("company_id", companyId).order("seq"),
     supabase.from("sheet_row_reviews").select("action, dwell_ms, before_text, after_text, created_at").order("created_at", { ascending: false }).limit(200),
     supabase.from("homeworks").select("title, status, priority").eq("company_id", companyId),
     supabase.from("questions_to_operator").select("*").eq("company_id", companyId).order("created_at", { ascending: false }),
@@ -125,9 +125,13 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
         <ol className="mt-2 divide-y hairline text-sm">
           {(rows ?? []).map((r) => (
             <li key={r.id} className={`py-2 flex gap-3 ${r.status === "held" ? "text-ink-3" : ""}`}>
-              <span className="num w-6 text-ink-3">{r.seq}</span>
-              <span className="serif">{r.value_raw}</span>
-              <span className="text-xs text-ink-3 ml-auto">{r.created_by === "ai" ? "AI下書き" : ""}{r.status === "held" ? " 保留" : ""}</span>
+              <span className="num w-6 text-ink-3 shrink-0">{r.seq}</span>
+              <span className="flex-1 min-w-0">
+                <span className="serif block">{r.value_raw}</span>
+                {r.experience_value_v1 && <span className="block text-ink-2"><span className="text-[11px] text-ink-3 mr-1">だから</span>{r.experience_value_v1}</span>}
+                {r.because_phrase && <span className="block text-ink-2"><span className="text-[11px] text-ink-3 mr-1">なぜなら</span>{r.because_phrase}</span>}
+              </span>
+              <span className="text-xs text-ink-3 shrink-0">{r.created_by === "ai" ? "AI下書き" : ""}{r.confirmed_at ? " 確定" : ""}{r.status === "held" ? " 保留" : ""}</span>
             </li>
           ))}
         </ol>
