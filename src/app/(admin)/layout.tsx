@@ -15,6 +15,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
         <nav className="mt-8 space-y-0.5 text-[15px]">
           <Link href="/admin" className="block py-2 text-ink-2 hover:text-ink">全社一覧</Link>
           <Link href="/admin/method" className="block py-2 text-ink-2 hover:text-ink">メソッド資産</Link>
+          <Link href="/admin/members" className="block py-2 text-ink-2 hover:text-ink">ベレネッツのメンバー</Link>
         </nav>
         <div className="mt-auto space-y-4">
           <div className="text-xs">
