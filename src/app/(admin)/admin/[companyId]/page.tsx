@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
-import { setStatus, createMeeting, updateMeeting, answerQuestion, resolveErrorReport } from "../actions";
+import { setStatus, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink } from "../actions";
 import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
 
-export default async function CompanyAdmin({ params }: PageProps<"/admin/[companyId]">) {
+export default async function CompanyAdmin({ params, searchParams }: PageProps<"/admin/[companyId]">) {
   const { companyId } = await params;
+  const sp = await searchParams;
+  const issuedLink = typeof sp?.link === "string" ? sp.link : null;
+  const linkError = typeof sp?.link_error === "string" ? sp.link_error : null;
   const { supabase } = await requireOperator();
   const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }, { data: meetings }, { data: errs }] = await Promise.all([
     supabase.from("companies").select("*").eq("id", companyId).single(),
@@ -67,6 +70,24 @@ export default async function CompanyAdmin({ params }: PageProps<"/admin/[compan
         </form>
       </section>
 
+
+
+      <section className="mt-10">
+        <h2 className="text-sm text-ink-2">サインインリンクを発行</h2>
+        <p className="text-xs text-ink-3 mt-1">メールが届かない担当者に、ベレネッツから直接リンクを渡すためのものです。リンクは1回限り・1時間有効。チャットやメールで本人にだけ送ってください。</p>
+        <form action={issueSignInLink} className="mt-2 flex gap-3 items-center">
+          <input type="hidden" name="company_id" value={c.id} />
+          <input type="email" name="email" required placeholder="担当者のメールアドレス" className="border-b hairline py-1 text-sm num w-80" />
+          <button className="btn-text" type="submit">発行</button>
+        </form>
+        {linkError && <p className="text-xs text-warm mt-2">{linkError}</p>}
+        {issuedLink && (
+          <div className="mt-3 rounded-[var(--radius)] bg-navy-soft px-4 py-3">
+            <p className="text-[11px] text-navy font-semibold">発行しました（この表示を閉じると再表示できません）</p>
+            <p className="num text-[12px] break-all mt-1 select-all">{issuedLink}</p>
+          </div>
+        )}
+      </section>
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">面談</h2>

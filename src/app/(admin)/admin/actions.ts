@@ -76,3 +76,26 @@ export async function resolveErrorReport(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/report");
 }
+
+/** 顧客のサインインリンクを発行（メールが届かないときにベレネッツが直接渡す）。URLはクエリで会社ページに返す */
+export async function issueSignInLink(formData: FormData) {
+  await requireOperator();
+  const companyId = String(formData.get("company_id"));
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  if (!email) return;
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+  const { data: prof } = await admin.from("profiles").select("id").eq("company_id", companyId);
+  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const u = list?.users.find((x) => x.email?.toLowerCase() === email);
+  if (!u || !(prof ?? []).some((p) => p.id === u.id)) {
+    const { redirect } = await import("next/navigation");
+    redirect(`/admin/${companyId}?link_error=${encodeURIComponent("その会社の担当者として登録されていないメールアドレスです")}`);
+  }
+  const { data, error } = await admin.auth.admin.generateLink({ type: "magiclink", email, options: { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback` } });
+  const { redirect } = await import("next/navigation");
+  const hashed = data?.properties?.hashed_token;
+  if (error || !hashed) redirect(`/admin/${companyId}?link_error=${encodeURIComponent(error?.message ?? "発行できませんでした")}`);
+  const url = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?token_hash=${encodeURIComponent(hashed!)}&type=magiclink`;
+  redirect(`/admin/${companyId}?link=${encodeURIComponent(url)}`);
+}
