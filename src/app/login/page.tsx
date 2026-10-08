@@ -1,3 +1,4 @@
+import Link from "next/link";
 export const instant = false;
 import { sendMagicLink } from "./actions";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
@@ -10,9 +11,16 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     <main className="flex-1 grid place-items-center px-6">
       <div className="w-full max-w-sm">
         <h1 className="mb-3"><ReasonLogo width={240} /></h1>
-        <p className="text-ink-2 text-sm mb-10">登録したメールアドレスにサインイン用のリンクを送ります。</p>
+        <p className="text-ink-2 text-sm mb-10">登録したメールアドレスにサインイン用のリンクを送ります。ベレネッツから招待を受けた方のみサインインできます。</p>
         {sent ? (
-          <p className="text-sm">メールを送りました。受信箱のリンクを開いてください。</p>
+          <div className="text-sm space-y-4">
+            <p>メールを送りました。受信箱のリンクを開いてください。</p>
+            <div className="rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-[13px] text-ink-2 leading-relaxed space-y-2">
+              <p>届かないときは、まず<strong className="text-ink">迷惑メールフォルダ</strong>をご確認ください（送信元：noreply@mail.app.supabase.io）。</p>
+              <p>1〜2分待ってもサインイン用のリンクが来ない場合は、<Link href="/login" className="text-navy underline underline-offset-4">もう一度メールアドレスを入力して下さい</Link>。</p>
+              <p>それでも届かない場合は、ベレネッツにご連絡ください。</p>
+            </div>
+          </div>
         ) : (
           <form action={sendMagicLink} className="space-y-6">
             <label className="block">
