@@ -12,7 +12,8 @@ import { StepGuide } from "@/components/StepGuide";
 import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
 
-export default async function DivergePage() {
+export default async function DivergePage({ searchParams }: PageProps<"/sheet/diverge">) {
+  const sp = await searchParams;
   const { supabase, company } = await requireCustomer();
   const [{ data: rows }, { data: progress }, fixed] = await Promise.all([
     supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, target, one_liner, target_tag, facet, round, status, created_by, confirmed_at").eq("company_id", company.id).order("seq"),
@@ -24,7 +25,11 @@ export default async function DivergePage() {
   const total = progress?.row_count ?? 0;       // 行数（体験価値が空も含む）
   const missing = total - count;
   const confirmed = (rows ?? []).filter((r) => r.confirmed_at && r.status === "active").length;
-  const { facet, round } = facetForToday(byFacet, progress?.max_round ?? 1);
+  const rec = facetForToday(byFacet, progress?.max_round ?? 1);
+  // 面は顧客が選べる（URLで保持）。指定が無ければ「いちばん薄い面」をおすすめとして出す
+  const chosen = typeof sp?.facet === "string" ? FACETS.find((f) => f.key === sp.facet) : undefined;
+  const facet = chosen ?? rec.facet;
+  const round = rec.round;
   const tpl = await loadFacetPrompt(facet.key, round);
   const gate = stepGate("diverge", await loadGateCtx(supabase, company.id, company.status));
   const aiErr = await lastAiError(supabase, company.id, "row.draft");
@@ -53,8 +58,15 @@ export default async function DivergePage() {
       <div className="mt-3"><ExportButton stageKey="diverge" /></div>
 
       <section className="mt-10">
-        <p className="text-xs text-ink-3">今日の面 · {round}周目</p>
-        <h2 className="serif text-[22px] mt-1">{facet.label}</h2>
+        <p className="text-xs text-ink-3">面を選ぶ · {round}周目{facet.key === rec.facet.key ? "（いちばん薄い面をおすすめしています）" : ""}</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {FACETS.map((f) => (
+            <a key={f.key} href={`/sheet/diverge?facet=${f.key}`} className={`rounded-full border px-3 py-1 text-[13px] ${f.key === facet.key ? "bg-navy border-navy text-white" : "border-hair text-ink-2 hover:text-ink"}`}>
+              {f.label} <span className="num opacity-70">{byFacet[f.key] ?? 0}</span>{f.key === rec.facet.key && f.key !== facet.key ? <span className="ml-1 text-warm">●</span> : null}
+            </a>
+          ))}
+        </div>
+        <h2 className="serif text-[22px] mt-4">{facet.label}</h2>
         <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">{tpl?.prompt_template ?? facet.hint}</p>
         {tpl?.helper_examples && <p className="text-xs text-ink-3 mt-2 whitespace-pre-line">{tpl.helper_examples}</p>}
 
