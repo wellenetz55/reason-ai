@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { STAGES } from "@/lib/stages";
 import { FACETS } from "@/lib/facets";
+import { PROFILE_ITEMS } from "@/lib/profileItems";
 
 /**
  * 「これまでのデータ」をExcelに書き出す。
@@ -48,14 +49,21 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
   cover.getColumn(1).font = { bold: true };
   cover.eachRow((row) => { row.alignment = { vertical: "top", wrapText: true }; });
 
-  // STEP 0 会社
+  // STEP 0 会社（御社の説明: 承認・直した項目を優先。B の回答も）
   if (has("step0")) {
-    const { data: sum } = await supabase.from("company_profile_summary").select("approved_json, draft_json, q1_before, q1_after").eq("company_id", companyId).maybeSingle();
-    const j = (sum?.approved_json ?? sum?.draft_json ?? {}) as Record<string, unknown>;
-    const rows = Object.entries(j).map(([k, v]) => ({ item: k, value: typeof v === "string" ? v : JSON.stringify(v, null, 1) }));
-    if (sum?.q1_after || sum?.q1_before) rows.push({ item: "一言で言うと", value: String(sum.q1_after ?? sum.q1_before) });
-    addSheet("0 会社", [{ header: "項目", key: "item", width: 20 }, { header: "内容", key: "value", width: 90 }], rows);
-    const { data: comps } = await supabase.from("competitors").select("name, website, is_reference").eq("company_id", companyId);
+    const [{ data: items }, { data: sum }, { data: comps }] = await Promise.all([
+      supabase.from("profile_items").select("key, draft, value, status, tag, source").eq("company_id", companyId),
+      supabase.from("company_profile_summary").select("q1_before, q1_after").eq("company_id", companyId).maybeSingle(),
+      supabase.from("competitors").select("name, website, is_reference").eq("company_id", companyId),
+    ]);
+    const STATUS_I: Record<string, string> = { empty: "未記入", draft: "AIの下書き", approved: "承認済み", fixed: "直して確定", held: "保留" };
+    const byKey = new Map((items ?? []).map((i) => [i.key, i]));
+    const rows = PROFILE_ITEMS.map((d) => {
+      const it = byKey.get(d.key);
+      const text = d.fixed ? (sum?.q1_after ?? sum?.q1_before ?? "") : (["approved", "fixed"].includes(it?.status ?? "") ? it?.value : it?.draft) ?? "";
+      return { group: d.group === "A" ? "資料から" : "御社に聞く", item: d.label, value: text, status: d.fixed ? (text ? "適合診断の記録" : "") : STATUS_I[it?.status ?? "empty"], tag: d.fixed ? "" : TAG[it?.tag ?? ""] ?? "", source: it?.source ?? "" };
+    });
+    addSheet("0 会社", [{ header: "区分", key: "group", width: 10 }, { header: "項目", key: "item", width: 26 }, { header: "内容", key: "value", width: 80 }, { header: "状態", key: "status", width: 12 }, { header: "根拠", key: "tag", width: 8 }, { header: "出所", key: "source", width: 24 }], rows);
     if (comps?.length) addSheet("0 競合", [{ header: "競合", key: "name", width: 30 }, { header: "Web", key: "website", width: 40 }, { header: "参考", key: "ref", width: 8 }], comps.map((c) => ({ name: c.name, website: c.website, ref: c.is_reference ? "○" : "" })));
   }
 
