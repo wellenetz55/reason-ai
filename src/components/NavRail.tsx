@@ -13,14 +13,14 @@ type S = { key: string; step: string; label: string; href: string; open: boolean
 export function NavRail({ stages }: { stages: S[] }) {
   const path = usePathname();
   return (
-    <nav className="mt-8">
-      <ol className="space-y-1">
+    <nav className="mt-6">
+      <ol className="space-y-0">
         {stages.map((s) => {
           const active = path.startsWith(s.href);
           const badge = (
             <span
               className={clsx(
-                "num inline-block rounded-full px-2 py-[3px] text-[10px] font-semibold tracking-[0.12em] leading-none border",
+                "num inline-block shrink-0 w-[60px] text-center rounded-full py-[3px] text-[9px] font-semibold tracking-[0.1em] leading-none border",
                 s.now
                   ? "bg-navy border-navy text-white"
                   : s.open
@@ -34,10 +34,10 @@ export function NavRail({ stages }: { stages: S[] }) {
           const inner = (
             <>
               {badge}
-              <span className="block text-[15px] leading-snug mt-1.5">{s.label}</span>
+              <span className="text-[14px] leading-tight">{s.label}</span>
             </>
           );
-          const base = "block py-2 pl-3 -ml-3 border-l-2 transition-colors";
+          const base = "flex items-center gap-2.5 py-[7px] pl-3 -ml-3 border-l-2 transition-colors";
           return (
             <li key={s.key}>
               {s.open ? (
