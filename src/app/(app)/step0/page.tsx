@@ -1,3 +1,5 @@
+import { ClosedStage } from "@/components/ClosedStage";
+import { STAGES, isStageOpen } from "@/lib/stages";
 import { ExportButton } from "@/components/ExportButton";
 import { NextStepBar } from "@/components/NextStepBar";
 import { StepGuide } from "@/components/StepGuide";
@@ -23,6 +25,7 @@ const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("ja-JP", { tim
 
 export default async function Page() {
   const { supabase, company } = await requireCustomer();
+  if (!isStageOpen(STAGES.find((x) => x.key === "step0")!, company.status)) return <ClosedStage stageKey="step0" status={company.status} />;
   const [{ data: docs }, ctx, { data: items }, { data: summary }, bq] = await Promise.all([
     supabase.from("company_documents").select("id, kind, title, storage_path, url, text_content, mime_type, size_bytes, created_at").eq("company_id", company.id).order("created_at", { ascending: false }),
     loadGateCtx(supabase, company.id, company.status),

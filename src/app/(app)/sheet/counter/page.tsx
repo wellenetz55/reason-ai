@@ -1,3 +1,5 @@
+import { ClosedStage } from "@/components/ClosedStage";
+import { STAGES, isStageOpen } from "@/lib/stages";
 import { ExportButton } from "@/components/ExportButton";
 import { NextStepBar } from "@/components/NextStepBar";
 import { stepGate } from "@/lib/gates";
@@ -6,6 +8,7 @@ import { requireCustomer } from "@/lib/session";
 import { StepGuide } from "@/components/StepGuide";
 export default async function Page() {
   const { supabase, company } = await requireCustomer();
+  if (!isStageOpen(STAGES.find((x) => x.key === "counter")!, company.status)) return <ClosedStage stageKey="counter" status={company.status} />;
   const gate = stepGate("counter", await loadGateCtx(supabase, company.id, company.status));
   return (
     <div>

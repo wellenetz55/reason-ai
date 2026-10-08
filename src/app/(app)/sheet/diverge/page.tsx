@@ -1,3 +1,5 @@
+import { ClosedStage } from "@/components/ClosedStage";
+import { STAGES, isStageOpen } from "@/lib/stages";
 import { ExportButton } from "@/components/ExportButton";
 import { NextStepBar } from "@/components/NextStepBar";
 import { stepGate } from "@/lib/gates";
@@ -15,6 +17,7 @@ import { AiNotice } from "@/components/AiNotice";
 export default async function DivergePage({ searchParams }: PageProps<"/sheet/diverge">) {
   const sp = await searchParams;
   const { supabase, company } = await requireCustomer();
+  if (!isStageOpen(STAGES.find((x) => x.key === "diverge")!, company.status)) return <ClosedStage stageKey="diverge" status={company.status} />;
   const [{ data: rows }, { data: progress }, fixed] = await Promise.all([
     supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, target, one_liner, target_tag, facet, round, status, created_by, confirmed_at").eq("company_id", company.id).order("seq"),
     supabase.from("v_divergence_progress").select("*").eq("company_id", company.id).maybeSingle(),

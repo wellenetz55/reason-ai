@@ -1,3 +1,5 @@
+import { ClosedStage } from "@/components/ClosedStage";
+import { STAGES, isStageOpen } from "@/lib/stages";
 import { ExportButton } from "@/components/ExportButton";
 import { NextStepBar } from "@/components/NextStepBar";
 import { StepGuide } from "@/components/StepGuide";
@@ -15,6 +17,7 @@ export const maxDuration = 60;
 
 export default async function Page() {
   const { supabase, company } = await requireCustomer();
+  if (!isStageOpen(STAGES.find((x) => x.key === "merge")!, company.status)) return <ClosedStage stageKey="merge" status={company.status} />;
   const [{ data: rows }, { data: diags }, ctx] = await Promise.all([
     supabase.from("sheet_rows").select("id, seq, facet, target, value_raw, experience_value_v1, status").eq("company_id", company.id).eq("status", "active").order("seq"),
     supabase.from("row_diagnoses").select("row_id, vague_score, issues, suggestion_value, suggestion_experience, resolved, checked_at, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
