@@ -2,7 +2,7 @@ export const instant = false;
 import Link from "next/link";
 import { requireCustomer } from "@/lib/session";
 import { STAGES, STATUS_LABEL, isStageOpen, currentStep } from "@/lib/stages";
-import { signOut } from "@/app/login/actions";
+import { SignOutButton } from "@/components/SignOutButton";
 import { NavRail } from "@/components/NavRail";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
 import { APP_VERSION } from "@/lib/version";
@@ -72,9 +72,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <p>
             <Link href="/report" className="inline-flex items-center gap-1.5 hover:text-ink"><Bug size={14} strokeWidth={1.75} aria-hidden className="text-ink-3" />エラーレポート</Link>
           </p>
-          <form action={signOut} className="pt-2">
-            <button className="text-ink-3 hover:text-ink" type="submit">サインアウト</button>
-          </form>
+          <div className="pt-2"><SignOutButton /></div>
           <OperatedBy className="pt-4" />
           <p className="num text-[11px] text-ink-3">{APP_VERSION}</p>
         </div>

@@ -1,7 +1,7 @@
 export const instant = false;
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
-import { signOut } from "@/app/login/actions";
+import { SignOutButton } from "@/components/SignOutButton";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
 import { APP_VERSION } from "@/lib/version";
 
@@ -17,10 +17,10 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
           <Link href="/admin/method" className="block py-2 text-ink-2 hover:text-ink">メソッド資産</Link>
         </nav>
         <div className="mt-auto space-y-4">
-          <form action={signOut}>
-            <p className="text-xs text-ink-2 mb-1">{profile.display_name}</p>
-            <button className="text-xs text-ink-3 hover:text-ink">サインアウト</button>
-          </form>
+          <div className="text-xs">
+            <p className="text-ink-2 mb-1">{profile.display_name}</p>
+            <SignOutButton />
+          </div>
           <OperatedBy />
           <p className="num text-[11px] text-ink-3">{APP_VERSION}</p>
         </div>
