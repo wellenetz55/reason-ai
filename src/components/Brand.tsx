@@ -8,7 +8,9 @@ export function OperatedBy({ className = "" }: { className?: string }) {
   return (
     <p className={`flex items-center gap-2.5 text-[12px] text-ink-3 ${className}`}>
       <span>運営</span>
-      <Image src="/logo-wellenetz.png" alt="wellenetz" width={150} height={17} />
+      <a href="https://www.wellenetz.co.jp/" target="_blank" rel="noopener noreferrer" title="株式会社ベレネッツ" className="hover:opacity-70 transition-opacity">
+        <Image src="/logo-wellenetz.png" alt="wellenetz" width={150} height={17} />
+      </a>
     </p>
   );
 }
