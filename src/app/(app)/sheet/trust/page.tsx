@@ -45,16 +45,24 @@ export default async function Page() {
       {fixed && <p className="mt-8 text-sm text-ink-2 leading-relaxed border-l-2 hairline pl-4 max-w-[64ch] whitespace-pre-line">{fixed}</p>}
 
       <section className="mt-8 max-w-[800px]">
-        <p className="text-[12px] text-ink-3">「なぜなら」の作り方は3種類。どれかに当てはめると書きやすくなります</p>
-        <dl className="mt-2 grid gap-3 sm:grid-cols-3">
+        <h2 className="serif text-[18px]">「なぜなら」の書き方</h2>
+        <div className="mt-3 rounded-[var(--radius)] bg-navy-soft px-5 py-4 text-sm leading-relaxed max-w-[72ch] space-y-2">
+          <p>「だから、お客様は〜と感じられる」は<strong>お客様について</strong>語る約束です。「なぜなら」は<strong>御社について</strong>語る根拠です。御社が<em>どうやって</em>その約束を実現しているか──手順・数字・資格・体制・保証のどれかを含めて書きます。</p>
+          <p>約束だけで根拠が無いと、どんなに良い言葉でも浮ついて聞こえます。「お客様を大切にするから」「最後までやり遂げるから」は約束の言い換えで、根拠ではありません。</p>
+          <p>根拠はたいてい、すでに御社の中にあります。人・手順・材料・検査・実績・採用・研修・お客様の声・専門性。探す角度は次の3つです。</p>
+        </div>
+        <dl className="mt-4 grid gap-3 md:grid-cols-3">
           {BECAUSE_TYPES.map((t) => (
-            <div key={t.key} className="rounded-[var(--radius)] bg-paper-2 px-4 py-3">
-              <dt className="serif text-[14px]">{t.label}</dt>
-              <dd className="text-[12px] text-ink-2 mt-0.5 leading-relaxed">{t.hint}</dd>
+            <div key={t.key} className="rounded-[var(--radius)] bg-paper-2 px-4 py-4 flex flex-col">
+              <dt className="serif text-[15px]">{t.label}</dt>
+              <dd className="text-[13px] text-ink mt-1 leading-snug">{t.one}</dd>
+              <dd className="text-[12px] text-ink-2 mt-2 leading-relaxed">{t.what}</dd>
+              <dd className="text-[12px] text-ink-2 mt-2 leading-relaxed"><span className="text-navy">自問：</span>{t.ask}</dd>
+              <dd className="text-[12px] text-ink-3 mt-2 leading-relaxed border-t hairline pt-2">例：{t.example}</dd>
             </div>
           ))}
         </dl>
-        <p className="text-[12px] text-ink-3 mt-2">「お客様を大切にするから」「最後までやり遂げるから」は約束の言い換えで、根拠ではありません。御社が<em>どうやって</em>それを実現するかを書きます。</p>
+        <p className="text-[12px] text-ink-3 mt-3 max-w-[72ch]">いちばん強いのは「〜するのは、当社しかありません」と言える根拠です。言えそうな組には印をつけてください。無い場合は、お客様が避けたいと感じていることを御社が引き受ける約束を新しく作る（生み出された根拠）ことも検討します。</p>
         <form action={requestBecauseDrafts} className="mt-4">
           <button className="btn-text -ml-1.5" type="submit" disabled={missing === 0}>「なぜなら」が空の{Math.min(missing, 10)}組に、AIの下書きを付ける（御社の説明から根拠を拾います）</button>
         </form>
