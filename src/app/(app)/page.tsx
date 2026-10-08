@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireCustomer } from "@/lib/session";
 import { STAGES, currentStep } from "@/lib/stages";
 
@@ -11,6 +12,7 @@ function greeting() {
 
 export default async function Home() {
   const { company, supabase } = await requireCustomer();
+  if (company.status === "diagnosed") redirect("/diagnosis");
   const [{ data: progress }, { count: openHomework }] = await Promise.all([
     supabase.from("v_divergence_progress").select("row_count").eq("company_id", company.id).maybeSingle(),
     supabase.from("homeworks").select("id", { count: "exact", head: true }).eq("company_id", company.id).eq("status", "open"),

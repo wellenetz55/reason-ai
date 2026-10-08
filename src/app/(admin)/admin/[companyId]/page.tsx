@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
 import { setStatus, createMeeting, updateMeeting, answerQuestion } from "../actions";
@@ -33,7 +34,7 @@ export default async function CompanyAdmin({ params }: PageProps<"/admin/[compan
   return (
     <div>
       <h1 className="serif text-[28px] leading-tight">{c.name}</h1>
-      <p className="text-sm text-ink-2 mt-1">{STATUS_LABEL[c.status]}</p>
+      <p className="text-sm text-ink-2 mt-1">{STATUS_LABEL[c.status]} · <Link href={`/admin/${c.id}/diagnosis`} className="underline underline-offset-4 hover:text-ink">適合診断の結果を書く</Link></p>
 
       <section className="mt-8 grid grid-cols-4 gap-6 text-sm">
         <div><p className="text-xs text-ink-3">行数</p><p className="serif text-[28px]">{progress?.row_count ?? 0}</p></div>

@@ -101,3 +101,9 @@ textarea:focus-visible, input:focus-visible { box-shadow: 0 1px 0 0 var(--navy);
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+@media print {
+  body { background: #fff; color: #000; }
+  main { padding: 0 !important; }
+  a { text-decoration: none; color: inherit; }
+}

@@ -28,11 +28,15 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="flex-1 flex min-h-screen">
-      <aside className="w-[260px] shrink-0 border-r hairline px-6 py-8 flex flex-col">
+      <aside className="print:hidden w-[260px] shrink-0 border-r hairline px-6 py-8 flex flex-col">
         <Link href="/" className="block"><ReasonLogo width={212} /></Link>
         <p className="serif text-[16px] leading-snug mt-6">{company.name}</p>
         <p className="text-[13px] text-ink-3 mt-1">{STATUS_LABEL[company.status] ?? company.status}</p>
-        <NavRail stages={stages} />
+        {company.status === "diagnosed" ? (
+          <nav className="mt-6"><Link href="/diagnosis" className="block text-[14px] py-[7px] pl-3 -ml-3 border-l-2 border-navy">適合診断の結果</Link></nav>
+        ) : (
+          <NavRail stages={stages} />
+        )}
         <Link href="/ask" className="btn-primary mt-8 block text-center">ベレネッツに質問を残す</Link>
         <div className="mt-auto pt-8 text-[13px] text-ink-2 space-y-2">
           {nextMeeting && (
