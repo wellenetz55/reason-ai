@@ -13,7 +13,7 @@ import { StepGuide } from "@/components/StepGuide";
 export default async function DivergePage() {
   const { supabase, company } = await requireCustomer();
   const [{ data: rows }, { data: progress }, fixed] = await Promise.all([
-    supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, target, one_liner, target_tag, facet, round, status, created_by").eq("company_id", company.id).order("seq"),
+    supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, target, one_liner, target_tag, facet, round, status, created_by, confirmed_at").eq("company_id", company.id).order("seq"),
     supabase.from("v_divergence_progress").select("*").eq("company_id", company.id).maybeSingle(),
     loadFixedText("round1_intro"),
   ]);
@@ -21,6 +21,7 @@ export default async function DivergePage() {
   const count = progress?.pair_count ?? 0;      // 対になっている組数
   const total = progress?.row_count ?? 0;       // 行数（体験価値が空も含む）
   const missing = total - count;
+  const confirmed = (rows ?? []).filter((r) => r.confirmed_at && r.status === "active").length;
   const { facet, round } = facetForToday(byFacet, progress?.max_round ?? 1);
   const tpl = await loadFacetPrompt(facet.key, round);
   const gate = stepGate("diverge", await loadGateCtx(supabase, company.id, company.status));
@@ -33,6 +34,7 @@ export default async function DivergePage() {
           <p className="text-ink-2 text-sm mt-2 max-w-[56ch]">
             {count < 20 ? `あと${20 - count}組で、まとめて絞る段階に進めます。目標は30組。` : count < 30 ? `${count}組。目標の30組まで出し切ると、絞ったあとに残る言葉が強くなります。` : `${count}組。出し切りました。まとめて絞る段階へ。`}
             {missing > 0 && <span className="text-warm">　体験価値が空の行が{missing}行。</span>}
+            {confirmed > 0 && <span className="text-navy">　確定 {confirmed}組。</span>}
           </p>
         </div>
         <div className="text-right shrink-0">

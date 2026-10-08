@@ -5,7 +5,7 @@ import { reviewRow } from "@/app/(app)/sheet/diverge/actions";
 
 type Row = {
   id: string; seq: number; value_raw: string | null; experience_value_v1: string | null; target: string | null; one_liner: string | null;
-  target_tag: string | null; facet: string | null; round: number; status: string; created_by: string;
+  target_tag: string | null; facet: string | null; round: number; status: string; created_by: string; confirmed_at: string | null;
 };
 
 export function RowList({ rows, facets }: { rows: Row[]; facets: { key: string; label: string }[] }) {
@@ -30,10 +30,11 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
   useEffect(() => { shownAt.current = Date.now(); }, [row.id]);
   const isDraft = row.created_by === "ai";
   const held = row.status === "held" || row.status === "dropped";
+  const confirmed = !!row.confirmed_at && !held;
   const tag = row.target_tag?.includes("仮説") ? "tag-hypo" : isDraft ? "tag-verify" : "tag-none";
 
   return (
-    <li className={clsx("py-4 pl-4 tag-line", tag, held && "bg-grey-row opacity-70")}>
+    <li className={clsx("py-4 pl-4 tag-line", confirmed ? "border-l-navy" : tag, held && "bg-grey-row opacity-70")}>
       <div className="flex items-start gap-4">
         <span className="num text-xs text-ink-3 w-6 pt-1.5">{row.seq}</span>
         <div className="flex-1 min-w-0">
@@ -67,12 +68,28 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
             {isDraft && <span className="text-verify">AIの下書き</span>}
             {row.target_tag?.includes("仮説") && <span className="text-hypo">仮説</span>}
             {held && <span>保留</span>}
+            {confirmed && <span className="text-navy font-medium">確定</span>}
           </p>
           {row.one_liner && <p className="text-sm text-ink-2 mt-1">一言で：{row.one_liner}</p>}
         </div>
         {!editing && (
           <div className="flex gap-1 shrink-0 pt-1">
             <button className="btn-text" onClick={() => setEditing(true)}>直す</button>
+            {!isDraft && !held && !confirmed && (
+              <form action={reviewRow}>
+                <input type="hidden" name="row_id" value={row.id} />
+                <input type="hidden" name="action" value="confirm" />
+                <input type="hidden" name="dwell_ms" value={Date.now() - shownAt.current} />
+                <button className="btn-text text-navy" type="submit">確定</button>
+              </form>
+            )}
+            {confirmed && (
+              <form action={reviewRow}>
+                <input type="hidden" name="row_id" value={row.id} />
+                <input type="hidden" name="action" value="unconfirm" />
+                <button className="btn-text" type="submit">確定を外す</button>
+              </form>
+            )}
             {(isDraft || held) && (
               <form action={reviewRow}>
                 <input type="hidden" name="row_id" value={row.id} />

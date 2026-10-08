@@ -25,25 +25,29 @@ export async function addRow(formData: FormData) {
 export async function reviewRow(formData: FormData) {
   const { supabase, company, user } = await requireCustomer();
   const rowId = String(formData.get("row_id"));
-  const action = String(formData.get("action")) as "approve" | "fix" | "hold";
+  const action = String(formData.get("action")) as "approve" | "fix" | "hold" | "confirm" | "unconfirm";
   const after = String(formData.get("after") || "").trim();
   const afterExp = formData.has("after_experience") ? String(formData.get("after_experience") || "").trim() : null;
   const dwell = Number(formData.get("dwell_ms") || 0);
   const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, status").eq("id", rowId).eq("company_id", company.id).single();
   if (!row) return;
   const update: Record<string, unknown> = {};
-  if (action === "hold") update.status = "held";
+  if (action === "hold") { update.status = "held"; update.confirmed_at = null; }
   if (action === "approve") update.status = "active";
+  if (action === "confirm") { update.status = "active"; update.confirmed_at = new Date().toISOString(); }
+  if (action === "unconfirm") update.confirmed_at = null;
   if (action === "fix" && after) {
     update.value_raw = after;
     if (afterExp !== null) update.experience_value_v1 = afterExp || null;
     update.status = "active";
+    update.confirmed_at = null; // 直したら確定は外れる
   }
   // approving an AI draft converts it to a customer-owned row
   if (action !== "hold") update.created_by = "customer";
   await supabase.from("sheet_rows").update(update).eq("id", rowId);
+  const reviewAction = action === "confirm" ? "approve" : action === "unconfirm" ? "hold" : action;
   await supabase.from("sheet_row_reviews").insert({
-    row_id: rowId, column_key: "value_raw", action, before_text: row.value_raw, after_text: action === "fix" ? after : row.value_raw, reviewer_id: user.id, dwell_ms: dwell || null,
+    row_id: rowId, column_key: "value_raw", action: reviewAction, before_text: row.value_raw, after_text: action === "fix" ? after : row.value_raw, reviewer_id: user.id, dwell_ms: dwell || null,
   });
   if (action === "fix" && afterExp !== null && afterExp !== (row.experience_value_v1 ?? "")) {
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "experience_value_v1", action, before_text: row.experience_value_v1, after_text: afterExp, reviewer_id: user.id });
