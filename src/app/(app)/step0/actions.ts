@@ -3,9 +3,26 @@ import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { requireCustomer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { LIMITS } from "@/lib/limits";
 
 const KINDS = ["brochure", "sales_deck", "website", "recruit", "exhibition", "testimonial", "presentation", "other"] as const;
 const MAX_BYTES = 25 * 1024 * 1024;
+
+async function usage(supabase: Awaited<ReturnType<typeof requireCustomer>>["supabase"], companyId: string) {
+  const { data } = await supabase.from("company_documents").select("storage_path, url, text_content, size_bytes").eq("company_id", companyId);
+  const docs = data ?? [];
+  return {
+    files: docs.filter((d) => d.storage_path).length,
+    bytes: docs.reduce((a, d) => a + (d.size_bytes ?? 0), 0),
+    urls: docs.filter((d) => d.url).length,
+    texts: docs.filter((d) => !d.storage_path && !d.url).length,
+  };
+}
+export type Usage = Awaited<ReturnType<typeof usage>>;
+export async function getUsage() {
+  const { supabase, company } = await requireCustomer();
+  return usage(supabase, company.id);
+}
 const ALLOWED = ["application/pdf", "image/png", "image/jpeg", "image/webp", "text/plain"];
 
 function kindOf(v: FormDataEntryValue | null) {
@@ -19,6 +36,8 @@ export async function uploadDocument(formData: FormData) {
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return;
   if (file.size > MAX_BYTES || !ALLOWED.includes(file.type)) return;
+  const u = await usage(supabase, company.id);
+  if (u.files >= LIMITS.files || u.bytes + file.size > LIMITS.totalBytes) return;
   const admin = createAdminClient();
   const path = `${company.id}/${randomUUID()}-${file.name.replace(/[^\w.\-ぁ-んァ-ン一-龠]/g, "_")}`;
   const { error } = await admin.storage.from("company-docs").upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: false });
@@ -42,6 +61,7 @@ export async function addUrl(formData: FormData) {
   if (!url) return;
   if (!/^https?:\/\//i.test(url)) url = "https://" + url;
   try { new URL(url); } catch { return; }
+  if ((await usage(supabase, company.id)).urls >= LIMITS.urls) return;
   await supabase.from("company_documents").insert({
     company_id: company.id,
     kind: kindOf(formData.get("kind")),
@@ -57,6 +77,7 @@ export async function addText(formData: FormData) {
   const { company, user, supabase } = await requireCustomer();
   const text = String(formData.get("text") || "").trim();
   if (!text) return;
+  if ((await usage(supabase, company.id)).texts >= LIMITS.texts) return;
   await supabase.from("company_documents").insert({
     company_id: company.id,
     kind: kindOf(formData.get("kind")),

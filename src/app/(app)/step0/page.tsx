@@ -4,7 +4,8 @@ import { StepGuide } from "@/components/StepGuide";
 import { stepGate } from "@/lib/gates";
 import { loadGateCtx } from "@/server/gates";
 import { requireCustomer } from "@/lib/session";
-import { uploadDocument, addUrl, addText, removeDocument } from "./actions";
+import { uploadDocument, addUrl, addText, removeDocument, getUsage } from "./actions";
+import { LIMITS } from "@/lib/limits";
 
 const KIND_LABEL: Record<string, string> = {
   brochure: "会社案内・製品パンフ", sales_deck: "営業資料", website: "Webサイト", recruit: "採用ページ",
@@ -20,6 +21,10 @@ export default async function Page() {
     loadGateCtx(supabase, company.id, company.status),
   ]);
   const gate = stepGate("step0", ctx);
+  const u = await getUsage();
+  const left = { files: LIMITS.files - u.files, urls: LIMITS.urls - u.urls, texts: LIMITS.texts - u.texts };
+  const mbLeft = Math.max(0, (LIMITS.totalBytes - u.bytes) / 1e6);
+  const full = (n: number) => n <= 0;
   const kindSelect = (
     <select name="kind" className="border-b hairline py-2 text-sm" defaultValue="brochure">
       {Object.entries(KIND_LABEL).filter(([k]) => k !== "diagnosis_memo").map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -35,33 +40,36 @@ export default async function Page() {
       <section className="mt-10 grid gap-10 md:grid-cols-3">
         <form action={uploadDocument} className="space-y-3">
           <p className="serif text-[16px]">ファイルを上げる</p>
-          <p className="text-[12px] text-ink-3">PDF・画像（PNG/JPG）・テキスト。25MBまで。</p>
+          <p className="text-[12px] text-ink-3">PDF・画像（PNG/JPG）・テキスト。1ファイル25MBまで。</p>
+          <p className={`text-[12px] num ${full(left.files) || mbLeft < 1 ? "text-warm" : "text-ink-3"}`}>{full(left.files) ? "上限の20件に達しています。取り下げてから上げてください。" : `あと ${left.files} 件・${mbLeft.toFixed(0)} MB 上げられます`}</p>
           <input type="file" name="file" required accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,application/pdf,image/png,image/jpeg,image/webp,text/plain" className="block w-full text-sm file:mr-3 file:rounded-full file:border file:border-ink-3 file:bg-transparent file:px-3 file:py-1 file:text-[12px]" />
           <input name="title" placeholder="名前（空ならファイル名）" className="block w-full border-b hairline py-2 text-sm" />
           {kindSelect}
-          <button className="btn-primary block" type="submit">上げる</button>
+          <button className="btn-primary block" type="submit" disabled={full(left.files) || mbLeft < 0.01}>上げる</button>
         </form>
 
         <form action={addUrl} className="space-y-3">
           <p className="serif text-[16px]">URLを登録する</p>
           <p className="text-[12px] text-ink-3">Webサイト・採用ページ・レビューページなど。</p>
+          <p className={`text-[12px] num ${full(left.urls) ? "text-warm" : "text-ink-3"}`}>{full(left.urls) ? "上限の20件に達しています。" : `あと ${left.urls} 件`}</p>
           <input type="url" name="url" required placeholder="https://" className="block w-full border-b hairline py-2 text-sm num" />
           <input name="title" placeholder="名前（空ならURL）" className="block w-full border-b hairline py-2 text-sm" />
           <select name="kind" className="border-b hairline py-2 text-sm" defaultValue="website">
             {Object.entries(KIND_LABEL).filter(([k]) => k !== "diagnosis_memo").map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
-          <button className="btn-primary block" type="submit">登録する</button>
+          <button className="btn-primary block" type="submit" disabled={full(left.urls)}>登録する</button>
         </form>
 
         <form action={addText} className="space-y-3">
           <p className="serif text-[16px]">テキストを貼る</p>
           <p className="text-[12px] text-ink-3">議事録・営業トーク・社内メモなど、そのまま貼り付け。</p>
+          <p className={`text-[12px] num ${full(left.texts) ? "text-warm" : "text-ink-3"}`}>{full(left.texts) ? "上限の20件に達しています。" : `あと ${left.texts} 件`}</p>
           <input name="title" placeholder="名前（空なら冒頭30字）" className="block w-full border-b hairline py-2 text-sm" />
           <textarea name="text" required rows={5} placeholder="ここに貼り付け" className="block w-full border-b hairline py-2 text-sm" />
           <select name="kind" className="border-b hairline py-2 text-sm" defaultValue="other">
             {Object.entries(KIND_LABEL).filter(([k]) => k !== "diagnosis_memo").map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
-          <button className="btn-primary block" type="submit">登録する</button>
+          <button className="btn-primary block" type="submit" disabled={full(left.texts)}>登録する</button>
         </form>
       </section>
 
@@ -71,6 +79,7 @@ export default async function Page() {
 
       <section className="mt-12">
         <h2 className="serif text-[18px]">登録した資料 <span className="num text-ink-3 text-[14px]">{docs?.length ?? 0}</span></h2>
+        <p className="text-[12px] text-ink-3 mt-1 num">ファイル {u.files}/{LIMITS.files}（{(u.bytes / 1e6).toFixed(0)}/{LIMITS.totalBytes / 1e6} MB）・URL {u.urls}/{LIMITS.urls}・テキスト {u.texts}/{LIMITS.texts}</p>
         {!docs?.length ? (
           <p className="text-sm text-ink-2 mt-3">まだ資料がありません。まず会社案内かWebサイトを1つ上げると、AIが御社の説明の下書きを作れます。</p>
         ) : (
