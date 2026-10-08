@@ -1,3 +1,4 @@
+import { ExportButton } from "@/components/ExportButton";
 import { NextStepBar } from "@/components/NextStepBar";
 import { stepGate } from "@/lib/gates";
 import { loadGateCtx } from "@/server/gates";
@@ -41,6 +42,7 @@ export default async function DivergePage() {
       </header>
 
       <StepGuide stageKey="diverge" />
+      <div className="mt-3"><ExportButton stageKey="diverge" /></div>
 
       {fixed && <p className="mt-8 text-sm text-ink-2 leading-relaxed border-l-2 hairline pl-4 max-w-[64ch] whitespace-pre-line">{fixed}</p>}
 
