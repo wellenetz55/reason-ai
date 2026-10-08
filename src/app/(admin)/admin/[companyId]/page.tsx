@@ -1,6 +1,6 @@
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
-import { setStatus, createMeeting, updateMeeting } from "../actions";
+import { setStatus, createMeeting, updateMeeting, answerQuestion } from "../actions";
 import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
 
 export default async function CompanyAdmin({ params }: PageProps<"/admin/[companyId]">) {
@@ -106,9 +106,23 @@ export default async function CompanyAdmin({ params }: PageProps<"/admin/[compan
       </section>
 
       <section className="mt-10">
-        <h2 className="text-sm text-ink-2">質問</h2>
+        <h2 className="text-sm text-ink-2">質問（未返答 {(qs ?? []).filter((q) => !q.answered_at).length}）</h2>
         <ul className="mt-2 divide-y hairline text-sm">
-          {(qs ?? []).map((q) => <li key={q.id} className="py-2"><p className="whitespace-pre-line">{q.body}</p>{q.answered_body && <p className="text-ink-2 mt-1">→ {q.answered_body}</p>}</li>)}
+          {(qs ?? []).map((q) => (
+            <li key={q.id} className="py-4">
+              <p className="whitespace-pre-line">{q.body}</p>
+              <p className="text-xs text-ink-3 mt-1 num">{new Date(q.created_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}</p>
+              <form action={answerQuestion} className="mt-3 max-w-[64ch]">
+                <input type="hidden" name="id" value={q.id} />
+                <input type="hidden" name="company_id" value={c.id} />
+                <textarea name="answered_body" rows={3} defaultValue={q.answered_body ?? ""} placeholder="返事を書く（顧客の質問の直下に表示されます）" className="w-full border-b hairline py-2 text-sm" />
+                <div className="flex items-center gap-3 mt-1">
+                  <button className="btn-text" type="submit">{q.answered_at ? "返事を更新" : "返事する"}</button>
+                  {q.answered_at && <span className="text-xs text-ink-3 num">返答 {new Date(q.answered_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}</span>}
+                </div>
+              </form>
+            </li>
+          ))}
         </ul>
       </section>
     </div>

@@ -1,6 +1,8 @@
 import { requireCustomer } from "@/lib/session";
 import { askOperator } from "./actions";
 
+const fmt = (iso: string) => new Date(iso).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+
 export default async function AskPage() {
   const { supabase, company } = await requireCustomer();
   const { data: qs } = await supabase.from("questions_to_operator").select("*").eq("company_id", company.id).order("created_at", { ascending: false });
@@ -12,12 +14,21 @@ export default async function AskPage() {
         <textarea name="body" required rows={4} className="w-full border-b hairline py-2 text-sm" placeholder="例：行12と行18は同じことを言っている気がします。どちらを残すべきですか。" />
         <button className="btn-primary" type="submit">質問を残す</button>
       </form>
-      <ul className="mt-10 divide-y hairline">
+      <ul className="mt-10 space-y-6 max-w-[64ch]">
         {(qs ?? []).map((q) => (
-          <li key={q.id} className="py-4 text-sm">
-            <p className="whitespace-pre-line">{q.body}</p>
-            <p className="text-xs text-ink-3 mt-1 num">{new Date(q.created_at).toLocaleString("ja-JP")}</p>
-            {q.answered_body && <p className="mt-2 pl-4 border-l-2 border-navy whitespace-pre-line">{q.answered_body}</p>}
+          <li key={q.id} className="text-sm">
+            <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
+              <p className="text-[11px] text-ink-3">あなたの質問 · <span className="num">{fmt(q.created_at)}</span></p>
+              <p className="whitespace-pre-line mt-1.5">{q.body}</p>
+            </div>
+            {q.answered_body ? (
+              <div className="ml-6 mt-2 rounded-[var(--radius)] bg-navy-soft px-5 py-4 border-l-2 border-navy">
+                <p className="text-[11px] font-semibold text-navy">ベレネッツからの返事 · <span className="num font-normal">{q.answered_at ? fmt(q.answered_at) : ""}</span></p>
+                <p className="whitespace-pre-line mt-1.5">{q.answered_body}</p>
+              </div>
+            ) : (
+              <p className="ml-6 mt-2 text-[12px] text-warm">返事待ち。次の面談か、それより前に人が返します。</p>
+            )}
           </li>
         ))}
       </ul>

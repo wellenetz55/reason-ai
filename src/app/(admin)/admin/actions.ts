@@ -54,3 +54,15 @@ export async function updateMeeting(formData: FormData) {
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/");
 }
+
+/** 顧客の質問に返事する。顧客側では質問の直下に表示される */
+export async function answerQuestion(formData: FormData) {
+  const { supabase } = await requireOperator();
+  const id = String(formData.get("id"));
+  const companyId = String(formData.get("company_id"));
+  const body = String(formData.get("answered_body") || "").trim();
+  if (!id || !body) return;
+  await supabase.from("questions_to_operator").update({ answered_body: body, answered_at: new Date().toISOString() }).eq("id", id);
+  revalidatePath(`/admin/${companyId}`);
+  revalidatePath("/ask");
+}
