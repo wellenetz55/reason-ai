@@ -18,6 +18,11 @@ export default async function CompanyAdmin({ params }: PageProps<"/admin/[compan
     supabase.from("error_reports").select("id, body, page, user_agent, screenshot_path, created_at, resolved_at, resolved_note").eq("company_id", companyId).order("created_at", { ascending: false }),
   ]);
   if (!c) return null;
+  // 開いたら既読にする（未返信は返事するまで残る）
+  await Promise.all([
+    supabase.from("questions_to_operator").update({ read_at: new Date().toISOString() }).eq("company_id", companyId).is("read_at", null),
+    supabase.from("error_reports").update({ read_at: new Date().toISOString() }).eq("company_id", companyId).is("read_at", null),
+  ]);
   const approves = (reviews ?? []).filter((r) => r.action === "approve").length;
   const fixes = (reviews ?? []).filter((r) => r.action === "fix").length;
   const fixChars = (reviews ?? []).filter((r) => r.action === "fix").reduce((a, r) => a + Math.abs((r.after_text?.length ?? 0) - (r.before_text?.length ?? 0)), 0);
