@@ -59,6 +59,7 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
                     <div className="mt-2 flex gap-1">
                       <button type="button" className="btn-text text-navy" onClick={() => setEditing(r.id)}>この案で直す</button>
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className="btn-text" type="submit">そのままでよい</button></form>
+                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className="btn-text" type="submit">保留にする</button></form>
                     </div>
                   </div>
                 )

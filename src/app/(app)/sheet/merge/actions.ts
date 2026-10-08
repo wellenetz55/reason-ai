@@ -24,6 +24,7 @@ export async function runVagueCheck() {
   if (upserts.length) await supabase.from("row_diagnoses").upsert(upserts, { onConflict: "row_id" });
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.run", payload: { n: upserts.length } });
   revalidatePath("/sheet/merge");
+  revalidatePath("/sheet/diverge");
 }
 
 /** 言い直し案を採用する／そのままでよいとする */
@@ -41,8 +42,13 @@ export async function resolveDiagnosis(formData: FormData) {
     await supabase.from("sheet_rows").update({ value_raw: after, experience_value_v1: afterExp || null, created_by: "customer" }).eq("id", rowId);
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "value_raw", action: "fix", before_text: row.value_raw, after_text: after, reviewer_id: user.id });
     await supabase.from("row_diagnoses").update({ resolved: "accepted", vague_score: 0 }).eq("row_id", rowId);
+  } else if (action === "hold") {
+    await supabase.from("sheet_rows").update({ status: "held", confirmed_at: null }).eq("id", rowId);
+    await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "value_raw", action: "hold", before_text: row.value_raw, after_text: row.value_raw, reviewer_id: user.id });
+    await supabase.from("row_diagnoses").update({ resolved: "held" }).eq("row_id", rowId);
   } else {
     await supabase.from("row_diagnoses").update({ resolved: "kept" }).eq("row_id", rowId);
   }
   revalidatePath("/sheet/merge");
+  revalidatePath("/sheet/diverge");
 }
