@@ -55,6 +55,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <p>
             <Link href="/homework" className="hover:text-ink">宿題 <span className="num">{openHomework ?? 0}</span></Link>
           </p>
+          <p>
+            <Link href="/report" className="hover:text-ink">エラーレポート</Link>
+          </p>
           <form action={signOut} className="pt-2">
             <p className="text-ink-2 mb-1">{profile.display_name}</p>
             <button className="text-ink-3 hover:text-ink" type="submit">サインアウト</button>

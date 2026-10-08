@@ -66,3 +66,13 @@ export async function answerQuestion(formData: FormData) {
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/ask");
 }
+
+export async function resolveErrorReport(formData: FormData) {
+  const { supabase } = await requireOperator();
+  const id = String(formData.get("id"));
+  const companyId = String(formData.get("company_id"));
+  await supabase.from("error_reports").update({ resolved_at: new Date().toISOString(), resolved_note: String(formData.get("note") || "").trim() || null }).eq("id", id);
+  revalidatePath(`/admin/${companyId}`);
+  revalidatePath("/admin");
+  revalidatePath("/report");
+}

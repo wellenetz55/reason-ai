@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
-import { setStatus, createMeeting, updateMeeting, answerQuestion } from "../actions";
+import { setStatus, createMeeting, updateMeeting, answerQuestion, resolveErrorReport } from "../actions";
 import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
 
 export default async function CompanyAdmin({ params }: PageProps<"/admin/[companyId]">) {
   const { companyId } = await params;
   const { supabase } = await requireOperator();
-  const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }, { data: meetings }] = await Promise.all([
+  const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }, { data: meetings }, { data: errs }] = await Promise.all([
     supabase.from("companies").select("*").eq("id", companyId).single(),
     supabase.from("sheet_rows").select("id, seq, value_raw, status, created_by, target_tag").eq("company_id", companyId).order("seq"),
     supabase.from("sheet_row_reviews").select("action, dwell_ms, before_text, after_text, created_at").order("created_at", { ascending: false }).limit(200),
@@ -15,6 +15,7 @@ export default async function CompanyAdmin({ params }: PageProps<"/admin/[compan
     supabase.from("questions_to_operator").select("*").eq("company_id", companyId).order("created_at", { ascending: false }),
     supabase.from("v_divergence_progress").select("*").eq("company_id", companyId).maybeSingle(),
     supabase.from("company_meetings").select("id, kind, scheduled_at, held_at, meeting_url").eq("company_id", companyId).order("scheduled_at"),
+    supabase.from("error_reports").select("id, body, page, user_agent, screenshot_path, created_at, resolved_at, resolved_note").eq("company_id", companyId).order("created_at", { ascending: false }),
   ]);
   if (!c) return null;
   const approves = (reviews ?? []).filter((r) => r.action === "approve").length;
@@ -104,6 +105,28 @@ export default async function CompanyAdmin({ params }: PageProps<"/admin/[compan
             </li>
           ))}
         </ol>
+      </section>
+
+
+      <section className="mt-10">
+        <h2 className="text-sm text-ink-2">エラーレポート（未対応 {(errs ?? []).filter((e) => !e.resolved_at).length}）</h2>
+        <ul className="mt-2 divide-y hairline text-sm">
+          {(errs ?? []).map((e) => (
+            <li key={e.id} className={`py-3 ${e.resolved_at ? "text-ink-3" : ""}`}>
+              <p className="whitespace-pre-line">{e.body}</p>
+              <p className="text-xs text-ink-3 mt-1 num">{new Date(e.created_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}{e.page ? ` · ${e.page}` : ""}</p>
+              {e.user_agent && <p className="text-[11px] text-ink-3 num break-all">{e.user_agent}</p>}
+              {e.screenshot_path && <a href={`/api/admin/file?path=${encodeURIComponent(e.screenshot_path)}`} target="_blank" rel="noopener" className="text-xs underline underline-offset-4">スクリーンショット</a>}
+              {!e.resolved_at ? (
+                <form action={resolveErrorReport} className="mt-2 flex gap-3 items-center">
+                  <input type="hidden" name="id" value={e.id} /><input type="hidden" name="company_id" value={c.id} />
+                  <input name="note" placeholder="対応内容（顧客に表示）" className="border-b hairline py-1 text-sm flex-1 max-w-[48ch]" />
+                  <button className="btn-text" type="submit">対応済みにする</button>
+                </form>
+              ) : <p className="text-xs mt-1">対応済み{e.resolved_note ? `：${e.resolved_note}` : ""}</p>}
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="mt-10">
