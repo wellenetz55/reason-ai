@@ -8,7 +8,7 @@ export default async function Page() {
   const gate = stepGate("litmus", await loadGateCtx(supabase, company.id, company.status));
   return (
     <div>
-      <h1 className="serif text-[28px] leading-tight">試験紙</h1>
+      <h1 className="serif text-[28px] leading-tight">リトマス試験紙</h1>
       <StepGuide stageKey="litmus" />
       <p className="text-ink-2 text-sm mt-2">この段階はまだ準備中です。先に「提供価値を出す」を進めてください。</p>
       <NextStepBar gate={gate} />

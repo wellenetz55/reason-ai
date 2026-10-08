@@ -48,11 +48,11 @@ export function stepGate(key: string, c: GateCtx): Gate {
         ? { next, ready: true, note: "すべてのブレーキに先回りの答えがつきました。" }
         : { next, ready: false, note: `答えがまだないブレーキが${c.brakesOpen}件あります。全部につけると進めます。` };
     case "trust":
-      return { next, ready: true, note: "体験価値を見直し終えたら、試験紙に進んでください。あとから戻って磨き直せます。" };
+      return { next, ready: true, note: "体験価値を見直し終えたら、リトマス試験紙に進んでください。あとから戻って磨き直せます。" };
     case "litmus":
       return atLeast(c.status, "week6_8")
         ? { next, ready: true, note: "確認セッション②を終えています。証拠集めに進めます。" }
-        : { next, ready: false, byOperator: true, note: "試験紙の結果を確認セッション②でベレネッツと見たあと、次のステップが開きます。" };
+        : { next, ready: false, byOperator: true, note: "リトマス試験紙の結果を確認セッション②でベレネッツと見たあと、次のステップが開きます。" };
     case "evidence":
       return c.evidences >= 1
         ? { next, ready: true, note: `証拠が${c.evidences}件つきました。接点への展開に進めます。` }
