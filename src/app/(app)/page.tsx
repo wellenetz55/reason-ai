@@ -32,6 +32,9 @@ export default async function Home() {
             {step.title}へ
           </Link>
         )}
+        <p className="text-[13px] text-ink-3 mt-6 max-w-[56ch] leading-relaxed">
+          ステップは STEP 0 から順に進みます。各画面のいちばん下に「次のステップ」があり、条件を満たすとボタンが押せます。ベレネッツとの面談のあとに開くステップもあります。
+        </p>
       </section>
 
       {(openHomework ?? 0) > 0 && (

@@ -1,3 +1,6 @@
+import { NextStepBar } from "@/components/NextStepBar";
+import { stepGate } from "@/lib/gates";
+import { loadGateCtx } from "@/server/gates";
 import { requireCustomer } from "@/lib/session";
 import { FACETS, facetForToday, loadFacetPrompt } from "@/server/sheet";
 import { loadFixedText } from "@/server/ai/client";
@@ -17,6 +20,7 @@ export default async function DivergePage() {
   const count = progress?.row_count ?? 0;
   const { facet, round } = facetForToday(byFacet, progress?.max_round ?? 1);
   const tpl = await loadFacetPrompt(facet.key, round);
+  const gate = stepGate("diverge", await loadGateCtx(supabase, company.id, company.status));
 
   return (
     <div>
@@ -70,6 +74,7 @@ export default async function DivergePage() {
       <section className="mt-12">
         <RowList rows={rows ?? []} facets={FACETS.map((f) => ({ key: f.key, label: f.label }))} />
       </section>
+      <NextStepBar gate={gate} />
     </div>
   );
 }
