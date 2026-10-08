@@ -35,7 +35,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <aside className="print:hidden w-[260px] shrink-0 border-r hairline px-6 py-8 flex flex-col">
         <Link href="/" className="block"><ReasonLogo width={212} /></Link>
         <p className="serif text-[16px] leading-snug mt-6">{company.name}</p>
-        <p className="text-[13px] text-ink-3 mt-1">{STATUS_LABEL[company.status] ?? company.status}</p>
+        <p className="mt-2 text-[11px] text-ink-3 tracking-wide">現在のフェーズ</p>
+        <p className="text-[13px] text-ink-2 mt-0.5">{STATUS_LABEL[company.status] ?? company.status}</p>
         {company.status === "diagnosed" ? (
           <nav className="mt-6"><Link href="/diagnosis" className="block text-[14px] py-[7px] pl-3 -ml-3 border-l-2 border-navy">適合診断の結果</Link></nav>
         ) : (
