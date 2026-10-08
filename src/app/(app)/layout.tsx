@@ -10,8 +10,8 @@ import { MEETING_LABEL, fmtMeeting } from "@/lib/meetings";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const { company, profile, supabase } = await requireCustomer();
-  const [{ count: openHomework }, { data: nextMeeting }, { data: progress }] = await Promise.all([
-    supabase.from("homeworks").select("id", { count: "exact", head: true }).eq("company_id", company.id).eq("status", "open"),
+  const [{ data: openHw }, { data: nextMeeting }, { data: progress }] = await Promise.all([
+    supabase.from("homeworks").select("id, title, due_at").eq("company_id", company.id).eq("status", "open").order("due_at"),
     supabase
       .from("company_meetings")
       .select("kind, scheduled_at, meeting_url")
@@ -23,6 +23,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle(),
   ]);
 
+  const openHomework = openHw?.length ?? 0;
+  const overdue = (openHw ?? []).filter((h) => h.due_at && new Date(h.due_at) < new Date()).length;
+  const nearest = (openHw ?? []).find((h) => h.due_at);
   const nowKey = currentStep(company.status, progress?.pair_count ?? 0).key;
   const stages = STAGES.map((s) => ({ ...s, open: isStageOpen(s, company.status), now: s.key === nowKey }));
 
@@ -52,9 +55,15 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
               )}
             </div>
           )}
-          <p>
-            <Link href="/homework" className="hover:text-ink">宿題 <span className="num">{openHomework ?? 0}</span></Link>
-          </p>
+          {openHomework > 0 ? (
+            <Link href="/homework" className="block rounded-[var(--radius)] bg-navy-soft px-4 py-3 -mx-1 hover:brightness-[0.98]">
+              <p className="text-[11px] font-semibold tracking-wide text-navy">宿題 · 次の面談までに</p>
+              <p className="mt-1 text-ink"><span className="num text-[20px] font-semibold">{openHomework}</span><span className="text-[12px] ml-1">件 未回答</span>{overdue > 0 && <span className="text-warm text-[12px] ml-2">期限超過 {overdue}</span>}</p>
+              {nearest?.due_at && <p className="text-[12px] text-ink-2 mt-1 truncate">近い期限 <span className="num">{new Date(nearest.due_at).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" })}</span>：{nearest.title}</p>}
+            </Link>
+          ) : (
+            <p><Link href="/homework" className="hover:text-ink">宿題 <span className="num">0</span></Link></p>
+          )}
           <p>
             <Link href="/report" className="hover:text-ink">エラーレポート</Link>
           </p>
