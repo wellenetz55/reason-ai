@@ -6,7 +6,8 @@ import { PROFILE_ITEMS } from "@/lib/profileItems";
 /** 使っているプロンプトのキーと用途（本文は DB） */
 const PROMPT_KEYS: { key: string; label: string }[] = [
   { key: "step0_summary", label: "STEP 0 御社の説明の下書き" },
-  { key: "diverge", label: "STEP 1 提供価値の下書き" },
+  { key: "diverge", label: "STEP 1 提供価値・体験価値の下書き" },
+  { key: "vague_check", label: "STEP 2 ふわっと診断（点検と言い直し案）" },
 ];
 const FIXED_KEYS: { key: string; label: string }[] = [
   { key: "round1_intro", label: "STEP 1 冒頭の固定文（提供価値／体験価値の書き方）" },
