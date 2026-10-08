@@ -2,7 +2,8 @@ import { STAGES } from "@/lib/stages";
 
 export type GateCtx = {
   status: string;
-  rows: number;          // 発散の行数（active）
+  rows: number;          // 対になっている組数（提供価値＋体験価値が両方ある行）
+  rowsAll: number;       // 行数（体験価値が空の行も含む）
   brakeKinds: number;    // 書き出したブレーキの種類数（最大4）
   brakesOpen: number;    // 先回りの答えがまだないブレーキ数
   evidences: number;     // 集めた証拠の数
@@ -33,8 +34,8 @@ export function stepGate(key: string, c: GateCtx): Gate {
         : { next, ready: false, byOperator: true, note: "キックオフ面談のあと、ベレネッツが次のステップを開きます。" };
     case "diverge":
       return c.rows >= 20
-        ? { next, ready: true, note: c.rows >= 30 ? `${c.rows}行。出し切りました。` : `${c.rows}行。目標の30行まで出すと、絞ったあとに残る言葉が強くなります。進んでから戻って足すこともできます。` }
-        : { next, ready: false, note: `あと${20 - c.rows}行で進めます（目標30行）。` };
+        ? { next, ready: true, note: c.rows >= 30 ? `${c.rows}組。出し切りました。` : `${c.rows}組。目標の30組まで出すと、絞ったあとに残る言葉が強くなります。進んでから戻って足すこともできます。` }
+        : { next, ready: false, note: `あと${20 - c.rows}組で進めます（目標30組）。${c.rowsAll > c.rows ? `体験価値が空の行が${c.rowsAll - c.rows}行あります。「だから、お客様は…」を埋めると組になります。` : ""}` };
     case "merge":
       return atLeast(c.status, "week3_5")
         ? { next, ready: true, note: "絞った言葉をベレネッツが確認済みです。お客様のブレーキに進めます。" }

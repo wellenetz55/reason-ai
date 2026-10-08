@@ -65,14 +65,14 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
   if (has("diverge")) {
     const cols = [
       { header: "No", key: "seq", width: 6 }, { header: "面", key: "facet", width: 14 }, { header: "周", key: "round", width: 5 },
-      { header: "提供価値（御社は〜できる）", key: "raw", width: 48 }, { header: "誰向け", key: "target", width: 16 },
+      { header: "提供価値（御社は〜できる）", key: "raw", width: 44 }, { header: "体験価値（だから、お客様は〜と感じることができる）", key: "exp1", width: 44 }, { header: "誰向け", key: "target", width: 16 },
     ];
     if (has("merge")) cols.push({ header: "統合後", key: "merged", width: 40 }, { header: "最終案", key: "final", width: 40 }, { header: "一言で", key: "one", width: 30 }, { header: "状態", key: "status", width: 12 }, { header: "順位", key: "rank", width: 6 });
-    if (has("trust")) cols.push({ header: "体験価値（お客様は〜と感じられる）", key: "exp", width: 44 }, { header: "だから（つなぎ）", key: "because", width: 30 }, { header: "欲求", key: "desire", width: 14 }, { header: "軸", key: "axis", width: 12 });
+    if (has("trust")) cols.push({ header: "体験価値（磨いた後）", key: "exp", width: 44 }, { header: "だから（つなぎ）", key: "because", width: 30 }, { header: "欲求", key: "desire", width: 14 }, { header: "軸", key: "axis", width: 12 });
     addSheet(has("merge") ? "1-2 提供価値" : "1 提供価値", cols, (rows ?? []).map((r) => ({
-      seq: r.seq, facet: facetLabel(r.facet), round: r.round, raw: r.value_raw, target: r.target,
+      seq: r.seq, facet: facetLabel(r.facet), round: r.round, raw: r.value_raw, exp1: r.experience_value_v1, target: r.target,
       merged: r.value_merged, final: r.value_final, one: r.one_liner, status: STATUS[r.status] ?? r.status, rank: r.rank,
-      exp: r.experience_value ?? r.experience_value_v1, because: r.because_phrase, desire: r.desire, axis: r.trust_axis,
+      exp: r.experience_value, because: r.because_phrase, desire: r.desire, axis: r.trust_axis,
     })));
   }
 

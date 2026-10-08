@@ -14,10 +14,10 @@ export default async function Home() {
   const { company, supabase } = await requireCustomer();
   if (company.status === "diagnosed") redirect("/diagnosis");
   const [{ data: progress }, { count: openHomework }] = await Promise.all([
-    supabase.from("v_divergence_progress").select("row_count").eq("company_id", company.id).maybeSingle(),
+    supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle(),
     supabase.from("homeworks").select("id", { count: "exact", head: true }).eq("company_id", company.id).eq("status", "open"),
   ]);
-  const rows = progress?.row_count ?? 0;
+  const rows = progress?.pair_count ?? 0;
   const step = currentStep(company.status, rows);
   const stage = STAGES.find((s) => s.key === step.key);
 

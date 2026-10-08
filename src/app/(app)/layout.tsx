@@ -20,10 +20,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       .order("scheduled_at")
       .limit(1)
       .maybeSingle(),
-    supabase.from("v_divergence_progress").select("row_count").eq("company_id", company.id).maybeSingle(),
+    supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle(),
   ]);
 
-  const nowKey = currentStep(company.status, progress?.row_count ?? 0).key;
+  const nowKey = currentStep(company.status, progress?.pair_count ?? 0).key;
   const stages = STAGES.map((s) => ({ ...s, open: isStageOpen(s, company.status), now: s.key === nowKey }));
 
   return (
