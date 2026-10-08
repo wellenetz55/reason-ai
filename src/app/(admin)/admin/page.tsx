@@ -10,7 +10,7 @@ export default async function AdminHome() {
   const [{ data: last }, { data: hw }, { data: alerts }, { data: qs }, { data: errs }] = await Promise.all([
     supabase.from("activity_log").select("company_id, created_at").in("company_id", ids).order("created_at", { ascending: false }),
     supabase.from("homeworks").select("company_id").in("company_id", ids).eq("status", "open"),
-    supabase.from("alerts").select("company_id, kind").in("company_id", ids).is("resolved_at", null),
+    supabase.from("alerts").select("company_id, kind, payload").in("company_id", ids).is("resolved_at", null),
     supabase.from("questions_to_operator").select("company_id, read_at, answered_at").in("company_id", ids),
     supabase.from("error_reports").select("company_id, read_at, resolved_at").in("company_id", ids),
   ]);
@@ -24,8 +24,14 @@ export default async function AdminHome() {
   for (const l of last ?? []) if (!lastBy[l.company_id]) lastBy[l.company_id] = l.created_at;
   const hwBy: Record<string, number> = {};
   for (const h of hw ?? []) hwBy[h.company_id] = (hwBy[h.company_id] ?? 0) + 1;
+  const ALERT: Record<string, string> = { stale7: "7日操作なし", no_internal_meeting: "社内打合せ未登録", homework_overdue: "宿題の期限超過", attitude_flag: "姿勢シグナル", disclosure_request: "開示要求", quota_reached: "生成上限", grace_ending: "猶予終了間近", extension_ending: "延長終了間近", escalation: "要対応" };
+  const fmtD = (iso: string) => new Date(iso).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" });
   const alBy: Record<string, string[]> = {};
-  for (const a of alerts ?? []) (alBy[a.company_id] ??= []).push(a.kind);
+  for (const a of alerts ?? []) {
+    const p = (a.payload ?? {}) as { type?: string; date?: string };
+    const label = p.type === "kickoff_chosen" && p.date ? `キックオフ日が選ばれました ${fmtD(p.date)}` : ALERT[a.kind] ?? a.kind;
+    (alBy[a.company_id] ??= []).push(label);
+  }
 
   return (
     <div>
