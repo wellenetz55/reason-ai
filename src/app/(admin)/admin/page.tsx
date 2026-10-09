@@ -10,7 +10,7 @@ export default async function AdminHome() {
   const [{ data: last }, { data: hw }, { data: alerts }, { data: qs }, { data: errs }] = await Promise.all([
     supabase.from("activity_log").select("company_id, created_at").in("company_id", ids).order("created_at", { ascending: false }),
     supabase.from("homeworks").select("company_id").in("company_id", ids).eq("status", "open"),
-    supabase.from("alerts").select("company_id, kind, payload").in("company_id", ids).is("resolved_at", null),
+    supabase.from("alerts").select("company_id, kind, payload, created_at").in("company_id", ids).is("resolved_at", null).order("created_at", { ascending: false }),
     supabase.from("questions_to_operator").select("company_id, read_at, answered_at").in("company_id", ids),
     supabase.from("error_reports").select("company_id, read_at, resolved_at").in("company_id", ids),
   ]);
@@ -26,11 +26,15 @@ export default async function AdminHome() {
   for (const h of hw ?? []) hwBy[h.company_id] = (hwBy[h.company_id] ?? 0) + 1;
   const ALERT: Record<string, string> = { stale7: "7日操作なし", no_internal_meeting: "社内打合せ未登録", homework_overdue: "宿題の期限超過", attitude_flag: "姿勢シグナル", disclosure_request: "開示要求", quota_reached: "生成上限", grace_ending: "猶予終了間近", extension_ending: "延長終了間近", escalation: "要対応" };
   const fmtD = (iso: string) => new Date(iso).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" });
-  const alBy: Record<string, string[]> = {};
+  // 会社ごとに、同じ内容はまとめて件数表示。新しい順
+  const alBy: Record<string, { label: string; count: number; at: string; urgent: boolean }[]> = {};
   for (const a of alerts ?? []) {
     const p = (a.payload ?? {}) as { type?: string; date?: string };
     const label = p.type === "kickoff_chosen" && p.date ? `キックオフ日が選ばれました ${fmtD(p.date)}` : p.type === "program_applied" ? "申込がありました（契約書・請求書を送付）" : p.type === "diagnosis_viewed" ? "診断結果を開きました" : ALERT[a.kind] ?? a.kind;
-    (alBy[a.company_id] ??= []).push(label);
+    const urgent = p.type === "program_applied" || p.type === "kickoff_chosen" || a.kind === "disclosure_request" || a.kind === "quota_reached";
+    const list = (alBy[a.company_id] ??= []);
+    const hit = list.find((x) => x.label === label);
+    if (hit) hit.count += 1; else list.push({ label, count: 1, at: a.created_at, urgent });
   }
 
   return (
@@ -46,14 +50,14 @@ export default async function AdminHome() {
       )}
       <table className="mt-8 w-full text-sm">
         <thead className="text-xs text-ink-3 text-left">
-          <tr><th className="py-2 font-normal">会社</th><th className="font-normal">状態</th><th className="font-normal">最終操作</th><th className="font-normal">質問</th><th className="font-normal">エラー</th><th className="font-normal">未回収宿題</th><th className="font-normal">アラート</th></tr>
+          <tr><th className="py-2 font-normal">会社</th><th className="font-normal">状態</th><th className="font-normal">最終操作</th><th className="font-normal">質問</th><th className="font-normal">エラー</th><th className="font-normal">未回収宿題</th><th className="font-normal w-[34%]">アラート</th></tr>
         </thead>
         <tbody className="divide-y hairline">
           {(companies ?? []).map((c) => {
             const lastAt = lastBy[c.id] ? new Date(lastBy[c.id]) : null;
             const stale = lastAt ? (Date.now() - lastAt.getTime()) / 86400000 : null;
             return (
-              <tr key={c.id} className={stale !== null && stale >= 7 ? "bg-[#fff8e5]" : ""}>
+              <tr key={c.id} className={`align-top ${stale !== null && stale >= 7 ? "bg-[#fff8e5]" : ""}`}>
                 <td className="py-3"><Link href={`/admin/${c.id}`} className="hover:underline">{c.name}</Link></td>
                 <td>{STATUS_LABEL[c.status] ?? c.status}</td>
                 <td className="num">{lastAt ? `${Math.floor(stale!)}日前` : "—"}</td>
@@ -74,7 +78,19 @@ export default async function AdminHome() {
                   ) : <span className="text-ink-3">—</span>}
                 </td>
                 <td className="num">{hwBy[c.id] ?? 0}</td>
-                <td className="text-xs text-ink-2">{(alBy[c.id] ?? []).join(", ")}</td>
+                <td className="py-3 text-xs">
+                  {(alBy[c.id] ?? []).length === 0 ? <span className="text-ink-3">—</span> : (
+                    <ul className="space-y-1">
+                      {alBy[c.id].map((x) => (
+                        <li key={x.label} className="flex items-baseline gap-2">
+                          <span className={`shrink-0 w-1.5 h-1.5 rounded-full translate-y-[-2px] ${x.urgent ? "bg-warm" : "bg-ink-3"}`} />
+                          <span className={x.urgent ? "text-ink font-medium" : "text-ink-2"}>{x.label}{x.count > 1 && <span className="num text-ink-3"> ×{x.count}</span>}</span>
+                          <span className="num text-ink-3 shrink-0">{fmtD(x.at)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </td>
               </tr>
             );
           })}
