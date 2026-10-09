@@ -1,7 +1,7 @@
 import { requireCustomer } from "@/lib/session";
 import { BRAKE_LABEL, TAG_LABEL } from "@/lib/diagnosis";
 import { fmtMeeting } from "@/lib/meetings";
-import { chooseKickoff } from "./actions";
+import { chooseKickoff, applyProgram } from "./actions";
 import { PrintButton } from "@/components/PrintButton";
 
 type Seed = { feature: string; experience: string; tag: string };
@@ -31,6 +31,12 @@ export default async function DiagnosisPage() {
   const fit = (d.fit_reasons ?? []) as Fit[];
   const comp = (d.competitor ?? null) as { name: string; claims: string[] } | null;
   const dates = (d.candidate_dates ?? []) as string[];
+  const steps = [
+    { key: "apply", label: "申し込む", at: company.applied_at, done: !!company.applied_at, now: !company.applied_at },
+    { key: "contract", label: "契約書を取り交わす", at: company.contracted_at, done: !!company.contracted_at, now: !!company.applied_at && !company.contracted_at },
+    { key: "pay", label: "入金", at: company.paid_at, done: !!company.paid_at, now: !!company.contracted_at && !company.paid_at },
+    { key: "kickoff", label: "キックオフ日を選ぶ", at: d.chosen_date, done: !!d.chosen_date, now: !!company.paid_at && !d.chosen_date },
+  ];
   const tagCls: Record<string, string> = { fact: "tag-fact", verify: "tag-verify", hypothesis: "tag-hypo" };
 
   return (
@@ -126,27 +132,54 @@ export default async function DiagnosisPage() {
       )}
 
       <section className="mt-16 border-t hairline pt-8 print:hidden">
-        <h2 className="serif text-[20px]">次の一手は、ひとつだけ</h2>
-        {d.chosen_date ? (
-          <p className="mt-3">キックオフは <span className="num font-semibold">{fmtMeeting(d.chosen_date)}</span> で承りました。ベレネッツから会議URLをお送りします。</p>
-        ) : dates.length > 0 ? (
-          <>
-            <p className="text-sm text-ink-2 mt-1">キックオフ（3時間・オンライン）の日を選んでください。</p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              {dates.map((iso) => (
-                <form key={iso} action={chooseKickoff}>
-                  <input type="hidden" name="date" value={iso} />
-                  <button className="btn-primary num" type="submit">{fmtMeeting(iso)}</button>
-                </form>
-              ))}
-            </div>
-            <p className="text-[12px] text-ink-3 mt-3">どれも合わない場合は「ベレネッツに質問を残す」からご希望日をお知らせください。</p>
-          </>
-        ) : (
-          <p className="text-sm text-ink-2 mt-1">キックオフの候補日は、ベレネッツからご連絡します。</p>
-        )}
+        <h2 className="serif text-[20px]">ここから、8週間が始まるまで</h2>
+        <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">契約と請求はメールでやりとりします。アプリでは、いまどこまで進んでいるかが見えます。</p>
+        <ol className="mt-5 grid grid-cols-4 gap-2 text-[12px]">
+          {steps.map((st, i) => (
+            <li key={st.key} className={`rounded-[var(--radius)] border px-3 py-2.5 ${st.done ? "border-navy bg-navy text-white" : st.now ? "border-warm bg-warm-soft" : "hairline text-ink-3"}`}>
+              <p className={`num text-[10px] tracking-wide ${st.done ? "text-white/70" : st.now ? "text-warm" : ""}`}>{i + 1}{st.done ? " ✓" : st.now ? " ← いまここ" : ""}</p>
+              <p className="font-semibold mt-0.5">{st.label}</p>
+              {st.at && <p className={`num text-[10px] mt-0.5 ${st.done ? "text-white/70" : "text-ink-3"}`}>{fmtMeeting(st.at)}</p>}
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-6">
+          {!company.applied_at ? (
+            <>
+              <p className="text-sm">診断結果を読んで「進めたい」と思われたら、下のボタンを押してください。ベレネッツから申込書・契約書と請求書をメールでお送りします。</p>
+              <form action={applyProgram} className="mt-4">
+                <button className="btn-primary" type="submit">このプログラムに申し込む</button>
+              </form>
+              <p className="text-[12px] text-ink-3 mt-3">ボタンを押した時点では費用は発生しません。契約書の内容を確認してからのご契約です。</p>
+            </>
+          ) : !company.paid_at ? (
+            <p className="text-sm">
+              {company.contracted_at
+                ? "ご契約ありがとうございます。入金を確認しだい、キックオフの日程をこの画面でお選びいただけます。"
+                : "お申し込みを受け付けました。ベレネッツから申込書・契約書と請求書をメールでお送りします。届かない場合は「ベレネッツに質問を残す」からお知らせください。"}
+            </p>
+          ) : d.chosen_date ? (
+            <p className="text-sm">キックオフは <span className="num font-semibold">{fmtMeeting(d.chosen_date)}</span> で承りました。ベレネッツから会議URLをお送りします。</p>
+          ) : dates.length > 0 ? (
+            <>
+              <p className="text-sm">入金を確認しました。キックオフ（3時間・オンライン）の日を選んでください。</p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                {dates.map((iso) => (
+                  <form key={iso} action={chooseKickoff}>
+                    <input type="hidden" name="date" value={iso} />
+                    <button className="btn-primary num" type="submit">{fmtMeeting(iso)}</button>
+                  </form>
+                ))}
+              </div>
+              <p className="text-[12px] text-ink-3 mt-3">どれも合わない場合は「ベレネッツに質問を残す」からご希望日をお知らせください。</p>
+            </>
+          ) : (
+            <p className="text-sm">入金を確認しました。キックオフの候補日は、ベレネッツからご連絡します。</p>
+          )}
+        </div>
         <p className="text-[13px] text-ink-2 mt-6 max-w-[56ch] leading-relaxed">
-          費用は8週間で70万円（前払い）。確認セッション①までに「違う」と感じられた場合は半額を返金します。
+          費用は8週間で70万円（前払い・税別）。確認セッション①までに「違う」と感じられた場合は半額を返金します。
         </p>
       </section>
     </article>

@@ -19,6 +19,22 @@ export async function setStatus(formData: FormData) {
   revalidatePath("/admin");
 }
 
+const CONTRACT_COLS = { applied: "applied_at", contracted: "contracted_at", paid: "paid_at" } as const;
+
+/** 申込・契約・入金の日時を記録する／取り消す（契約と請求そのものはアプリ外） */
+export async function setContractStep(formData: FormData) {
+  const { supabase } = await requireOperator();
+  const id = String(formData.get("company_id"));
+  const step = String(formData.get("step")) as keyof typeof CONTRACT_COLS;
+  const col = CONTRACT_COLS[step];
+  if (!col) return;
+  const clear = formData.get("clear") === "1";
+  await supabase.from("companies").update({ [col]: clear ? null : new Date().toISOString() }).eq("id", id);
+  if (step === "applied" && !clear) await supabase.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("company_id", id).is("resolved_at", null).contains("payload", { type: "program_applied" });
+  revalidatePath(`/admin/${id}`);
+  revalidatePath("/admin");
+}
+
 const MEETING_KINDS = ["kickoff", "session1", "midcheck", "session2", "session3", "advisor_monthly", "internal"] as const;
 
 /** 面談を登録。日時はJSTで入力されたものをUTCに変換して保存 */

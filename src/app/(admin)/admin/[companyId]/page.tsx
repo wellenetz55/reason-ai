@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
-import { setStatus, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink } from "../actions";
+import { setStatus, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink, setContractStep } from "../actions";
 import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
 
 export default async function CompanyAdmin({ params, searchParams }: PageProps<"/admin/[companyId]">) {
@@ -57,6 +57,29 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
         {signals.length === 0 ? <p className="text-sm text-ink-3 mt-2">該当なし</p> : (
           <p className="mt-2 text-sm">{signals.length}つが重なっています：{signals.join("／")}</p>
         )}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-sm text-ink-2">申込・契約・入金（契約書と請求書はメールで）</h2>
+        <p className="text-xs text-ink-3 mt-1">お客様が診断結果ページで「申し込む」を押すと申込が入ります。契約書を取り交わしたら「契約済」、入金を確認したら「入金済」を押してください。入金済にすると、お客様がキックオフ日を選べるようになります。候補日は「適合診断の結果を書く」で設定します。</p>
+        <div className="mt-3 flex flex-wrap gap-6 text-sm">
+          {([["applied", "申込", c.applied_at], ["contracted", "契約済", c.contracted_at], ["paid", "入金済", c.paid_at]] as const).map(([step, label, at]) => (
+            <form key={step} action={setContractStep} className="flex items-center gap-2">
+              <input type="hidden" name="company_id" value={c.id} />
+              <input type="hidden" name="step" value={step} />
+              {at ? (
+                <>
+                  <span className="font-semibold">{label} ✓</span>
+                  <span className="num text-xs text-ink-3">{fmtMeeting(at)}</span>
+                  <input type="hidden" name="clear" value="1" />
+                  <button className="btn-text text-xs" type="submit">取り消す</button>
+                </>
+              ) : (
+                <button className="btn-text" type="submit">{label}にする</button>
+              )}
+            </form>
+          ))}
+        </div>
       </section>
 
       <section className="mt-10">

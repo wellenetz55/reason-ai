@@ -19,6 +19,9 @@ export type Company = {
   session2_at: string | null;
   session3_at: string | null;
   grace_until: string | null;
+  applied_at: string | null;
+  contracted_at: string | null;
+  paid_at: string | null;
   extension_until: string | null;
   generation_quota_month: number;
   generation_quota_grace: number;
