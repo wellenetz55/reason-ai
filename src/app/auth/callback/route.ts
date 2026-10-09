@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap">
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:"Noto Sans JP",system-ui,sans-serif;color:#1c1c1e;background:#fff}.box{max-width:24rem;padding:0 1.5rem}h1{font-size:18px;font-weight:700;margin:0 0 .75rem}p{font-size:14px;color:#5f5f66;line-height:1.7;margin:0 0 1.5rem}button{background:#1e2a5a;color:#fff;border:0;border-radius:999px;font:inherit;font-size:15px;padding:12px 28px;cursor:pointer}button:hover{filter:brightness(1.08)}</style></head>
 <body><div class="box"><h1>選ばれる理由AI にサインインします</h1><p>下のボタンを押すとサインインが完了します。このリンクは一度だけ使えます。</p>
-<form method="post" action="/auth/callback"><input type="hidden" name="token_hash" value="${esc(tokenHash)}"><input type="hidden" name="type" value="${esc(type)}"><button type="submit">サインインする</button></form></div></body></html>`;
+<form method="post" action="/auth/callback" onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='少々お待ちください…';"><input type="hidden" name="token_hash" value="${esc(tokenHash)}"><input type="hidden" name="type" value="${esc(type)}"><button type="submit">サインインする</button></form></div></body></html>`;
   return new NextResponse(html, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 }
 
