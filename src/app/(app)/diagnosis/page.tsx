@@ -9,10 +9,10 @@ type Brake = { kind: string; words: string };
 type Fit = { condition: string; quote: string };
 
 const WEEKS = [
-  { w: "第0週", t: "キックオフ（3時間）", b: "会社資料を読み込み、最初の言葉を出す" },
-  { w: "第1〜2週", t: "骨格をつくる", b: "提供価値を30行書き出し、絞る。確認セッション①" },
-  { w: "第3〜5週", t: "肉付けする", b: "お客様のブレーキを外し、体験価値に磨く。中間チェック、確認セッション②" },
-  { w: "第6〜8週", t: "仕上げる", b: "証拠をつけ、営業・価格・Webの言葉に展開。確認セッション③" },
+  { w: "第0週", t: "最初の驚き", b: "キックオフ（3時間）。AIが御社の資料とWebを読み、「御社はこういう会社です」を下書きします。「そんなことまで拾うのか」が最初の発見です。" },
+  { w: "第1〜2週", t: "30組が見えてくる", b: "毎日ちがう角度の問いに答えるだけで、提供価値・体験価値が組になって増えます。社内で当たり前すぎて誰も言わなかったことが、言葉になります。確認セッション①" },
+  { w: "第3〜5週", t: "選ばれない理由が消える", b: "お客様が買う直前に迷う理由を書き出し、先回りの答えを用意します。「なぜなら」がつき、言葉が浮つかなくなります。中間チェック、確認セッション②" },
+  { w: "第6〜8週", t: "使える形になる", b: "お客様の声・数字・事実で裏づけ、営業トーク・価格説明・Web・採用の文章に展開。確認セッション③で、冒頭の一言をもう一度答えていただきます。" },
 ];
 
 export default async function DiagnosisPage() {
@@ -49,18 +49,45 @@ export default async function DiagnosisPage() {
         <PrintButton />
       </div>
 
+      <div className="mt-8 grid grid-cols-3 gap-3">
+        <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
+          <p className="text-[11px] text-ink-3">45分の面談で見えた芽</p>
+          <p className="serif text-[30px] leading-none mt-1"><span className="num">{seeds.length}</span><span className="text-[14px] ml-1">組</span></p>
+        </div>
+        <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
+          <p className="text-[11px] text-ink-3">まだ言葉になっていないブレーキ</p>
+          <p className="serif text-[30px] leading-none mt-1"><span className="num">{brakes.length}</span><span className="text-[14px] ml-1">つ</span></p>
+        </div>
+        <div className="rounded-[var(--radius)] bg-navy text-white px-5 py-4">
+          <p className="text-[11px] text-white/70">8週間後にそろう言葉</p>
+          <p className="serif text-[30px] leading-none mt-1"><span className="num">30</span><span className="text-[14px] ml-1">組</span></p>
+        </div>
+      </div>
+
       {d.one_liner_before && (
         <section className="mt-12">
-          <p className="text-[12px] text-ink-3">面談で、御社をこう一言で表されました</p>
-          <blockquote className="serif text-[24px] leading-snug mt-2 border-l-2 border-navy pl-5">「{d.one_liner_before}」</blockquote>
-          <p className="text-sm text-ink-2 mt-3 max-w-[56ch]">8週間後、この一言がどう変わるかを見てください。最後の確認セッションで、同じ問いにもう一度お答えいただきます。</p>
+          <h2 className="serif text-[20px]">「御社を一言で言うと？」</h2>
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[11px] text-ink-3">いま（面談でのお答え）</p>
+              <blockquote className="serif text-[20px] leading-snug mt-2 border-l-2 border-navy pl-4">「{d.one_liner_before}」</blockquote>
+            </div>
+            <div>
+              <p className="text-[11px] text-ink-3">8週間後</p>
+              <div className="mt-2 rounded-[var(--radius)] border border-dashed border-ink-3 px-4 py-5 text-ink-3">
+                <p className="serif text-[20px] leading-snug">「────────」</p>
+                <p className="text-[12px] mt-2">確認セッション③で、同じ問いにもう一度お答えいただきます。ここが埋まります。</p>
+              </div>
+            </div>
+          </div>
+          <p className="text-sm text-ink-2 mt-4 max-w-[56ch]">多くの会社で、左は業種と所在地の説明、右はお客様が選ぶ理由になります。同じ会社の、同じ人の言葉で。</p>
         </section>
       )}
 
       {seeds.length > 0 && (
         <section className="mt-14">
-          <h2 className="serif text-[20px]">面談で見えた「選ばれる理由」の芽</h2>
-          <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">お話しいただいた言葉を、提供価値の型に仮に置き換えたものです。まだ仮説です。8週間で事実にします。</p>
+          <h2 className="serif text-[20px]">45分で、もう見つかったもの</h2>
+          <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">御社の中では当たり前すぎて、誰も言っていなかったこと。お話しいただいた言葉を「御社は〜できる。だから、お客様は〜と感じられる」の型に仮に置いたものです。まだ仮説です。8週間で事実にします。</p>
           <ol className="mt-5 space-y-4">
             {seeds.map((s, i) => (
               <li key={i} className={`tag-line ${tagCls[s.tag] ?? "tag-hypo"} pl-5 py-1`}>
@@ -70,13 +97,22 @@ export default async function DiagnosisPage() {
               </li>
             ))}
           </ol>
+          <div className="mt-8">
+            <p className="text-[12px] text-ink-3">これは、最初の{seeds.length}組です。</p>
+            <div className="mt-2 grid grid-cols-10 gap-1.5 max-w-[360px]" aria-label="30組のうち見つかった数">
+              {Array.from({ length: 30 }, (_, i) => (
+                <span key={i} className={`h-[18px] rounded-[3px] ${i < seeds.length ? "bg-navy" : "border border-dashed border-ink-3"}`} />
+              ))}
+            </div>
+            <p className="text-sm mt-3 max-w-[56ch]"><span className="font-semibold">残り{30 - seeds.length}組は、御社の中にあります。</span>毎日ちがう角度の問いに答えるうちに、「言われてみれば、それもそうだ」が積み上がって30組になります。面談では、その入口が見えただけです。</p>
+          </div>
         </section>
       )}
 
       {brakes.length > 0 && (
         <section className="mt-14">
           <h2 className="serif text-[20px]">まだ言葉になっていないブレーキ</h2>
-          <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">お客様が御社を選ぶ直前に、おそらくこう迷っています。これに先回りの答えを用意するのが3〜5週目の仕事です。</p>
+          <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">お客様が御社を選ぶ直前に、おそらくこう迷っています。ここを言葉で先回りできると、見積りの前の会話が変わります。3〜5週目の仕事です。</p>
           <ul className="mt-5 space-y-3">
             {brakes.map((b, i) => (
               <li key={i} className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
@@ -113,7 +149,7 @@ export default async function DiagnosisPage() {
       )}
 
       <section className="mt-14">
-        <h2 className="serif text-[20px]">{company.name}様の8週間</h2>
+        <h2 className="serif text-[20px]">{company.name}様の8週間で、起きること</h2>
         <ol className="mt-5 space-y-3">
           {WEEKS.map((x) => (
             <li key={x.w} className="grid grid-cols-[90px_1fr] gap-4">
