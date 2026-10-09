@@ -8,11 +8,18 @@ type Seed = { feature: string; experience: string; tag: string };
 type Brake = { kind: string; words: string };
 type Fit = { condition: string; quote: string };
 
-const WEEKS = [
-  { w: "第0週", t: "最初の驚き", b: "キックオフ（3時間）。AIが御社の資料とWebを読み、「御社はこういう会社です」を下書きします。「そんなことまで拾うのか」が最初の発見です。" },
-  { w: "第1〜2週", t: "組が増えていく", b: "毎日ちがう角度の問いに答えるだけで、提供価値・体験価値が組になって増えます。社内で当たり前すぎて誰も言わなかったことが、言葉になります。2週目の終わりに、ベレネッツとの面談で確認します。" },
-  { w: "第3〜5週", t: "選ばれない理由が消える", b: "お客様が買う直前に迷う理由を書き出し、先回りの答えを用意します。「なぜなら」がつき、言葉が浮つかなくなります。途中の中間チェックと、5週目の終わりの面談で確認します。" },
-  { w: "第6〜8週", t: "使える形になる", b: "お客様の声・数字・事実で裏づけ、営業トーク・価格説明・Web・採用の文章に展開。最後の面談で、冒頭の一言をもう一度答えていただきます。" },
+// 3ステップ。1・2は「やること」、3は「手に入る状態」
+const STEPS3 = [
+  { n: "1", w: "第0〜2週", t: "集める", b: "キックオフ（3時間）でAIが御社の資料とWebを読み、「御社はこういう会社です」を下書きします。そこから毎日ちがう角度の問いに答えるだけで、提供価値・体験価値が組になって増えます。社内で当たり前すぎて誰も言わなかったことが、言葉になります。2週目の終わりに面談で確認します。", p: "ポイント：考えて書くのではなく、問いに答える。答えられない日は飛ばしてかまいません。" },
+  { n: "2", w: "第3〜5週", t: "裏づける", b: "お客様が買う直前に迷う理由を書き出し、先回りの答えを用意します。お客様の声・数字・事実で「なぜなら」をつけ、言葉が浮つかなくなります。中間チェックと、5週目の終わりの面談で確認します。", p: "ポイント：きれいな言葉より、証拠のある言葉。言えない組は、残しません。" },
+  { n: "3", w: "第6〜8週", t: "比べられても、選ばれる", b: "営業トーク・価格説明・Web・採用の文章に展開します。見積りの前の会話で「なぜ御社か」を自分の言葉で言える状態になります。最後の面談で、冒頭の一言をもう一度答えていただきます。", p: "ポイント：言葉は社長のものです。ベレネッツが代わりに書いた言葉は、ひとつも残りません。" },
+];
+
+// 「選ばれる理由」をつくろうとして、多くの会社がやること
+const MISTAKES = [
+  { t: "社内で会議して考える", b: "出てくるのは「品質・納期・対応力」。どの会社も言える言葉です。" },
+  { t: "制作会社やライターに頼む", b: "きれいになります。ただ、他社でも言える言葉になります。" },
+  { t: "ホームページを作り直す", b: "見た目は変わります。言葉が変わっていないので、結果は変わりません。" },
 ];
 
 export default async function DiagnosisPage() {
@@ -122,6 +129,9 @@ export default async function DiagnosisPage() {
               </li>
             ))}
           </ul>
+          <p className="mt-5 text-sm max-w-[56ch] pl-4 border-l-2 border-warm">
+            <span className="font-semibold">ここを放っておくと、</span>御社は「比べられたら負ける会社」のままです。選ばれる時は値引きと相見積もりで選ばれ、選ばれない時は理由を教えてもらえません。
+          </p>
         </section>
       )}
 
@@ -150,12 +160,35 @@ export default async function DiagnosisPage() {
       )}
 
       <section className="mt-14">
-        <h2 className="serif text-[20px]">{company.name}様の8週間で、起きること</h2>
+        <h2 className="serif text-[20px]">「選ばれる理由」をつくろうとして、多くの会社がやること</h2>
         <ol className="mt-5 space-y-3">
-          {WEEKS.map((x) => (
-            <li key={x.w} className="grid grid-cols-[90px_1fr] gap-4">
-              <span className="num text-[12px] text-ink-3 pt-1">{x.w}</span>
-              <div><p className="font-medium">{x.t}</p><p className="text-sm text-ink-2">{x.b}</p></div>
+          {MISTAKES.map((m, i) => (
+            <li key={i} className="grid grid-cols-[28px_1fr] gap-3 items-start">
+              <span className="num text-[13px] text-ink-3 pt-0.5">{i + 1}</span>
+              <div><p className="font-medium">{m.t}</p><p className="text-sm text-ink-2">{m.b}</p></div>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-6 rounded-[var(--radius)] bg-navy-soft px-6 py-5 max-w-[60ch]">
+          <p className="leading-relaxed">問題は、御社に理由がないことではありません。<span className="font-semibold">社内にある理由を、取り出す手順がないこと</span>です。</p>
+          <p className="text-sm text-ink-2 mt-2">初回ヒアリングで{seeds.length > 0 ? `${seeds.length}組が` : "芽が"}見つかったのが、その証拠です。8週間プログラムは、その手順です。</p>
+        </div>
+      </section>
+
+      <section className="mt-14">
+        <h2 className="serif text-[20px]">{company.name}様が8週間でやること、3つ</h2>
+        <ol className="mt-5 space-y-6">
+          {STEPS3.map((x) => (
+            <li key={x.n} className="grid grid-cols-[90px_1fr] gap-4">
+              <div className="pt-0.5">
+                <p className="serif text-[22px] leading-none">{x.n}</p>
+                <p className="num text-[11px] text-ink-3 mt-1">{x.w}</p>
+              </div>
+              <div>
+                <p className={`serif text-[18px] leading-snug ${x.n === "3" ? "text-warm" : ""}`}>{x.t}</p>
+                <p className="text-sm text-ink-2 mt-1">{x.b}</p>
+                <p className="text-[12px] text-ink-3 mt-1.5">{x.p}</p>
+              </div>
             </li>
           ))}
         </ol>
@@ -167,6 +200,20 @@ export default async function DiagnosisPage() {
           <p className="mt-2 leading-relaxed whitespace-pre-line">{d.operator_note}</p>
         </section>
       )}
+
+      <section className="mt-14 grid grid-cols-2 gap-4">
+        <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
+          <p className="text-[11px] text-ink-3">自力でやる場合</p>
+          <p className="text-sm mt-2 leading-relaxed">30組を集めるには、毎日ちがう角度で問いを立てる人と、答えを「御社は〜できる。だから〜」の型に揃える人が要ります。社長ひとりで両方をやると、最初の数組で止まります。</p>
+        </div>
+        <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
+          <p className="text-[11px] text-ink-3">8週間プログラムの場合</p>
+          <p className="text-sm mt-2 leading-relaxed">問いはAIが毎日出します。揃えるのはベレネッツが面談で担います。社長がやるのは、答えることだけです。</p>
+        </div>
+        <p className="col-span-2 text-sm max-w-[60ch] pl-4 border-l-2 border-warm">
+          <span className="font-semibold">初回ヒアリングで見つかった芽は、御社の「いま」の言葉です。</span>時間が経つほど、言い回しも熱量も薄れます。見つかったうちに、始めてください。
+        </p>
+      </section>
 
       <section className="mt-16 border-t hairline pt-8 print:hidden">
         <h2 className="serif text-[20px]">ここから、8週間が始まるまで</h2>
