@@ -51,7 +51,7 @@ export default async function DiagnosisPage() {
 
       <div className="mt-8 grid grid-cols-3 gap-3">
         <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
-          <p className="text-[11px] text-ink-3">45分の面談で見えた芽</p>
+          <p className="text-[11px] text-ink-3">初回ヒアリングで見えた芽</p>
           <p className="serif text-[30px] leading-none mt-1"><span className="num">{seeds.length}</span><span className="text-[14px] ml-1">組</span></p>
         </div>
         <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
@@ -86,7 +86,7 @@ export default async function DiagnosisPage() {
 
       {seeds.length > 0 && (
         <section className="mt-14">
-          <h2 className="serif text-[20px]">45分で、もう見つかったもの</h2>
+          <h2 className="serif text-[20px]">初回ヒアリングで、もう見つかったもの</h2>
           <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">御社の中では当たり前すぎて、誰も言っていなかったこと。お話しいただいた言葉を「御社は〜できる。だから、お客様は〜と感じられる」の型に仮に置いたものです。まだ仮説です。8週間で事実にします。</p>
           <ol className="mt-5 space-y-4">
             {seeds.map((s, i) => (
