@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
-import { setStatus, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink, setContractStep } from "../actions";
+import { setStatus, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink, setContractStep, inviteCustomer } from "../actions";
 import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
 
 export default async function CompanyAdmin({ params, searchParams }: PageProps<"/admin/[companyId]">) {
@@ -10,6 +10,8 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const { cookies } = await import("next/headers");
   const jar = await cookies();
   const issuedLink = sp?.link === "1" ? (jar.get("issued_link")?.value ?? null) : null;
+  const memberError = typeof sp?.member_error === "string" ? sp.member_error : null;
+  const memberOk = sp?.member_ok === "1";
   const linkError = typeof sp?.link_error === "string" ? sp.link_error : null;
   const { supabase } = await requireOperator();
   const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }, { data: meetings }, { data: errs }] = await Promise.all([
@@ -22,6 +24,9 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
     supabase.from("company_meetings").select("id, kind, scheduled_at, held_at, meeting_url").eq("company_id", companyId).order("scheduled_at"),
     supabase.from("error_reports").select("id, body, page, user_agent, screenshot_path, created_at, resolved_at, resolved_note").eq("company_id", companyId).order("created_at", { ascending: false }),
   ]);
+  const { data: members } = await supabase.from("profiles").select("id, display_name, role, created_at").eq("company_id", companyId).order("created_at");
+  const { data: userList } = await (await import("@/lib/supabase/admin")).createAdminClient().auth.admin.listUsers({ perPage: 1000 });
+  const emailOf = (id: string) => userList?.users.find((u) => u.id === id)?.email ?? "";
   const { data: diag } = await supabase.from("diagnosis_results").select("published_at, first_viewed_at, last_viewed_at, view_count").eq("company_id", companyId).maybeSingle();
   if (!c) return null;
   // 開いたら既読にする（未返信は返事するまで残る）
@@ -103,6 +108,30 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
       </section>
 
 
+
+      <section className="mt-10">
+        <h2 className="text-sm text-ink-2">担当者</h2>
+        <p className="text-xs text-ink-3 mt-1">この会社でサインインできる人です。追加すると招待メール（日本語）が届きます。最初の1人が管理担当者になります。</p>
+        {(members ?? []).length > 0 && (
+          <ul className="mt-3 text-sm space-y-1">
+            {(members ?? []).map((m) => (
+              <li key={m.id} className="flex items-center gap-3">
+                <span>{m.display_name || "（名前未設定）"}</span>
+                <span className="num text-xs text-ink-3">{emailOf(m.id)}</span>
+                <span className="text-[11px] text-ink-3">{m.role === "customer_admin" ? "管理担当者" : "担当者"}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form action={inviteCustomer} className="mt-3 flex flex-wrap gap-3 items-center">
+          <input type="hidden" name="company_id" value={c.id} />
+          <input type="email" name="email" required placeholder="メールアドレス" className="border-b hairline py-1 text-sm num w-72" />
+          <input name="display_name" placeholder="お名前（任意）" className="border-b hairline py-1 text-sm w-40" />
+          <button className="btn-text" type="submit">追加して招待する</button>
+        </form>
+        {memberError && <p className="text-xs text-warm mt-2">{memberError}</p>}
+        {memberOk && <p className="text-xs text-navy mt-2">招待メールを送りました。</p>}
+      </section>
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">サインインリンクを発行</h2>

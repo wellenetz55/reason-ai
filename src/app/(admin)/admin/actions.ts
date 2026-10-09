@@ -19,6 +19,34 @@ export async function setStatus(formData: FormData) {
   revalidatePath("/admin");
 }
 
+/** 会社の担当者を登録して招待メールを送る（既存アカウントならマジックリンク） */
+export async function inviteCustomer(formData: FormData) {
+  const { supabase } = await requireOperator();
+  const companyId = String(formData.get("company_id"));
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const name = String(formData.get("display_name") || "").trim();
+  const { redirect } = await import("next/navigation");
+  if (!email) return;
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const existing = list?.users.find((u) => u.email?.toLowerCase() === email);
+  if (existing) {
+    const { data: prof } = await admin.from("profiles").select("role, company_id").eq("id", existing.id).maybeSingle();
+    if (prof?.role === "operator") redirect(`/admin/${companyId}?member_error=${encodeURIComponent("そのメールアドレスは運営者です。顧客の担当者には登録できません")}`);
+    if (prof?.company_id && prof.company_id !== companyId) redirect(`/admin/${companyId}?member_error=${encodeURIComponent("そのメールアドレスは別の会社の担当者として登録済みです")}`);
+    await admin.from("profiles").upsert({ id: existing.id, company_id: companyId, role: prof?.role ?? "customer_member", display_name: name || existing.email });
+    await admin.auth.signInWithOtp({ email, options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`, shouldCreateUser: false } });
+  } else {
+    const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback` });
+    if (error || !invited?.user) redirect(`/admin/${companyId}?member_error=${encodeURIComponent(error?.message ?? "招待できませんでした")}`);
+    const { count } = await supabase.from("profiles").select("id", { count: "exact", head: true }).eq("company_id", companyId);
+    await admin.from("profiles").upsert({ id: invited!.user!.id, company_id: companyId, role: (count ?? 0) === 0 ? "customer_admin" : "customer_member", display_name: name || email });
+  }
+  revalidatePath(`/admin/${companyId}`);
+  redirect(`/admin/${companyId}?member_ok=1`);
+}
+
 const CONTRACT_COLS = { applied: "applied_at", contracted: "contracted_at", paid: "paid_at" } as const;
 
 /** 申込・契約・入金の日時を記録する／取り消す（契約と請求そのものはアプリ外） */
