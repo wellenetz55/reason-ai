@@ -37,16 +37,28 @@ export async function chooseKickoff(formData: FormData) {
   revalidatePath("/");
 }
 
-/** 顧客が診断結果ページを開いた記録。初回だけベレネッツに通知する */
+/** 顧客が診断結果ページを開いた記録。開くたびにベレネッツに通知する（10分以内の連続表示は1回と数える） */
 export async function recordDiagnosisView() {
   const { company, user, profile } = await requireCustomer();
   const admin = createAdminClient();
-  const { data: d } = await admin.from("diagnosis_results").select("first_viewed_at, view_count, published_at").eq("company_id", company.id).maybeSingle();
+  const { data: d } = await admin.from("diagnosis_results").select("first_viewed_at, last_viewed_at, view_count, published_at").eq("company_id", company.id).maybeSingle();
   if (!d || !d.published_at) return;
-  const now = new Date().toISOString();
-  await admin.from("diagnosis_results").update({ first_viewed_at: d.first_viewed_at ?? now, last_viewed_at: now, view_count: (d.view_count ?? 0) + 1 }).eq("company_id", company.id);
-  if (!d.first_viewed_at) {
-    await admin.from("alerts").insert({ company_id: company.id, kind: "escalation", payload: { type: "diagnosis_viewed", by: user.id } });
-    await notifyOperators({ subject: `${company.name} が適合診断の結果を開きました`, lines: [`${company.name} の ${profile.display_name ?? "担当者"} さんが、適合診断の結果ページを初めて開きました。`, "申込ボタンが押されると、別途お知らせします。"], path: `/admin/${company.id}` });
+  const now = new Date();
+  const last = d.last_viewed_at ? new Date(d.last_viewed_at) : null;
+  if (last && now.getTime() - last.getTime() < 10 * 60 * 1000) {
+    await admin.from("diagnosis_results").update({ last_viewed_at: now.toISOString() }).eq("company_id", company.id);
+    return;
   }
+  const count = (d.view_count ?? 0) + 1;
+  await admin.from("diagnosis_results").update({ first_viewed_at: d.first_viewed_at ?? now.toISOString(), last_viewed_at: now.toISOString(), view_count: count }).eq("company_id", company.id);
+  if (!d.first_viewed_at) await admin.from("alerts").insert({ company_id: company.id, kind: "escalation", payload: { type: "diagnosis_viewed", by: user.id } });
+  const who = profile.display_name ?? "担当者";
+  await notifyOperators({
+    subject: count === 1 ? `${company.name} が適合診断の結果を開きました` : `${company.name} が適合診断の結果を再び開きました（${count}回目）`,
+    lines: [
+      count === 1 ? `${company.name} の ${who} さんが、適合診断の結果ページを初めて開きました。` : `${company.name} の ${who} さんが、適合診断の結果ページをもう一度開きました（${count}回目${d.first_viewed_at ? `、初回は ${fmtMeeting(d.first_viewed_at)}` : ""}）。`,
+      count >= 3 ? "何度も読み返しています。迷っている点があるかもしれません。ひと声かける頃合いです。" : "申込ボタンが押されると、別途お知らせします。",
+    ],
+    path: `/admin/${company.id}`,
+  });
 }
