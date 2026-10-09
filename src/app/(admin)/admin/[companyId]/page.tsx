@@ -7,7 +7,9 @@ import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
 export default async function CompanyAdmin({ params, searchParams }: PageProps<"/admin/[companyId]">) {
   const { companyId } = await params;
   const sp = await searchParams;
-  const issuedLink = typeof sp?.link === "string" ? sp.link : null;
+  const { cookies } = await import("next/headers");
+  const jar = await cookies();
+  const issuedLink = sp?.link === "1" ? (jar.get("issued_link")?.value ?? null) : null;
   const linkError = typeof sp?.link_error === "string" ? sp.link_error : null;
   const { supabase } = await requireOperator();
   const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }, { data: meetings }, { data: errs }] = await Promise.all([

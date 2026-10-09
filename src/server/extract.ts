@@ -14,15 +14,44 @@ function htmlToText(html: string) {
     .replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n").trim();
 }
 
+const MAX_FETCH_BYTES = 8 * 1024 * 1024;
+
+/** 社内ネットワーク・メタデータ等に向くURLを拒否する（SSRF対策） */
+async function isPublicHttpUrl(url: string): Promise<boolean> {
+  let u: URL;
+  try { u = new URL(url); } catch { return false; }
+  if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+  const host = u.hostname.toLowerCase();
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) return false;
+  const { lookup } = await import("node:dns/promises");
+  let addrs: { address: string; family: number }[];
+  try { addrs = await lookup(host, { all: true }); } catch { return false; }
+  const priv = (ip: string, fam: number) => {
+    if (fam === 6) {
+      const x = ip.toLowerCase();
+      return x === "::1" || x === "::" || x.startsWith("fc") || x.startsWith("fd") || x.startsWith("fe80") || x.startsWith("::ffff:");
+    }
+    const [a, b] = ip.split(".").map(Number);
+    return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
+  };
+  return addrs.length > 0 && addrs.every((x) => !priv(x.address, x.family));
+}
+
 async function fetchUrlText(url: string) {
+  if (!(await isPublicHttpUrl(url))) return "";
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 15_000);
   try {
-    const res = await fetch(url, { signal: ctrl.signal, headers: { "user-agent": "Mozilla/5.0 (compatible; reason-ai/1.0)" } });
+    const res = await fetch(url, { signal: ctrl.signal, redirect: "follow", headers: { "user-agent": "Mozilla/5.0 (compatible; reason-ai/1.0)" } });
     if (!res.ok) return "";
+    if (!(await isPublicHttpUrl(res.url || url))) return "";
+    const len = Number(res.headers.get("content-length") ?? 0);
+    if (len > MAX_FETCH_BYTES) return "";
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > MAX_FETCH_BYTES) return "";
     const ct = res.headers.get("content-type") ?? "";
-    if (ct.includes("pdf")) return (await pdfText(Buffer.from(await res.arrayBuffer()))).text;
-    return htmlToText(await res.text());
+    if (ct.includes("pdf")) return (await pdfText(buf)).text;
+    return htmlToText(buf.toString("utf8"));
   } catch {
     return "";
   } finally {

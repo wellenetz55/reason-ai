@@ -113,5 +113,8 @@ export async function issueSignInLink(formData: FormData) {
   const hashed = data?.properties?.hashed_token;
   if (error || !hashed) redirect(`/admin/${companyId}?link_error=${encodeURIComponent(error?.message ?? "発行できませんでした")}`);
   const url = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?token_hash=${encodeURIComponent(hashed!)}&type=magiclink`;
-  redirect(`/admin/${companyId}?link=${encodeURIComponent(url)}`);
+  // トークンをURLに載せない（履歴・ログに残るため）。1回だけ読める短命クッキーで渡す
+  const { cookies } = await import("next/headers");
+  (await cookies()).set("issued_link", url, { httpOnly: true, secure: true, sameSite: "lax", path: `/admin/${companyId}`, maxAge: 120 });
+  redirect(`/admin/${companyId}?link=1`);
 }
