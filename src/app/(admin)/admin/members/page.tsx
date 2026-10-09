@@ -42,7 +42,7 @@ export default async function MembersPage() {
         <label className="flex-1 min-w-[240px]"><span className="text-xs text-ink-2">メールアドレス</span><input name="email" type="email" required className="block w-full border-b hairline py-2 text-sm num" /></label>
         <button className="btn-primary" type="submit">招待する</button>
       </form>
-      <p className="text-xs text-ink-3 mt-2">招待メールの送信元は noreply@mail.app.supabase.io です。届かない場合は迷惑メールフォルダを確認してもらってください。</p>
+      <p className="text-xs text-ink-3 mt-2">招待メールの送信元は noreply@reason-ai.wellenetz.co.jp です。届かない場合は迷惑メールフォルダを確認してもらってください。</p>
     </div>
   );
 }
