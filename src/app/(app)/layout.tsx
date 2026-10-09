@@ -45,7 +45,18 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <p className="text-[13px] text-ink mt-0.5">{STATUS_LABEL[company.status] ?? company.status}</p>
         </div>
         {company.status === "diagnosed" ? (
-          <nav className="mt-6"><Link href="/diagnosis" className="block text-[14px] py-[7px] pl-3 -ml-3 border-l-2 border-navy">適合診断の結果</Link></nav>
+          <nav className="mt-6">
+            <Link href="/diagnosis" className="block text-[14px] py-[7px] pl-3 -ml-3 border-l-2 border-navy">適合診断の結果</Link>
+            <p className="mt-5 text-[11px] font-semibold tracking-wide text-ink-3">契約後に開く8週間のステップ</p>
+            <ol className="mt-1 opacity-60">
+              {STAGES.map((s) => (
+                <li key={s.key} className="flex items-center gap-2.5 py-[6px] pl-3 -ml-3 text-ink-3" title="契約後に開きます">
+                  <span className="num inline-block shrink-0 w-[60px] text-center rounded-full py-[3px] text-[9px] font-semibold tracking-[0.1em] leading-none border border-dashed border-ink-3">{s.step}</span>
+                  <span className="text-[13px] leading-tight">{s.label}</span>
+                </li>
+              ))}
+            </ol>
+          </nav>
         ) : (
           <NavRail stages={stages} />
         )}
