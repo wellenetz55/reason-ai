@@ -33,3 +33,7 @@ create policy cu_log_sel on activity_log for select using (company_id = current_
 revoke execute on function current_company_id() from anon;
 revoke execute on function is_operator() from anon;
 alter function set_updated_at() set search_path = public;
+
+-- 4'. 列単位 REVOKE はテーブル権限が残っていると効かないので、テーブル権限を外して列を列挙して付け直す
+revoke select on deployments from authenticated;
+grant select (id, company_id, touchpoint, awareness_level, primary_row_id, content_json, status, review_notes, created_by, created_at) on deployments to authenticated;
