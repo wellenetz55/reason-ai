@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { requireCustomer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyOperators } from "@/server/notify";
 
 export async function sendErrorReport(formData: FormData) {
   const { company, user, supabase } = await requireCustomer();
@@ -23,5 +24,6 @@ export async function sendErrorReport(formData: FormData) {
     body: body.slice(0, 5000),
     screenshot_path,
   });
+  await notifyOperators({ subject: `${company.name} からエラーレポート`, lines: [`${company.name} の担当者からエラーレポートが届きました。`, body.length > 300 ? body.slice(0, 300) + "…" : body, screenshot_path ? "スクリーンショットあり" : ""].filter(Boolean), path: `/admin/${company.id}` });
   revalidatePath("/report");
 }
