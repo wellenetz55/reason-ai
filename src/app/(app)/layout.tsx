@@ -89,12 +89,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           ) : (
             <p><Link href="/homework" className="hover:text-ink">宿題 <span className="num">0</span></Link></p>
           )}
-          <p>
-            <Link href="/report" className="inline-flex items-center gap-1.5 hover:text-ink"><Bug size={14} strokeWidth={1.75} aria-hidden className="text-ink-3" />エラーレポート</Link>
-          </p>
           <div className="pt-2"><SignOutButton /></div>
           <OperatedBy className="pt-4" />
-          <p className="num text-[11px] text-ink-3">{APP_VERSION}</p>
+          <div className="pt-3 flex items-center justify-between gap-3">
+            <Link href="/report" className="inline-flex items-center gap-1.5 rounded-full border hairline px-3 py-1 text-[11px] text-ink-2 hover:text-ink hover:bg-paper-2">
+              <Bug size={12} strokeWidth={1.75} aria-hidden className="text-ink-3" />エラーレポート
+            </Link>
+            <p className="num text-[11px] text-ink-3">{APP_VERSION}</p>
+          </div>
         </div>
       </aside>
       <main className="flex-1 min-w-0 px-10 py-10">
