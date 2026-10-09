@@ -26,6 +26,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   ]);
 
   const openHomework = openHw?.length ?? 0;
+  // 契約前（適合診断済み）はキックオフ以外の面談を見せない。枠は残して「——」
+  const shownMeeting = company.status === "diagnosed" ? (nextMeeting?.kind === "kickoff" ? nextMeeting : null) : nextMeeting;
   const overdue = (openHw ?? []).filter((h) => h.due_at && new Date(h.due_at) < new Date()).length;
   const nearest = (openHw ?? []).find((h) => h.due_at);
   const nowKey = currentStep(company.status, progress?.pair_count ?? 0).key;
@@ -49,17 +51,22 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         )}
         <Link href="/ask" className="btn-primary mt-8 block text-center">ベレネッツに質問を残す</Link>
         <div className="mt-auto pt-8 text-[13px] text-ink-2 space-y-2">
-          {nextMeeting && (
+          {shownMeeting ? (
             <div className="rounded-[var(--radius)] bg-warm-soft px-4 py-3 -mx-1">
-              <p className="text-[11px] font-semibold tracking-wide text-warm">次の面談 · {MEETING_LABEL[nextMeeting.kind] ?? nextMeeting.kind}</p>
-              <p className="num text-[17px] font-semibold text-ink mt-1 leading-tight">{fmtMeeting(nextMeeting.scheduled_at)}</p>
-              {nextMeeting.meeting_url ? (
-                <a href={nextMeeting.meeting_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[13px] font-medium text-warm underline underline-offset-4 hover:opacity-80">
+              <p className="text-[11px] font-semibold tracking-wide text-warm">次の面談 · {MEETING_LABEL[shownMeeting.kind] ?? shownMeeting.kind}</p>
+              <p className="num text-[17px] font-semibold text-ink mt-1 leading-tight">{fmtMeeting(shownMeeting.scheduled_at)}</p>
+              {shownMeeting.meeting_url ? (
+                <a href={shownMeeting.meeting_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[13px] font-medium text-warm underline underline-offset-4 hover:opacity-80">
                   会議に参加する ↗
                 </a>
               ) : (
                 <p className="text-[12px] text-ink-3 mt-2">会議URL未設定</p>
               )}
+            </div>
+          ) : (
+            <div className="rounded-[var(--radius)] bg-warm-soft px-4 py-3 -mx-1">
+              <p className="text-[11px] font-semibold tracking-wide text-warm">次の面談</p>
+              <p className="num text-[17px] font-semibold text-ink-3 mt-1 leading-tight">——</p>
             </div>
           )}
           {openHomework > 0 ? (
