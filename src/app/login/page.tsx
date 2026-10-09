@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { APP_VERSION } from "@/lib/version";
 export const instant = false;
 import { sendMagicLink } from "./actions";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
@@ -38,6 +39,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           </form>
         )}
         <OperatedBy className="mt-16" />
+        <p className="num text-[11px] text-ink-3 mt-2">{APP_VERSION}</p>
       </div>
     </main>
   );
