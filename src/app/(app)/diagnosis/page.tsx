@@ -215,9 +215,15 @@ export default async function DiagnosisPage() {
             <p className="text-sm">入金を確認しました。キックオフの候補日は、ベレネッツからご連絡します。</p>
           )}
         </div>
-        <p className="text-[13px] text-ink-2 mt-6 max-w-[56ch] leading-relaxed">
-          費用は8週間で70万円（前払い・税別）。2週目の終わりの面談までに「違う」と感じられた場合は半額を返金します。
-        </p>
+        <div className="mt-6 flex items-start gap-4 max-w-[60ch]">
+          <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full border-2 border-warm bg-warm-soft text-warm text-[12px] font-bold px-3 py-1.5 whitespace-nowrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z" /><path d="M9 12l2 2 4-4" /></svg>
+            半額返金保証
+          </span>
+          <p className="text-[13px] text-ink-2 leading-relaxed">
+            費用は8週間で70万円（前払い・税別）。2週目の終わりの面談までに「違う」と感じられた場合は、半額を返金します。それ以降の返金はありません。
+          </p>
+        </div>
       </section>
     </article>
   );
