@@ -10,7 +10,7 @@ type Fit = { condition: string; quote: string };
 
 const WEEKS = [
   { w: "第0週", t: "最初の驚き", b: "キックオフ（3時間）。AIが御社の資料とWebを読み、「御社はこういう会社です」を下書きします。「そんなことまで拾うのか」が最初の発見です。" },
-  { w: "第1〜2週", t: "30組が見えてくる", b: "毎日ちがう角度の問いに答えるだけで、提供価値・体験価値が組になって増えます。社内で当たり前すぎて誰も言わなかったことが、言葉になります。2週目の終わりに、ベレネッツとの面談で確認します。" },
+  { w: "第1〜2週", t: "組が増えていく", b: "毎日ちがう角度の問いに答えるだけで、提供価値・体験価値が組になって増えます。社内で当たり前すぎて誰も言わなかったことが、言葉になります。2週目の終わりに、ベレネッツとの面談で確認します。" },
   { w: "第3〜5週", t: "選ばれない理由が消える", b: "お客様が買う直前に迷う理由を書き出し、先回りの答えを用意します。「なぜなら」がつき、言葉が浮つかなくなります。途中の中間チェックと、5週目の終わりの面談で確認します。" },
   { w: "第6〜8週", t: "使える形になる", b: "お客様の声・数字・事実で裏づけ、営業トーク・価格説明・Web・採用の文章に展開。最後の面談で、冒頭の一言をもう一度答えていただきます。" },
 ];
@@ -60,7 +60,7 @@ export default async function DiagnosisPage() {
           <p className="serif text-[30px] leading-none mt-1"><span className="num">{brakes.length}</span><span className="text-[14px] ml-1">つ</span></p>
         </div>
         <div className="rounded-[var(--radius)] bg-navy text-white px-5 py-4">
-          <p className="text-[11px] text-white/70">8週間後にそろう言葉</p>
+          <p className="text-[11px] text-white/70">8週間での目標</p>
           <p className="serif text-[30px] leading-none mt-1"><span className="num">30</span><span className="text-[14px] ml-1">組</span></p>
         </div>
       </div>
@@ -105,7 +105,7 @@ export default async function DiagnosisPage() {
                 <span key={i} className={`h-[18px] rounded-[3px] ${i < seeds.length ? "bg-navy" : "border border-dashed border-ink-3"}`} />
               ))}
             </div>
-            <p className="text-sm mt-3 max-w-[56ch]"><span className="font-semibold">残り{30 - seeds.length}組は、御社の中にあります。</span>毎日ちがう角度の問いに答えるうちに、「言われてみれば、それもそうだ」が積み上がって30組になります。面談では、その入口が見えただけです。</p>
+            <p className="text-sm mt-3 max-w-[56ch]"><span className="font-semibold">残りは、御社の中にあります。</span>毎日ちがう角度の問いに答えるうちに、「言われてみれば、それもそうだ」が積み上がっていきます。目標は30組。面談では、その入口が見えただけです。</p>
           </div>
         </section>
       )}
