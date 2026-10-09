@@ -20,6 +20,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
     supabase.from("company_meetings").select("id, kind, scheduled_at, held_at, meeting_url").eq("company_id", companyId).order("scheduled_at"),
     supabase.from("error_reports").select("id, body, page, user_agent, screenshot_path, created_at, resolved_at, resolved_note").eq("company_id", companyId).order("created_at", { ascending: false }),
   ]);
+  const { data: diag } = await supabase.from("diagnosis_results").select("published_at, first_viewed_at, last_viewed_at, view_count").eq("company_id", companyId).maybeSingle();
   if (!c) return null;
   // 開いたら既読にする（未返信は返事するまで残る）
   await Promise.all([
@@ -62,6 +63,12 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">申込・契約・入金（契約書と請求書はメールで）</h2>
         <p className="text-xs text-ink-3 mt-1">お客様が診断結果ページで「申し込む」を押すと申込が入ります。契約書を取り交わしたら「契約済」、入金を確認したら「入金済」を押してください。入金済にすると、お客様がキックオフ日を選べるようになります。候補日は「適合診断の結果を書く」で設定します。</p>
+        {diag?.published_at && (
+          <p className="text-xs mt-2">
+            診断結果：{fmtMeeting(diag.published_at)} 公開 ·{" "}
+            {diag.first_viewed_at ? <>お客様が {fmtMeeting(diag.first_viewed_at)} に初めて開きました（閲覧 <span className="num">{diag.view_count}</span> 回、最終 {fmtMeeting(diag.last_viewed_at!)}）</> : <span className="text-warm">まだ開かれていません</span>}
+          </p>
+        )}
         <div className="mt-3 flex flex-wrap gap-6 text-sm">
           {([["applied", "申込", c.applied_at], ["contracted", "契約済", c.contracted_at], ["paid", "入金済", c.paid_at]] as const).map(([step, label, at]) => (
             <form key={step} action={setContractStep} className="flex items-center gap-2">

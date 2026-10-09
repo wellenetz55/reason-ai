@@ -29,7 +29,7 @@ export default async function AdminHome() {
   const alBy: Record<string, string[]> = {};
   for (const a of alerts ?? []) {
     const p = (a.payload ?? {}) as { type?: string; date?: string };
-    const label = p.type === "kickoff_chosen" && p.date ? `キックオフ日が選ばれました ${fmtD(p.date)}` : p.type === "program_applied" ? "申込がありました（契約書・請求書を送付）" : ALERT[a.kind] ?? a.kind;
+    const label = p.type === "kickoff_chosen" && p.date ? `キックオフ日が選ばれました ${fmtD(p.date)}` : p.type === "program_applied" ? "申込がありました（契約書・請求書を送付）" : p.type === "diagnosis_viewed" ? "診断結果を開きました" : ALERT[a.kind] ?? a.kind;
     (alBy[a.company_id] ??= []).push(label);
   }
 

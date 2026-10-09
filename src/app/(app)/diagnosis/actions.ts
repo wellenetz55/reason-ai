@@ -36,3 +36,17 @@ export async function chooseKickoff(formData: FormData) {
   revalidatePath("/diagnosis");
   revalidatePath("/");
 }
+
+/** 顧客が診断結果ページを開いた記録。初回だけベレネッツに通知する */
+export async function recordDiagnosisView() {
+  const { company, user, profile } = await requireCustomer();
+  const admin = createAdminClient();
+  const { data: d } = await admin.from("diagnosis_results").select("first_viewed_at, view_count, published_at").eq("company_id", company.id).maybeSingle();
+  if (!d || !d.published_at) return;
+  const now = new Date().toISOString();
+  await admin.from("diagnosis_results").update({ first_viewed_at: d.first_viewed_at ?? now, last_viewed_at: now, view_count: (d.view_count ?? 0) + 1 }).eq("company_id", company.id);
+  if (!d.first_viewed_at) {
+    await admin.from("alerts").insert({ company_id: company.id, kind: "escalation", payload: { type: "diagnosis_viewed", by: user.id } });
+    await notifyOperators({ subject: `${company.name} が適合診断の結果を開きました`, lines: [`${company.name} の ${profile.display_name ?? "担当者"} さんが、適合診断の結果ページを初めて開きました。`, "申込ボタンが押されると、別途お知らせします。"], path: `/admin/${company.id}` });
+  }
+}

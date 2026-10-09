@@ -1,7 +1,7 @@
 import { requireCustomer } from "@/lib/session";
 import { BRAKE_LABEL, TAG_LABEL } from "@/lib/diagnosis";
 import { fmtMeeting } from "@/lib/meetings";
-import { chooseKickoff, applyProgram } from "./actions";
+import { chooseKickoff, applyProgram, recordDiagnosisView } from "./actions";
 import { PrintButton } from "@/components/PrintButton";
 
 type Seed = { feature: string; experience: string; tag: string };
@@ -26,6 +26,7 @@ export default async function DiagnosisPage() {
       </div>
     );
   }
+  await recordDiagnosisView();
   const seeds = (d.seeds ?? []) as Seed[];
   const brakes = (d.brakes ?? []) as Brake[];
   const fit = (d.fit_reasons ?? []) as Fit[];
