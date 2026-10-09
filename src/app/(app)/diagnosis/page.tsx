@@ -41,8 +41,8 @@ export default async function DiagnosisPage() {
 
   return (
     <article className="max-w-[760px]">
-      <p className="text-[12px] text-ink-3 tracking-wide">適合診断の結果</p>
-      <h1 className="serif text-[30px] leading-tight mt-1"><span className="text-warm mr-1">◎</span>{company.name}様は、<span className="text-warm">「選ばれる理由」をつくれる会社</span>です。</h1>
+      <p className="inline-block rounded-full bg-navy text-white text-[13px] font-semibold tracking-wide px-4 py-1.5">適合診断の結果</p>
+      <h1 className="serif text-[30px] leading-tight mt-4"><span className="text-warm mr-1">◎</span>{company.name}様は、<span className="text-warm">「選ばれる理由」をつくれる会社</span>です。</h1>
       <div className="mt-3 flex items-center gap-4 text-[12px] text-ink-3">
         {d.published_at && <span className="num">{fmtMeeting(d.published_at)} 公開</span>}
         {d.expires_at && <span>このページは <span className="num">{fmtMeeting(d.expires_at)}</span> まで</span>}
