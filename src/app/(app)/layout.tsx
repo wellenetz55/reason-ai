@@ -110,6 +110,20 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </div>
         </div>
         <div className="max-w-[960px]">{children}</div>
+        <footer className="print:hidden max-w-[960px] mt-20 pt-5 border-t hairline flex items-end justify-between gap-6 text-[12px] text-ink-3">
+          <div className="space-y-1">
+            <p className="text-ink-2">選ばれる理由AI <span className="mx-1.5">·</span> 運営 株式会社ベレネッツ</p>
+            <a href="https://www.wellenetz.co.jp/" target="_blank" rel="noopener noreferrer" className="hover:text-ink">www.wellenetz.co.jp</a>
+          </div>
+          <div className="text-right space-y-1">
+            <p>
+              <Link href="/ask" className="hover:text-ink">ベレネッツに質問を残す</Link>
+              <span className="mx-2">／</span>
+              <Link href="/report" className="hover:text-ink">エラーレポート</Link>
+            </p>
+            <p className="num text-[11px]">{APP_VERSION}</p>
+          </div>
+        </footer>
       </main>
     </div>
   );
