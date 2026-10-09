@@ -118,7 +118,10 @@ textarea:focus-visible, input:focus-visible { box-shadow: 0 1px 0 0 var(--navy);
 }
 
 @media print {
+  @page { margin: 16mm 14mm 18mm; }
   body { background: #fff; color: #000; }
   main { padding: 0 !important; }
   a { text-decoration: none; color: inherit; }
+  /* 各ページ下に小さく運営表記 */
+  main::after { content: "選ばれる理由AI · 株式会社ベレネッツ · www.wellenetz.co.jp"; display: block; margin-top: 24px; padding-top: 8px; border-top: 1px solid #e6e6e3; font-size: 10px; color: #777; }
 }

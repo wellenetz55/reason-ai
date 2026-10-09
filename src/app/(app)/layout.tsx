@@ -98,6 +98,15 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </aside>
       <main className="flex-1 min-w-0 px-10 py-10">
+        {/* 印刷時だけ出るヘッダ（ロゴ・運営・会社名・日付）。画面では非表示 */}
+        <div className="hidden print:flex items-center justify-between pb-4 mb-8 border-b hairline">
+          <ReasonLogo width={180} />
+          <div className="text-right text-[11px] text-ink-3">
+            <p>{company.name} 様</p>
+            <p className="num">{new Date().toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "long", day: "numeric" })}</p>
+            <p>運営 株式会社ベレネッツ · www.wellenetz.co.jp</p>
+          </div>
+        </div>
         <div className="max-w-[960px]">{children}</div>
       </main>
     </div>
