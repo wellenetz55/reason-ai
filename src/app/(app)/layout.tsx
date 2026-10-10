@@ -44,6 +44,20 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <p className="text-[11px] font-semibold text-navy tracking-wide">現在のフェーズ</p>
           <p className="text-[13px] text-ink mt-0.5">{STATUS_LABEL[company.status] ?? company.status}</p>
         </div>
+        {/* 宿題：フェーズのすぐ下。未回答があれば暖色で目立たせる（契約前は出さない） */}
+        {company.status !== "diagnosed" && (openHomework > 0 ? (
+          <Link href="/homework" className={`mt-3 block rounded-[var(--radius)] border-2 px-3.5 py-3 hover:brightness-[0.98] ${overdue > 0 ? "border-warm bg-warm text-white" : "border-warm bg-warm-soft"}`}>
+            <p className={`flex items-center gap-2 text-[12px] font-bold tracking-wide ${overdue > 0 ? "text-white" : "text-warm"}`}>
+              {overdue === 0 && <span className="now-dot" aria-hidden />}
+              {overdue > 0 ? `宿題の期限が過ぎています（${overdue}件）` : "宿題があります"}
+            </p>
+            <p className={`mt-1 ${overdue > 0 ? "text-white" : "text-ink"}`}><span className="num text-[24px] font-bold leading-none">{openHomework}</span><span className="text-[12px] ml-1">件 未回答 · 次の面談までに</span></p>
+            {nearest?.due_at && <p className={`text-[12px] mt-1 truncate ${overdue > 0 ? "text-white/85" : "text-ink-2"}`}>期限 <span className="num">{new Date(nearest.due_at).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" })}</span>：{nearest.title}</p>}
+            <p className={`mt-2 text-[13px] font-semibold ${overdue > 0 ? "text-white" : "text-warm"}`}>回答する →</p>
+          </Link>
+        ) : (
+          <Link href="/homework" className="mt-3 block rounded-[var(--radius)] border hairline px-3.5 py-2 text-[12px] text-ink-3 hover:text-ink">宿題 · すべて回答済み ✓</Link>
+        ))}
         {company.status === "diagnosed" ? (
           <nav className="mt-6">
             <Link href="/diagnosis" className="block text-[14px] py-[7px] pl-3 -ml-3 border-l-2 border-navy">適合診断の結果</Link>
@@ -79,15 +93,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
               <p className="text-[11px] font-semibold tracking-wide text-warm">次の面談</p>
               <p className="num text-[17px] font-semibold text-ink-3 mt-1 leading-tight">——</p>
             </div>
-          )}
-          {openHomework > 0 ? (
-            <Link href="/homework" className="block rounded-[var(--radius)] bg-navy-soft px-4 py-3 -mx-1 hover:brightness-[0.98]">
-              <p className="text-[11px] font-semibold tracking-wide text-navy">宿題 · 次の面談までに</p>
-              <p className="mt-1 text-ink"><span className="num text-[20px] font-semibold">{openHomework}</span><span className="text-[12px] ml-1">件 未回答</span>{overdue > 0 && <span className="text-warm text-[12px] ml-2">期限超過 {overdue}</span>}</p>
-              {nearest?.due_at && <p className="text-[12px] text-ink-2 mt-1 truncate">近い期限 <span className="num">{new Date(nearest.due_at).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" })}</span>：{nearest.title}</p>}
-            </Link>
-          ) : (
-            <p><Link href="/homework" className="hover:text-ink">宿題 <span className="num">0</span></Link></p>
           )}
           <div className="pt-2"><SignOutButton /></div>
           <OperatedBy className="pt-4" />
