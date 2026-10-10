@@ -201,6 +201,7 @@ export default async function DiagnosisPage() {
         </section>
       )}
 
+      {company.status === "diagnosed" && (<>
       <section className="mt-14 grid grid-cols-2 gap-4">
         <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
           <p className="text-[11px] text-ink-3">自力でやる場合</p>
@@ -272,6 +273,12 @@ export default async function DiagnosisPage() {
           </p>
         </div>
       </section>
+      </>)}
+      {company.status !== "diagnosed" && (
+        <p className="mt-16 border-t hairline pt-6 text-sm text-ink-2 max-w-[60ch] print:hidden">
+          これは契約前の初回ヒアリングでの診断結果です。ここで見つかった芽とブレーキは、8週間のステップの出発点になります。最後の面談で、「御社を一言で言うと？」にもう一度答えていただきます。
+        </p>
+      )}
     </article>
   );
 }

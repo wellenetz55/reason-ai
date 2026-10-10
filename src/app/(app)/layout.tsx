@@ -12,7 +12,7 @@ import { MEETING_LABEL, fmtMeeting } from "@/lib/meetings";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const { company, profile, supabase } = await requireCustomer();
-  const [{ data: openHw }, { data: nextMeeting }, { data: progress }] = await Promise.all([
+  const [{ data: openHw }, { data: nextMeeting }, { data: progress }, { data: diag }] = await Promise.all([
     supabase.from("homeworks").select("id, title, due_at").eq("company_id", company.id).eq("status", "open").order("due_at"),
     supabase
       .from("company_meetings")
@@ -23,6 +23,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       .limit(1)
       .maybeSingle(),
     supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle(),
+    supabase.from("diagnosis_results").select("company_id").eq("company_id", company.id).maybeSingle(),
   ]);
 
   const openHomework = openHw?.length ?? 0;
@@ -72,7 +73,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             </ol>
           </nav>
         ) : (
-          <NavRail stages={stages} />
+          <>
+            <NavRail stages={stages} />
+            {diag && (
+              <Link href="/diagnosis" className="mt-4 block text-[12px] text-ink-2 hover:text-ink border-t hairline pt-3">
+                適合診断の結果<span className="text-ink-3">（初回ヒアリング）</span> →
+              </Link>
+            )}
+          </>
         )}
         <Link href="/ask" className="btn-primary mt-8 block text-center">ベレネッツに質問を残す</Link>
         <div className="mt-auto pt-8 text-[13px] text-ink-2 space-y-2">
