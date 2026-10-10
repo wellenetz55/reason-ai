@@ -135,7 +135,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">サインインリンクを発行</h2>
-        <p className="text-xs text-ink-3 mt-1">メールが届かない担当者に、ベレネッツから直接リンクを渡すためのものです。リンクは1回限り・1時間有効。チャットやメールで本人にだけ送ってください。</p>
+        <p className="text-xs text-ink-3 mt-1">メールが届かない担当者に、ベレネッツから直接リンクを渡すためのものです。リンクは1回限り・5分有効（Supabaseの設定に連動）。チャットやメールで本人にだけ送ってください。</p>
         <form action={issueSignInLink} className="mt-2 flex gap-3 items-center">
           <input type="hidden" name="company_id" value={c.id} />
           <input type="email" name="email" required placeholder="担当者のメールアドレス" className="border-b hairline py-1 text-sm num w-80" />

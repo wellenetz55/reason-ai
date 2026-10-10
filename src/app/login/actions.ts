@@ -20,7 +20,7 @@ export async function sendMagicLink(formData: FormData) {
         : `送信できませんでした（${error.message}）。しばらくしてからもう一度お試しください。`;
     redirect(`/login?error=${encodeURIComponent(msg)}`);
   }
-  redirect("/login?sent=1");
+  redirect(`/login?sent=1&t=${Date.now()}`);
 }
 
 export async function signOut() {
