@@ -8,6 +8,10 @@ export type Profile = {
   role: "customer_admin" | "customer_member" | "operator";
   display_name: string | null;
   title: string | null;
+  /** ベレネッツ側のスーパー管理者（migration 0017） */
+  is_super_admin?: boolean;
+  /** 削除したメンバー（migration 0017） */
+  disabled_at?: string | null;
 };
 
 export type Company = {
@@ -37,6 +41,10 @@ export async function requireUser() {
   if (!user) redirect("/login");
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
   if (!profile) redirect("/login?error=" + encodeURIComponent("アカウント設定が完了していません。ベレネッツにお問い合わせください。"));
+  if (profile.disabled_at) {
+    await supabase.auth.signOut();
+    redirect("/login?error=" + encodeURIComponent("このアカウントは使えなくなっています。"));
+  }
   return { supabase, user, profile: profile as Profile };
 }
 
@@ -56,5 +64,12 @@ export async function requireCustomer() {
 export async function requireOperator() {
   const ctx = await requireUser();
   if (ctx.profile.role !== "operator") redirect("/");
+  return { ...ctx, isSuper: !!ctx.profile.is_super_admin };
+}
+
+/** スーパー管理者だけが使える操作（メンバーの追加・削除・権限変更） */
+export async function requireSuperAdmin() {
+  const ctx = await requireOperator();
+  if (!ctx.isSuper) redirect("/admin/members?error=" + encodeURIComponent("この操作はスーパー管理者だけができます"));
   return ctx;
 }

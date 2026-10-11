@@ -6,8 +6,8 @@ const FROM = "選ばれる理由AI（ベレネッツ） <noreply@reason-ai.welle
 /** オペレータ全員のメールアドレス */
 async function operatorEmails(): Promise<string[]> {
   const admin = createAdminClient();
-  const { data: ops } = await admin.from("profiles").select("id").eq("role", "operator");
-  const ids = new Set((ops ?? []).map((p) => p.id));
+  const { data: ops } = await admin.from("profiles").select("*").eq("role", "operator");
+  const ids = new Set((ops ?? []).filter((p) => !p.disabled_at).map((p) => p.id));
   if (ids.size === 0) return [];
   const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
   return (list?.users ?? []).filter((u) => ids.has(u.id) && u.email).map((u) => u.email!);
