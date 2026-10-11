@@ -45,6 +45,67 @@ export default async function AdminHome() {
     if (hit) hit.count += 1; else list.push({ label, count: 1, at: a.created_at, urgent });
   }
 
+  // 状態ごとにまとめ、各まとまりの中は「返事待ち → 急ぎのアラート → 新しい順」に並べる（会社が増えても、先に見るべき会社が上に来る）
+  type Company = NonNullable<typeof companies>[number];
+  const GROUPS = [
+    { key: "active", label: "プログラム進行中", st: ["onboarding", "week1_2", "week3_5", "week6_8", "extended"] },
+    { key: "pre", label: "契約前（適合診断）", st: ["diagnosed"] },
+    { key: "after", label: "猶予期間・顧問", st: ["grace", "advisor"] },
+    { key: "ended", label: "終了（ダウンロードのみ・解約）", st: ["locked", "cancelled"] },
+  ] as const;
+  const isWaiting = (id: string) => (msg[id]?.unanswered ?? 0) + (msg[id]?.errOpen ?? 0) > 0;
+  const isUrgent = (id: string) => (alBy[id] ?? []).some((x) => x.urgent);
+  const rank = (c: Company) => (isWaiting(c.id) ? 0 : isUrgent(c.id) ? 1 : 2);
+  const grouped: Record<string, Company[]> = Object.fromEntries(GROUPS.map((g) => [g.key, [] as Company[]]));
+  for (const c of companies ?? []) (grouped[GROUPS.find((g) => (g.st as readonly string[]).includes(c.status))?.key ?? "active"]).push(c);
+  for (const k in grouped) grouped[k].sort((a, b) => rank(a) - rank(b));
+
+  const renderRow = (c: Company) => {
+            const lastAt = lastBy[c.id] ? new Date(lastBy[c.id]) : null;
+            const stale = lastAt ? (Date.now() - lastAt.getTime()) / 86400000 : null;
+            const waiting = (msg[c.id]?.unanswered ?? 0) + (msg[c.id]?.errOpen ?? 0) > 0;
+            return (
+              <tr key={c.id} className={`align-top ${stale !== null && stale >= 7 && ["onboarding", "week1_2", "week3_5", "week6_8", "extended"].includes(c.status) ? "bg-warm-soft" : ""}`}>
+                <td className={`py-3 pl-3 pr-4 min-w-[200px] border-l-4 ${waiting ? "border-warm" : "border-transparent"}`}>
+                  <Link href={`/admin/${c.id}`} className={`hover:underline ${waiting ? "font-semibold" : ""}`}>{c.name}</Link>
+                  {waiting && <span className="block text-[11px] text-warm font-semibold mt-0.5">返事待ち</span>}
+                </td>
+                <td className="pr-4 py-3 whitespace-nowrap">{STATUS_LABEL[c.status] ?? c.status}</td>
+                <td className="num pr-4 py-3 whitespace-nowrap">{lastAt ? `${Math.floor(stale!)}日前` : "—"}</td>
+                <td className="pr-4 py-3">
+                  {msg[c.id]?.unanswered ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      {msg[c.id].unread > 0 && <span className="attention-blink num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">未読 {msg[c.id].unread}</span>}
+                      <span className="num rounded-full border border-warm text-warm text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">未返信 {msg[c.id].unanswered}</span>
+                    </span>
+                  ) : <span className="text-ink-3">—</span>}
+                </td>
+                <td className="pr-4 py-3">
+                  {msg[c.id]?.errOpen ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      {msg[c.id].errUnread > 0 && <span className="attention-blink num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">未読 {msg[c.id].errUnread}</span>}
+                      <span className="num rounded-full border border-warm text-warm text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">未対応 {msg[c.id].errOpen}</span>
+                    </span>
+                  ) : <span className="text-ink-3">—</span>}
+                </td>
+                <td className="num pr-4 py-3">{hwBy[c.id] ?? 0}</td>
+                <td className="py-3 pr-3 text-xs min-w-[220px]">
+                  {(alBy[c.id] ?? []).length === 0 ? <span className="text-ink-3">—</span> : (
+                    <ul className="space-y-1">
+                      {alBy[c.id].map((x) => (
+                        <li key={x.label} className="flex items-baseline gap-2">
+                          <span className={`shrink-0 w-1.5 h-1.5 rounded-full translate-y-[-2px] ${x.urgent ? "bg-warm" : "bg-ink-3"}`} />
+                          <span className={x.urgent ? "text-ink font-medium" : "text-ink-2"}>{x.label}{x.count > 1 && <span className="num text-ink-3"> ×{x.count}</span>}</span>
+                          <span className="num text-ink-3 shrink-0">{fmtD(x.at)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </td>
+              </tr>
+            );
+          };
+
   return (
     <div>
       <h1 className="serif text-[28px] leading-tight">全社一覧</h1>
@@ -60,55 +121,18 @@ export default async function AdminHome() {
         <p className="mt-8 rounded-[var(--radius)] bg-paper-2 px-5 py-4 text-sm text-ink-2 max-w-[40em]">まだ会社がありません。いちばん下の「新しい会社」に会社名を入れて追加してください。</p>
       ) : (
       <div className="mt-8 overflow-x-auto">
-      <table className="w-full min-w-[880px] text-sm">
+      <table className="w-full min-w-[1000px] text-sm">
         <thead className="text-xs text-ink-3 text-left whitespace-nowrap">
-          <tr><th className="py-2 pl-4 font-normal">会社</th><th className="font-normal">状態</th><th className="font-normal">最終操作</th><th className="font-normal">質問</th><th className="font-normal">エラー</th><th className="font-normal">未回収宿題</th><th className="font-normal w-[34%]">アラート</th></tr>
+          <tr><th className="py-2 pl-4 pr-4 font-normal">会社</th><th className="pr-4 font-normal">状態</th><th className="pr-4 font-normal">最終操作</th><th className="pr-4 font-normal">質問</th><th className="pr-4 font-normal">エラー</th><th className="pr-4 font-normal">未回収宿題</th><th className="font-normal">アラート</th></tr>
         </thead>
         <tbody className="divide-y divide-hair">
-          {(companies ?? []).map((c) => {
-            const lastAt = lastBy[c.id] ? new Date(lastBy[c.id]) : null;
-            const stale = lastAt ? (Date.now() - lastAt.getTime()) / 86400000 : null;
-            const waiting = (msg[c.id]?.unanswered ?? 0) + (msg[c.id]?.errOpen ?? 0) > 0;
-            return (
-              <tr key={c.id} className={`align-top ${stale !== null && stale >= 7 && ["onboarding", "week1_2", "week3_5", "week6_8", "extended"].includes(c.status) ? "bg-warm-soft" : ""}`}>
-                <td className={`py-3 pl-3 border-l-4 ${waiting ? "border-warm" : "border-transparent"}`}>
-                  <Link href={`/admin/${c.id}`} className={`hover:underline ${waiting ? "font-semibold" : ""}`}>{c.name}</Link>
-                  {waiting && <span className="block text-[11px] text-warm font-semibold mt-0.5">返事待ち</span>}
-                </td>
-                <td>{STATUS_LABEL[c.status] ?? c.status}</td>
-                <td className="num">{lastAt ? `${Math.floor(stale!)}日前` : "—"}</td>
-                <td>
-                  {msg[c.id]?.unanswered ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      {msg[c.id].unread > 0 && <span className="attention-blink num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">未読 {msg[c.id].unread}</span>}
-                      <span className="num rounded-full border border-warm text-warm text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">未返信 {msg[c.id].unanswered}</span>
-                    </span>
-                  ) : <span className="text-ink-3">—</span>}
-                </td>
-                <td>
-                  {msg[c.id]?.errOpen ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      {msg[c.id].errUnread > 0 && <span className="attention-blink num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">未読 {msg[c.id].errUnread}</span>}
-                      <span className="num rounded-full border border-warm text-warm text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">未対応 {msg[c.id].errOpen}</span>
-                    </span>
-                  ) : <span className="text-ink-3">—</span>}
-                </td>
-                <td className="num">{hwBy[c.id] ?? 0}</td>
-                <td className="py-3 text-xs">
-                  {(alBy[c.id] ?? []).length === 0 ? <span className="text-ink-3">—</span> : (
-                    <ul className="space-y-1">
-                      {alBy[c.id].map((x) => (
-                        <li key={x.label} className="flex items-baseline gap-2">
-                          <span className={`shrink-0 w-1.5 h-1.5 rounded-full translate-y-[-2px] ${x.urgent ? "bg-warm" : "bg-ink-3"}`} />
-                          <span className={x.urgent ? "text-ink font-medium" : "text-ink-2"}>{x.label}{x.count > 1 && <span className="num text-ink-3"> ×{x.count}</span>}</span>
-                          <span className="num text-ink-3 shrink-0">{fmtD(x.at)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </td>
-              </tr>
-            );
+          {GROUPS.map((g) => {
+            const list = grouped[g.key];
+            if (!list.length) return null;
+            return [
+              <tr key={g.key} className="bg-paper-2"><th colSpan={7} className="py-2 pl-4 text-left text-xs font-semibold text-ink-2">{g.label}<span className="num font-normal text-ink-3 ml-2">{list.length}社</span></th></tr>,
+              ...list.map(renderRow),
+            ];
           })}
         </tbody>
       </table>

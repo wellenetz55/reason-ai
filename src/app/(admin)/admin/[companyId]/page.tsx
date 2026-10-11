@@ -340,20 +340,36 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
       </section>
 
       <section className="mt-10">
-        <h2 className="text-sm text-ink-2">提供価値（{(rows ?? []).length}行）</h2>
-        <ol className="mt-2 divide-y divide-hair text-sm">
-          {(rows ?? []).map((r) => (
-            <li key={r.id} className={`py-2 flex gap-3 ${r.status === "held" ? "text-ink-3" : ""}`}>
-              <span className="num w-6 text-ink-3 shrink-0">{r.seq}</span>
+        {(() => {
+          // 行が多い会社でもページが長くなりすぎないよう、最初の30行だけ出し、残りは開いて見る
+          const all = rows ?? [];
+          const live = all.filter((r) => r.status === "active" || r.status === "held").length;
+          const STATUS_NOTE: Record<string, string> = { held: " 保留", dropped: " 外した", separate: " 別扱い" };
+          const item = (r: (typeof all)[number]) => (
+            <li key={r.id} className={`py-2 flex gap-3 ${r.status !== "active" ? "text-ink-3" : ""}`}>
+              <span className="num w-8 text-ink-3 shrink-0">{r.seq}</span>
               <span className="flex-1 min-w-0">
-                <span className="serif block">{r.value_raw}</span>
+                <span className={`serif block ${r.status === "dropped" ? "line-through" : ""}`}>{r.value_raw}</span>
                 {(r.experience_value ?? r.experience_value_v1) && <span className="block text-ink-2"><span className="text-[11px] text-ink-3 mr-1">だから</span>{r.experience_value ?? r.experience_value_v1}</span>}
                 {r.because_phrase && <span className="block text-ink-2"><span className="text-[11px] text-ink-3 mr-1">なぜなら</span>{r.because_phrase}</span>}
               </span>
-              <span className="text-xs text-ink-3 shrink-0">{r.created_by === "ai" ? "AI下書き" : ""}{r.confirmed_at ? " 確定" : ""}{r.status === "held" ? " 保留" : ""}</span>
+              <span className="text-xs text-ink-3 shrink-0">{r.created_by === "ai" ? "AI下書き" : ""}{r.confirmed_at ? " 確定" : ""}{STATUS_NOTE[r.status] ?? ""}</span>
             </li>
-          ))}
-        </ol>
+          );
+          return (
+            <>
+              <h2 className="text-sm text-ink-2">提供価値（{live}行{all.length > live ? <span className="text-ink-3">・外した行など {all.length - live}</span> : null}）</h2>
+              {all.length === 0 && <p className="text-sm text-ink-3 mt-2">まだ行がありません。</p>}
+              <ol className="mt-2 divide-y divide-hair text-sm">{all.slice(0, 30).map(item)}</ol>
+              {all.length > 30 && (
+                <details className="mt-1">
+                  <summary className="cursor-pointer text-sm text-ink-2 py-2">残りの {all.length - 30} 行を表示</summary>
+                  <ol className="divide-y divide-hair text-sm">{all.slice(30).map(item)}</ol>
+                </details>
+              )}
+            </>
+          );
+        })()}
       </section>
 
 
