@@ -32,15 +32,15 @@ export default async function Page() {
 
   return (
     <div>
-      <header className="flex items-end justify-between gap-8">
+      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-8">
         <div>
           <h1 className="serif text-[28px] leading-tight">体験価値を磨く</h1>
           <p className="text-ink-2 text-sm mt-2 max-w-[56ch]">
-            {missing > 0 ? `「なぜなら」が空の組が${missing}組。根拠がつくと、約束が浮つかなくなります。` : "すべての組に「なぜなら」がつきました。"}
+            {list.length === 0 ? "まだ組がありません。先に STEP 1 で提供価値・体験価値の組を出してください。" : missing > 0 ? `「なぜなら」が空の組が${missing}組。根拠がつくと、約束が浮つかなくなります。` : "すべての組に「なぜなら」がつきました。"}
             {onlyUs > 0 && <span className="text-navy">　「当社しかありません」と言える組 {onlyUs}。</span>}
           </p>
         </div>
-        <div className="text-right shrink-0 serif leading-none">
+        <div className="sm:text-right shrink-0 serif leading-none">
           <span className="text-[56px]">{withB}</span>
           <span className="text-[20px] text-ink-3"> / {list.length}<span className="text-[13px] font-normal ml-1">組に根拠</span></span>
         </div>
@@ -70,9 +70,11 @@ export default async function Page() {
         </dl>
         <p className="text-[12px] text-ink-3 mt-3 max-w-[72ch]">いちばん強いのは「〜するのは、当社しかありません」と言える根拠です。言えそうな組には印をつけてください。無い場合は、お客様が避けたいと感じていることを御社が引き受ける約束を新しく作る（生み出された根拠）ことも検討します。</p>
         <AiNotice message={aiErr} />
-        <form action={requestBecauseDrafts} className="mt-4">
-          <button className="btn-text -ml-1.5" type="submit" disabled={missing === 0}>「なぜなら」が空の{Math.min(missing, 10)}組に、AIの下書きを付ける（御社の説明から根拠を拾います）</button>
-        </form>
+        {missing > 0 && (
+          <form action={requestBecauseDrafts} className="mt-4">
+            <button className="btn-text -ml-1.5" type="submit">「なぜなら」が空の{Math.min(missing, 10)}組に、AIの下書きを付ける（御社の説明から根拠を拾います）</button>
+          </form>
+        )}
       </section>
 
       <section className="mt-10 max-w-[800px]">

@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { saveDiagnosis, publishDiagnosis } from "./actions";
@@ -16,7 +17,7 @@ export default async function DiagnosisAdmin({ params }: PageProps<"/admin/[comp
     supabase.from("diagnosis_results").select("*").eq("company_id", companyId).maybeSingle(),
     supabase.from("profiles").select("display_name").eq("company_id", companyId),
   ]);
-  if (!c) return null;
+  if (!c) notFound();
   const seeds = ((d?.seeds ?? []) as Seed[]);
   const brakes = ((d?.brakes ?? []) as Brake[]);
   const fit = ((d?.fit_reasons ?? []) as Fit[]);

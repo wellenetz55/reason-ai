@@ -57,7 +57,15 @@ export async function setContractStep(formData: FormData) {
   const col = CONTRACT_COLS[step];
   if (!col) return;
   const clear = formData.get("clear") === "1";
-  await supabase.from("companies").update({ [col]: clear ? null : new Date().toISOString() }).eq("id", id);
+  const now = new Date().toISOString();
+  const patch: Record<string, string | null> = { [col]: clear ? null : now };
+  if (!clear) {
+    // 後の段階を記録したら、空いている前の段階も同時に埋める（顧客画面の進み具合が矛盾しないように）
+    const { data: cur } = await supabase.from("companies").select("applied_at, contracted_at").eq("id", id).single();
+    if ((step === "contracted" || step === "paid") && !cur?.applied_at) patch.applied_at = now;
+    if (step === "paid" && !cur?.contracted_at) patch.contracted_at = now;
+  }
+  await supabase.from("companies").update(patch).eq("id", id);
   if (step === "applied" && !clear) await supabase.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("company_id", id).is("resolved_at", null).contains("payload", { type: "program_applied" });
   revalidatePath(`/admin/${id}`);
   revalidatePath("/admin");

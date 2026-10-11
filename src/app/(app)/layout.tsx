@@ -9,37 +9,36 @@ import { APP_VERSION } from "@/lib/version";
 import { PendingBar } from "@/components/PendingBar";
 import { Bug } from "lucide-react";
 import { MEETING_LABEL, fmtMeeting } from "@/lib/meetings";
+import { SideNav } from "@/components/SideNav";
+import { RouteTracker } from "@/components/RouteTracker";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const { company, profile, supabase } = await requireCustomer();
-  const [{ data: openHw }, { data: nextMeeting }, { data: progress }, { data: diag }] = await Promise.all([
+  // 契約前（適合診断済み）はキックオフ以外の面談を見せない。枠は残して「——」
+  let meetingQ = supabase.from("company_meetings").select("kind, scheduled_at, meeting_url").eq("company_id", company.id).gte("scheduled_at", new Date().toISOString());
+  if (company.status === "diagnosed") meetingQ = meetingQ.eq("kind", "kickoff");
+  const [{ data: openHw }, { data: nextMeeting }, { data: progress }, { data: diag }, { count: hwTotal }] = await Promise.all([
     supabase.from("homeworks").select("id, title, due_at").eq("company_id", company.id).eq("status", "open").order("due_at"),
-    supabase
-      .from("company_meetings")
-      .select("kind, scheduled_at, meeting_url")
-      .eq("company_id", company.id)
-      .gte("scheduled_at", new Date().toISOString())
-      .order("scheduled_at")
-      .limit(1)
-      .maybeSingle(),
+    meetingQ.order("scheduled_at").limit(1).maybeSingle(),
     supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle(),
     supabase.from("diagnosis_results").select("company_id").eq("company_id", company.id).maybeSingle(),
+    supabase.from("homeworks").select("id", { count: "exact", head: true }).eq("company_id", company.id),
   ]);
 
   const openHomework = openHw?.length ?? 0;
-  // 契約前（適合診断済み）はキックオフ以外の面談を見せない。枠は残して「——」
-  const shownMeeting = company.status === "diagnosed" ? (nextMeeting?.kind === "kickoff" ? nextMeeting : null) : nextMeeting;
+  const shownMeeting = nextMeeting;
   const overdue = (openHw ?? []).filter((h) => h.due_at && new Date(h.due_at) < new Date()).length;
   const nearest = (openHw ?? []).find((h) => h.due_at);
   const nowKey = currentStep(company.status, progress?.pair_count ?? 0).key;
   const stages = STAGES.map((s) => ({ ...s, open: isStageOpen(s, company.status), now: s.key === nowKey }));
 
   return (
-    <div className="flex-1 flex min-h-screen">
+    <div className="flex-1 flex flex-col md:flex-row min-h-screen">
       <PendingBar stamp={Date.now()} />
-      <aside className="print:hidden w-[260px] shrink-0 border-r hairline px-6 py-8 flex flex-col">
-        <Link href="/" className="block"><ReasonLogo width={212} /></Link>
-        <p className="serif text-[16px] leading-snug mt-6">{company.name}</p>
+      <RouteTracker />
+      <SideNav brand={<Link href="/" className="block"><ReasonLogo width={180} /></Link>}>
+        <Link href="/" className="hidden md:block"><ReasonLogo width={212} /></Link>
+        <p className="serif text-[16px] leading-snug md:mt-6">{company.name}</p>
         <p className="text-[13px] text-ink-2 mt-1">{profile.display_name} <span className="text-ink-3">さん</span></p>
         <div className="mt-3 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-3.5 py-2.5">
           <p className="text-[11px] font-semibold text-navy tracking-wide">現在のフェーズ</p>
@@ -57,7 +56,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <p className={`mt-2 text-[13px] font-semibold ${overdue > 0 ? "text-white" : "text-warm"}`}>回答する →</p>
           </Link>
         ) : (
-          <Link href="/homework" className="mt-3 block rounded-[var(--radius)] border hairline px-3.5 py-2 text-[12px] text-ink-3 hover:text-ink">宿題 · すべて回答済み ✓</Link>
+          <Link href="/homework" className="mt-3 block rounded-[var(--radius)] border hairline px-3.5 py-2 text-[12px] text-ink-3 hover:text-ink">{(hwTotal ?? 0) > 0 ? "宿題 · すべて回答済み ✓" : "宿題 · まだ出ていません"}</Link>
         ))}
         {company.status === "diagnosed" ? (
           <nav className="mt-6">
@@ -111,8 +110,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <p className="num text-[11px] text-ink-3">{APP_VERSION}</p>
           </div>
         </div>
-      </aside>
-      <main className="flex-1 min-w-0 px-10 py-10">
+      </SideNav>
+      <main className="flex-1 min-w-0 px-4 py-6 md:px-10 md:py-10">
         {/* 印刷時だけ出るヘッダ（ロゴ・運営・会社名・日付）。画面では非表示 */}
         <div className="hidden print:flex items-center justify-between pb-4 mb-8 border-b hairline">
           <ReasonLogo width={180} />
@@ -123,12 +122,12 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </div>
         </div>
         <div className="max-w-[960px]">{children}</div>
-        <footer className="print:hidden max-w-[960px] mt-20 pt-5 border-t hairline flex items-end justify-between gap-6 text-[12px] text-ink-3">
+        <footer className="print:hidden max-w-[960px] mt-20 pt-5 border-t hairline flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 text-[12px] text-ink-3">
           <div className="space-y-1">
             <p className="text-ink-2">選ばれる理由AI <span className="mx-1.5">·</span> 運営 株式会社ベレネッツ</p>
             <a href="https://www.wellenetz.co.jp/" target="_blank" rel="noopener noreferrer" className="hover:text-ink">www.wellenetz.co.jp</a>
           </div>
-          <div className="text-right space-y-1">
+          <div className="sm:text-right space-y-1">
             <p>
               <Link href="/ask" className="hover:text-ink">ベレネッツに質問を残す</Link>
               <span className="mx-2">／</span>

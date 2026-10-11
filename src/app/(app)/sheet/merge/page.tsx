@@ -56,7 +56,7 @@ export default async function Page() {
 
         <section>
           <h2 className="serif text-[20px]">統合して最終案を決める</h2>
-          <p className="text-sm text-ink-2 mt-1">診断を一通り見終えたら、ここで似た組をまとめます（準備中）。</p>
+          <p className="text-sm text-ink-2 mt-1">診断を一通り見終えたら、ここで似た組をまとめます。この機能は準備中です。まとめ方はベレネッツとの面談で一緒に決めます。</p>
         </section>
       </div>
 

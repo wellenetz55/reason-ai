@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 export function ClientEnv() {
   const [env, setEnv] = useState({ page: "", ua: "" });
   useEffect(() => {
-    const ref = document.referrer && new URL(document.referrer).origin === location.origin ? new URL(document.referrer).pathname : "";
+    let ref = "";
+    try {
+      ref = sessionStorage.getItem("ra:prevPath") ?? "";
+    } catch {}
+    if (!ref && document.referrer && new URL(document.referrer).origin === location.origin) ref = new URL(document.referrer).pathname;
     setEnv({ page: ref, ua: `${navigator.userAgent} / ${window.innerWidth}×${window.innerHeight}` });
   }, []);
   return (

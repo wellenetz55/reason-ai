@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
@@ -17,7 +18,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }, { data: meetings }, { data: errs }] = await Promise.all([
     supabase.from("companies").select("*").eq("id", companyId).single(),
     supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, because_phrase, status, created_by, target_tag, confirmed_at").eq("company_id", companyId).order("seq"),
-    supabase.from("sheet_row_reviews").select("action, dwell_ms, before_text, after_text, created_at").order("created_at", { ascending: false }).limit(200),
+    supabase.from("sheet_row_reviews").select("action, dwell_ms, before_text, after_text, created_at, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId).order("created_at", { ascending: false }).limit(200),
     supabase.from("homeworks").select("title, status, priority").eq("company_id", companyId),
     supabase.from("questions_to_operator").select("*").eq("company_id", companyId).order("created_at", { ascending: false }),
     supabase.from("v_divergence_progress").select("*").eq("company_id", companyId).maybeSingle(),
@@ -28,7 +29,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const { data: userList } = await (await import("@/lib/supabase/admin")).createAdminClient().auth.admin.listUsers({ perPage: 1000 });
   const emailOf = (id: string) => userList?.users.find((u) => u.id === id)?.email ?? "";
   const { data: diag } = await supabase.from("diagnosis_results").select("published_at, first_viewed_at, last_viewed_at, view_count").eq("company_id", companyId).maybeSingle();
-  if (!c) return null;
+  if (!c) notFound();
   // 開いたら既読にする（未返信は返事するまで残る）
   await Promise.all([
     supabase.from("questions_to_operator").update({ read_at: new Date().toISOString() }).eq("company_id", companyId).is("read_at", null),

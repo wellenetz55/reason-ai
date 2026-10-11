@@ -1,22 +1,17 @@
 import { ClosedStage } from "@/components/ClosedStage";
 import { STAGES, isStageOpen } from "@/lib/stages";
 import { ExportButton } from "@/components/ExportButton";
-import { NextStepBar } from "@/components/NextStepBar";
-import { stepGate } from "@/lib/gates";
-import { loadGateCtx } from "@/server/gates";
 import { requireCustomer } from "@/lib/session";
 import { StepGuide } from "@/components/StepGuide";
 export default async function Page() {
-  const { supabase, company } = await requireCustomer();
+  const { company } = await requireCustomer();
   if (!isStageOpen(STAGES.find((x) => x.key === "counter")!, company.status)) return <ClosedStage stageKey="counter" status={company.status} />;
-  const gate = stepGate("counter", await loadGateCtx(supabase, company.id, company.status));
   return (
     <div>
       <h1 className="serif text-[28px] leading-tight">ブレーキを外す</h1>
       <StepGuide stageKey="counter" />
       <div className="mt-3"><ExportButton stageKey="counter" /></div>
-      <p className="text-ink-2 text-sm mt-2">この段階はまだ準備中です。先に「提供価値を出す」を進めてください。</p>
-      <NextStepBar gate={gate} />
+      <p className="mt-6 rounded-[var(--radius)] bg-paper-2 px-5 py-4 text-sm text-ink-2 max-w-[60ch]">この段階の画面は、いま準備中です。始めるときは、ベレネッツからご案内します。それまでは前の段階の見直しや、宿題を進めてください。</p>
     </div>
   );
 }

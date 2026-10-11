@@ -63,7 +63,9 @@ export function currentStep(status: string, rows: number) {
     case "advisor":
       return { key: "deploy", title: "接点に展開する", body: "完成した提供価値を、営業トーク・価格説明・Webなどの言葉に変換する段階です。" };
     case "locked":
-      return { key: "", title: "シートの閲覧", body: "完成した提供価値シートの閲覧とダウンロードができます。" };
+      return { key: "", title: "シートのダウンロード", body: "編集できる期間は終わりました。これまでに作った提供価値シートは、Excelでダウンロードできます。続けて使いたい場合は、ベレネッツにお問い合わせください。" };
+    case "cancelled":
+      return { key: "", title: "ご契約は終了しています", body: "シートの内容が必要な場合は、ベレネッツにお問い合わせください。" };
     default:
       return { key: "", title: "準備中", body: "ベレネッツからの案内をお待ちください。" };
   }

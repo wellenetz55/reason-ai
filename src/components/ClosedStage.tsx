@@ -7,6 +7,22 @@ export function ClosedStage({ stageKey, status }: { stageKey: string; status: st
   const s = STAGES.find((x) => x.key === stageKey);
   if (!s) return null;
   const byOperator = ["step0", "merge", "litmus"].includes(stageKey) || ["onboarding", "diagnosed"].includes(status);
+  if (status === "locked" || status === "cancelled") {
+    return (
+      <div>
+        <h1 className="serif text-[28px] leading-tight">{s.label}</h1>
+        <section className="mt-10 rounded-[var(--radius)] bg-paper-2 px-6 py-5 max-w-[64ch]">
+          <p className="font-semibold">{status === "locked" ? "編集できる期間は終わりました" : "ご契約は終了しています"}</p>
+          <p className="text-sm text-ink-2 mt-1 leading-relaxed">
+            {status === "locked"
+              ? "これまでに作った提供価値シートは、Excelでダウンロードできます。続けて使いたい場合は、ベレネッツにお問い合わせください。"
+              : "シートの内容が必要な場合は、ベレネッツにお問い合わせください。"}
+          </p>
+          {status === "locked" && <a href="/api/export?step=deploy" className="btn-primary inline-block mt-4">提供価値シートをダウンロード</a>}
+        </section>
+      </div>
+    );
+  }
   return (
     <div>
       <h1 className="serif text-[28px] leading-tight">{s.label}</h1>

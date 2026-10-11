@@ -35,6 +35,7 @@ export default async function Home() {
             {step.title}へ
           </Link>
         )}
+        {company.status === "locked" && <a href="/api/export?step=deploy" className="btn-primary inline-block mt-6">提供価値シートをダウンロード</a>}
         <p className="text-[13px] text-ink-3 mt-6 max-w-[56ch] leading-relaxed">
           ステップは STEP 0 から順に進みます。各画面のいちばん下に「次のステップ」があり、条件を満たすとボタンが押せます。ベレネッツとの面談のあとに開くステップもあります。
         </p>

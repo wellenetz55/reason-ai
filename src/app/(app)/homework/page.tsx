@@ -17,7 +17,7 @@ export default async function HomeworkPage() {
             <div className="flex items-baseline gap-3">
               <span className="text-hypo text-xs">{"★".repeat(h.priority)}</span>
               <h2 className="text-[17px]">{h.title}</h2>
-              {h.due_at && <span className="num text-xs text-ink-3">期限 {new Date(h.due_at).toLocaleDateString("ja-JP")}</span>}
+              {h.due_at && <span className="num text-xs text-ink-3">期限 {new Date(h.due_at).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" })}</span>}
             </div>
             {h.why && <p className="text-sm text-ink-2 mt-1">効く場所：{h.why}</p>}
             {h.ask_whom_hint && <p className="text-sm text-ink-2 mt-1">まず{h.ask_whom_hint}に聞いてください。</p>}

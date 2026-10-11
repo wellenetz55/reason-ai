@@ -39,11 +39,15 @@ export default async function DiagnosisPage() {
   const fit = (d.fit_reasons ?? []) as Fit[];
   const comp = (d.competitor ?? null) as { name: string; claims: string[] } | null;
   const dates = (d.candidate_dates ?? []) as string[];
+  // 運営が段階を飛ばして記録しても矛盾しないよう、後の段階が済んでいれば前の段階も済みとみなす
+  const paid = !!company.paid_at;
+  const contracted = paid || !!company.contracted_at;
+  const applied = contracted || !!company.applied_at;
   const steps = [
-    { key: "apply", label: "申し込む", at: company.applied_at, done: !!company.applied_at, now: !company.applied_at },
-    { key: "contract", label: "契約書を取り交わす", at: company.contracted_at, done: !!company.contracted_at, now: !!company.applied_at && !company.contracted_at },
-    { key: "pay", label: "入金", at: company.paid_at, done: !!company.paid_at, now: !!company.contracted_at && !company.paid_at },
-    { key: "kickoff", label: "キックオフ日を選ぶ", at: d.chosen_date, done: !!d.chosen_date, now: !!company.paid_at && !d.chosen_date },
+    { key: "apply", label: "申し込む", at: company.applied_at, done: applied, now: !applied },
+    { key: "contract", label: "契約書を取り交わす", at: company.contracted_at, done: contracted, now: applied && !contracted },
+    { key: "pay", label: "入金", at: company.paid_at, done: paid, now: contracted && !paid },
+    { key: "kickoff", label: "キックオフ日を選ぶ", at: d.chosen_date, done: !!d.chosen_date, now: paid && !d.chosen_date },
   ];
   const tagCls: Record<string, string> = { fact: "tag-fact", verify: "tag-verify", hypothesis: "tag-hypo" };
 
@@ -53,11 +57,11 @@ export default async function DiagnosisPage() {
       <h1 className="serif text-[30px] leading-tight mt-4"><span className="text-warm mr-1">◎</span>{company.name}様は、<span className="text-warm">「選ばれる理由」をつくれる会社</span>です。</h1>
       <div className="mt-3 flex items-center gap-4 text-[12px] text-ink-3">
         {d.published_at && <span className="num">{fmtMeeting(d.published_at)} 公開</span>}
-        {d.expires_at && <span>このページは <span className="num">{fmtMeeting(d.expires_at)}</span> まで</span>}
+        {d.expires_at && company.status === "diagnosed" && new Date(d.expires_at) > new Date() && <span>このページは <span className="num">{fmtMeeting(d.expires_at)}</span> まで</span>}
         <PrintButton />
       </div>
 
-      <div className="mt-8 grid grid-cols-3 gap-3">
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
           <p className="text-[11px] text-ink-3">初回ヒアリングで見えた芽</p>
           <p className="serif text-[30px] leading-none mt-1"><span className="num">{seeds.length}</span><span className="text-[14px] ml-1">組</span></p>
@@ -75,7 +79,7 @@ export default async function DiagnosisPage() {
       {d.one_liner_before && (
         <section className="mt-12">
           <h2 className="serif text-[20px]">「御社を一言で言うと？」</h2>
-          <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <p className="text-[11px] text-ink-3">いま（面談でのお答え）</p>
               <blockquote className="serif text-[20px] leading-snug mt-2 border-l-2 border-navy pl-4">「{d.one_liner_before}」</blockquote>
@@ -171,7 +175,7 @@ export default async function DiagnosisPage() {
         </ol>
         <div className="mt-6 rounded-[var(--radius)] bg-navy-soft px-6 py-5 max-w-[60ch]">
           <p className="leading-relaxed">問題は、御社に理由がないことではありません。<span className="font-semibold">社内にある理由を、取り出す手順がないこと</span>です。</p>
-          <p className="text-sm text-ink-2 mt-2">初回ヒアリングで{seeds.length > 0 ? `${seeds.length}組が` : "芽が"}見つかったのが、その証拠です。8週間プログラムは、その手順です。</p>
+          <p className="text-sm text-ink-2 mt-2">{seeds.length > 0 ? `初回ヒアリングの短い時間でも${seeds.length}組が見つかったのが、その証拠です。` : ""}8週間プログラムは、その手順です。</p>
         </div>
       </section>
 
@@ -202,7 +206,7 @@ export default async function DiagnosisPage() {
       )}
 
       {company.status === "diagnosed" && (<>
-      <section className="mt-14 grid grid-cols-2 gap-4">
+      <section className="mt-14 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
           <p className="text-[11px] text-ink-3">自力でやる場合</p>
           <p className="text-sm mt-2 leading-relaxed">30組を集めるには、毎日ちがう角度で問いを立てる人と、答えを「御社は〜できる。だから〜」の型に揃える人が要ります。社長ひとりで両方をやると、最初の数組で止まります。</p>
@@ -211,7 +215,7 @@ export default async function DiagnosisPage() {
           <p className="text-[11px] text-ink-3">8週間プログラムの場合</p>
           <p className="text-sm mt-2 leading-relaxed">問いはAIが毎日出します。揃えるのはベレネッツが面談で担います。社長がやるのは、答えることだけです。</p>
         </div>
-        <p className="col-span-2 text-sm max-w-[60ch] pl-4 border-l-2 border-warm">
+        <p className="sm:col-span-2 text-sm max-w-[60ch] pl-4 border-l-2 border-warm">
           <span className="font-semibold">初回ヒアリングで見つかった芽は、御社の「いま」の言葉です。</span>時間が経つほど、言い回しも熱量も薄れます。見つかったうちに、始めてください。
         </p>
       </section>
@@ -219,7 +223,7 @@ export default async function DiagnosisPage() {
       <section className="mt-16 border-t hairline pt-8 print:hidden">
         <h2 className="serif text-[20px]">ここから、8週間が始まるまで</h2>
         <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">契約と請求はメールでやりとりします。アプリでは、いまどこまで進んでいるかが見えます。</p>
-        <ol className="mt-5 grid grid-cols-4 gap-2 text-[12px]">
+        <ol className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[12px]">
           {steps.map((st, i) => (
             <li key={st.key} className={`rounded-[var(--radius)] border px-3 py-2.5 ${st.done ? "border-navy bg-navy text-white" : st.now ? "border-warm bg-warm-soft" : "hairline text-ink-3"}`}>
               <p className={`num text-[10px] tracking-wide ${st.done ? "text-white/70" : st.now ? "text-warm" : ""}`}>{i + 1}{st.done ? " ✓" : st.now ? " ← いまここ" : ""}</p>
@@ -230,7 +234,7 @@ export default async function DiagnosisPage() {
         </ol>
 
         <div className="mt-6">
-          {!company.applied_at ? (
+          {!applied ? (
             <>
               <p className="text-sm">診断結果を読んで「進めたい」と思われたら、下のボタンを押してください。ベレネッツから申込書・契約書と請求書をメールでお送りします。</p>
               <form action={applyProgram} className="mt-4">
@@ -238,9 +242,9 @@ export default async function DiagnosisPage() {
               </form>
               <p className="text-[12px] text-ink-3 mt-3">ボタンを押した時点では費用は発生しません。契約書の内容を確認してからのご契約です。</p>
             </>
-          ) : !company.paid_at ? (
+          ) : !paid ? (
             <p className="text-sm">
-              {company.contracted_at
+              {contracted
                 ? "ご契約ありがとうございます。入金を確認しだい、キックオフの日程をこの画面でお選びいただけます。"
                 : "お申し込みを受け付けました。ベレネッツから申込書・契約書と請求書をメールでお送りします。届かない場合は「ベレネッツに質問を残す」からお知らせください。"}
             </p>
@@ -263,8 +267,8 @@ export default async function DiagnosisPage() {
             <p className="text-sm">入金を確認しました。キックオフの候補日は、ベレネッツからご連絡します。</p>
           )}
         </div>
-        <div className="mt-6 flex items-start gap-4">
-          <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full border-2 border-warm bg-warm-soft text-warm text-[12px] font-bold px-3 py-1.5 whitespace-nowrap">
+        <div className="mt-6 flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+          <span className="shrink-0 self-start inline-flex items-center gap-1.5 rounded-full border-2 border-warm bg-warm-soft text-warm text-[12px] font-bold px-3 py-1.5 whitespace-nowrap">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z" /><path d="M9 12l2 2 4-4" /></svg>
             半額返金保証
           </span>

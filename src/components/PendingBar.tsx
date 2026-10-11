@@ -5,46 +5,47 @@ const WAIT = "少々お待ちください…";
 
 /**
  * フォーム送信中の合図。
- * 押したボタンの文字を「少々お待ちください…」に変え、画面上端に紺のバーと案内を出し、二度押しを防ぐ。
- * サーバ側の処理（AI下書き・メール送信など）は数秒〜数十秒かかる。
+ * 押したボタンに「少々お待ちください…」を重ねて表示し（CSS: button[data-busy]）、画面上端に紺のバーと案内を出す。
+ * 二度押しは、送信中のフォームの submit を止めて防ぐ。
+ * ボタンの文字や disabled は書き換えない（React が描き直した新しい文言・状態を上書きしないため）。
  * `stamp` はサーバ描画のたびに変わる値。変わったら処理が終わったとみなして戻す。
  */
+function clearBusy(root: ParentNode = document) {
+  root.querySelectorAll<HTMLElement>("[data-busy]").forEach((el) => {
+    delete el.dataset.busy;
+    el.style.removeProperty("--busy-color");
+  });
+}
+
 export function PendingBar({ stamp }: { stamp: number }) {
   const [pending, setPending] = useState(false);
   useEffect(() => {
     setPending(false);
-    document.querySelectorAll<HTMLButtonElement>("button[data-pending]").forEach((b) => {
-      b.disabled = false;
-      if (b.dataset.label !== undefined) b.textContent = b.dataset.label;
-      delete b.dataset.pending;
-      delete b.dataset.label;
-    });
+    clearBusy();
   }, [stamp]);
   useEffect(() => {
     const onSubmit = (e: Event) => {
       const form = e.target as HTMLFormElement | null;
       if (!form || form.tagName !== "FORM") return;
       if (form.method?.toLowerCase() === "get") return;
+      if (form.dataset.busy) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
       setPending(true);
-      const submitter = (e as SubmitEvent).submitter as HTMLButtonElement | null;
-      form.querySelectorAll<HTMLButtonElement>('button[type="submit"]').forEach((b) => {
-        b.disabled = true;
-        b.dataset.pending = "1";
-        if (b === submitter || (!submitter && form.querySelectorAll('button[type="submit"]').length === 1)) {
-          b.dataset.label = b.textContent ?? "";
-          b.textContent = WAIT;
-          b.style.minWidth = `${b.offsetWidth}px`;
-        }
-      });
+      form.dataset.busy = "1";
+      const submitter = (e as SubmitEvent).submitter as HTMLElement | null;
+      const buttons = form.querySelectorAll<HTMLButtonElement>('button[type="submit"]');
+      const target = submitter ?? (buttons.length === 1 ? buttons[0] : null);
+      if (target) {
+        target.style.setProperty("--busy-color", getComputedStyle(target).color);
+        target.dataset.busy = "1";
+      }
       // 万一応答が無いときのため、60秒で解除
       setTimeout(() => {
         setPending(false);
-        form.querySelectorAll<HTMLButtonElement>("button[data-pending]").forEach((b) => {
-          b.disabled = false;
-          if (b.dataset.label !== undefined) b.textContent = b.dataset.label;
-          delete b.dataset.pending;
-          delete b.dataset.label;
-        });
+        clearBusy();
       }, 60_000);
     };
     document.addEventListener("submit", onSubmit, true);

@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const FAIL = (origin: string, detail?: string) => NextResponse.redirect(`${origin}/login?error=${encodeURIComponent("リンクが無効か、期限切れです。もう一度メールアドレスを入力してください。" + (detail ? `（${detail}）` : ""))}`);
+const FAIL = (origin: string, detail?: string) => {
+  if (detail) console.warn("[auth/callback]", detail);
+  return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent("リンクが無効か、有効期限（5分）が過ぎています。もう一度メールアドレスを入力してください。")}`);
+};
 
 /**
  * GET: code（PKCE）ならその場で交換。token_hash なら「サインインする」ボタンの画面を返す。
