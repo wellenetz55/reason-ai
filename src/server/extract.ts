@@ -105,7 +105,12 @@ export async function extractCompanyDocs(companyId: string): Promise<{ docs: { t
         if (f) { const r = await pdfText(Buffer.from(await f.arrayBuffer())); text = r.text; if (r.error) errors.push(`${d.title}: ${r.error}`); }
       } else if (d.storage_path && d.mime_type === "text/plain") {
         const { data: f } = await admin.storage.from("company-docs").download(d.storage_path);
-        if (f) text = (await f.text()).trim();
+        if (f) {
+          const buf = Buffer.from(await f.arrayBuffer());
+          text = buf.toString("utf8");
+          if (text.includes("\uFFFD")) { try { text = new TextDecoder("shift_jis").decode(buf); } catch { /* そのまま */ } }
+          text = text.trim();
+        }
       }
       if (text) await admin.from("company_documents").update({ text_content: text.slice(0, 200_000) }).eq("id", d.id);
     }

@@ -7,6 +7,7 @@ import { randomUUID } from "node:crypto";
 import { requireCustomer, requireWritableCustomer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LIMITS } from "@/lib/limits";
+import { normalizeWebUrl } from "@/lib/url";
 import { draftProfile } from "@/server/profile";
 import { aiGuard } from "@/server/aiGuard";
 
@@ -76,7 +77,7 @@ export async function finishUpload(formData: FormData): Promise<{ ok: boolean; e
     return { ok: false, error: "登録できるファイルの数か容量の上限に達しています。不要な資料を取り下げてください。" };
   }
   const fileName = String(formData.get("file_name") || name).slice(0, 200);
-  await supabase.from("company_documents").insert({
+  const { error: insErr } = await supabase.from("company_documents").insert({
     company_id: company.id,
     kind: kindOf(formData.get("kind")),
     title: String(formData.get("title") || fileName).trim() || fileName,
@@ -85,6 +86,10 @@ export async function finishUpload(formData: FormData): Promise<{ ok: boolean; e
     size_bytes: meta.size ?? Number(formData.get("file_size") || 0),
     uploaded_by: user.id,
   });
+  if (insErr) {
+    await createAdminClient().storage.from("company-docs").remove([path]);
+    return { ok: false, error: "登録できませんでした。もう一度お試しください。" };
+  }
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "doc.upload" });
   revalidatePath("/step0");
   return { ok: true };
@@ -93,12 +98,10 @@ export async function finishUpload(formData: FormData): Promise<{ ok: boolean; e
 /** URL を登録（Webサイト・採用ページ・レビューなど） */
 export async function addUrl(formData: FormData) {
   const { company, user, supabase } = await requireWritableCustomer();
-  let url = String(formData.get("url") || "").trim();
-  if (!url) return;
-  if (!/^https?:\/\//i.test(url)) url = "https://" + url;
-  let ok = true;
-  try { new URL(url); } catch { ok = false; }
-  if (!ok) fail("URLの形式が正しくありません。");
+  const raw = String(formData.get("url") || "").trim();
+  if (!raw) return;
+  const url = normalizeWebUrl(raw);
+  if (!url) fail("URLの形式が正しくありません（例：https://www.example.co.jp）。");
   if ((await usage(supabase, company.id)).urls >= LIMITS.urls) fail("登録できるURLの数の上限に達しています。");
   await supabase.from("company_documents").insert({
     company_id: company.id,

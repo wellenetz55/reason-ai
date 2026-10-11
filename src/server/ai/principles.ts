@@ -21,10 +21,13 @@ export async function loadPrinciples(promptKey?: string): Promise<string> {
   // 10分キャッシュ（AI呼び出しのたびに読まない）
   if (!cache || Date.now() - cache.at > 10 * 60 * 1000) {
     const { data, error } = await createAdminClient().from("method_principles").select("area, principle, usage").eq("active", true).order("sort");
-    if (error) return ""; // 一時的なエラーはキャッシュしない
-    cache = { rows: data ?? [], at: Date.now() };
+    if (error) {
+      if (!cache) return ""; // 一時的なエラーは、前に読めた分があればそれを使う
+    } else {
+      cache = { rows: data ?? [], at: Date.now() };
+    }
   }
-  const data = cache.rows.filter((p) => areas.includes(p.area));
+  const data = (cache?.rows ?? []).filter((p) => areas.includes(p.area));
   if (!data.length) return "";
   const lines = data.map((p) => `- ${p.principle} → ${p.usage}`);
   return [

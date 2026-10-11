@@ -20,7 +20,7 @@ export async function loadBannedTerms(): Promise<string[]> {
   const names = (data ?? []).map((d) => d.name).filter((n): n is string => !!n && n.length >= 3);
   // 原則の出典の書名（「書名 p.12–34／書名 p.5」の書名部分）も出力に出さない
   const titles = (principles ?? [])
-    .flatMap((p) => String(p.source ?? "").split(/／|\s\/\s/))
+    .flatMap((p) => String(p.source ?? "").split(/／|\s\/\s|\/(?=[^\s/]+\s*(?:pp?\.|P\.|ｐ|頁))/))
     .map((s) => s.replace(/\s*(pp?\.|P\.|ｐ|頁)[\s\S]*$/, "").replace(/[『』「」]/g, "").replace(/（[^）]*）$/, "").trim())
     .filter((t) => t.length >= 4);
   cache = { terms: [...new Set([...STATIC_BANNED, ...names, ...titles])], at: Date.now() };

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireOperator } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Q_KEYS } from "@/server/intake";
+import { normalizeWebUrl } from "@/lib/url";
 
 const back = (companyId: string, q: string): never => redirect(`/admin/${companyId}/intake?${q}`);
 const MAX_TRANSCRIPT = 400_000;
@@ -36,8 +37,8 @@ export async function saveIntake(formData: FormData) {
   revalidatePath("/step0");
 
   // URL → 会社の資料（website）。末尾の / を揃えて比べ、同じURLは二重に入れない。形の壊れたURLは飛ばして知らせる
-  const norm = (u: string) => { try { const x = new URL(u); return x.protocol.startsWith("http") ? x.href.replace(/\/$/, "") : null; } catch { return null; } };
-  const tokens = String(formData.get("urls") || "").split(/\s+/).map((u) => u.trim()).filter(Boolean).map((u) => (/^https?:\/\//i.test(u) ? u : `https://${u}`));
+  const norm = (u: string) => normalizeWebUrl(u);
+  const tokens = String(formData.get("urls") || "").split(/\s+/).map((u) => u.trim()).filter(Boolean);
   const bad = tokens.filter((u) => !norm(u));
   const wanted = [...new Set(tokens.map(norm).filter((u): u is string => !!u))];
   if (wanted.length) {
@@ -51,9 +52,6 @@ export async function saveIntake(formData: FormData) {
   }
   if (bad.length) back(companyId, `error=${encodeURIComponent("記録は保存しました。次のURLは形が正しくないため登録していません：" + bad.join(" "))}`);
   if (kind !== "company" && !targetName) back(companyId, `error=${encodeURIComponent("記録は保存しました。事業部・ブランド、商品・サービスを選んだときは、対象の名前も入れてください（AIが会社全体と取り違えないため）")}`);
-  revalidatePath(`/admin/${companyId}/intake`);
-  revalidatePath(`/admin/${companyId}`);
-  revalidatePath("/step0");
   back(companyId, "ok=saved");
 }
 
