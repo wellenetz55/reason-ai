@@ -18,6 +18,11 @@ export const maxDuration = 60;
 export default async function Page() {
   const { supabase, company } = await requireCustomer();
   if (!isStageOpen(STAGES.find((x) => x.key === "merge")!, company.status)) return <ClosedStage stageKey="merge" status={company.status} />;
+  if (company.status === "week1_2") {
+    const { data: pg } = await supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle();
+    const n = pg?.pair_count ?? 0;
+    if (n < 20) return <ClosedStage stageKey="merge" status={company.status} note={`STEP 1 で、提供価値と体験価値の組があと${20 - n}組そろうと開きます（いま${n}組）。`} />;
+  }
   const [{ data: rows }, { data: diags }, ctx] = await Promise.all([
     supabase.from("sheet_rows").select("id, seq, facet, target, value_raw, experience_value_v1, status").eq("company_id", company.id).eq("status", "active").order("seq"),
     supabase.from("row_diagnoses").select("row_id, vague_score, issues, suggestion_value, suggestion_experience, resolved, checked_at, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),

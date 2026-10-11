@@ -1,7 +1,7 @@
 export const instant = false;
 import Link from "next/link";
 import { requireCustomer } from "@/lib/session";
-import { STAGES, STATUS_LABEL, isStageOpen, currentStep } from "@/lib/stages";
+import { STAGES, STATUS_LABEL, isStageOpen, currentStep, NOT_READY } from "@/lib/stages";
 import { SignOutButton } from "@/components/SignOutButton";
 import { NavRail } from "@/components/NavRail";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
@@ -16,7 +16,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const { company, profile, supabase } = await requireCustomer();
   // 契約前（適合診断済み）はキックオフ以外の面談を見せない。枠は残して「——」
-  let meetingQ = supabase.from("company_meetings").select("kind, scheduled_at, meeting_url").eq("company_id", company.id).gte("scheduled_at", new Date().toISOString());
+  let meetingQ = supabase.from("company_meetings").select("kind, scheduled_at, meeting_url").eq("company_id", company.id).is("held_at", null).gte("scheduled_at", new Date(Date.now() - 3 * 3600_000).toISOString());
   if (company.status === "diagnosed") meetingQ = meetingQ.eq("kind", "kickoff");
   const [{ data: openHw }, { data: nextMeeting }, { data: progress }, { data: diag }, { count: hwTotal }] = await Promise.all([
     supabase.from("homeworks").select("id, title, due_at").eq("company_id", company.id).eq("status", "open").order("due_at"),
@@ -31,7 +31,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const overdue = (openHw ?? []).filter((h) => h.due_at && new Date(h.due_at) < new Date()).length;
   const nearest = (openHw ?? []).find((h) => h.due_at);
   const nowKey = currentStep(company.status, progress?.pair_count ?? 0).key;
-  const stages = STAGES.map((s) => ({ ...s, open: isStageOpen(s, company.status), now: s.key === nowKey }));
+  const pairs = progress?.pair_count ?? 0;
+  const stages = STAGES.map((s) => ({
+    ...s,
+    // まとめて絞る（STEP 2）は、1〜2週目のうちは20組そろってから開く（次へボタンの条件と同じ）
+    open: isStageOpen(s, company.status) && !(s.key === "merge" && company.status === "week1_2" && pairs < 20),
+    ready: !NOT_READY.has(s.key),
+    now: s.key === nowKey,
+  }));
 
   return (
     <div className="flex-1 flex flex-col md:flex-row min-h-screen">

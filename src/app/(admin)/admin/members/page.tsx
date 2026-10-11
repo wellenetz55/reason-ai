@@ -112,7 +112,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
           <p className="text-xs text-ink-3 mt-2">作るのに数十秒かかることがあります。メソッド資産を含むため、社外に出さないでください。</p>
 
           <h3 className="mt-8 text-[13px] font-semibold">Dropbox への自動バックアップ</h3>
-          <p className="text-[13px] text-ink-2 mt-1 max-w-[44em]">毎週月曜 3:00（日本時間）に、同じZIPを Dropbox の専用フォルダ（アプリ / 選ばれる理由AIのバックアップ用フォルダ）に保存します。新しい{KEEP}回分を残し、古いものから消します。失敗したときはベレネッツのメンバーにメールで知らせます。</p>
+          <p className="text-[13px] text-ink-2 mt-1 max-w-[44em]">毎週月曜 3:00（日本時間）に、同じZIPを Dropbox の専用フォルダ（アプリ / 選ばれる理由AIのバックアップ用フォルダ）に保存します。新しい{KEEP}回分（手動の保存も含む）を残し、古いものから消します。失敗したときはスーパー管理者にメールで知らせます。</p>
           {!dropboxConfigured() ? (
             <p className="mt-3 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-[13px] text-ink-2">準備中：Vercel に DROPBOX_APP_KEY と DROPBOX_APP_SECRET を設定すると、ここに「Dropbox と接続する」が出ます。</p>
           ) : dbx ? (

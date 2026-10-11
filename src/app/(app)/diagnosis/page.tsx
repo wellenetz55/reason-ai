@@ -248,7 +248,9 @@ export default async function DiagnosisPage() {
         </ol>
 
         <div className="mt-6">
-          {!applied ? (
+          {!applied && d.expires_at && new Date(d.expires_at) < new Date() ? (
+            <p className="text-sm">このページの閲覧期限（<span className="num">{fmtMeeting(d.expires_at)}</span>）が過ぎたため、ここからのお申し込みは締め切りました。お申し込みを希望される場合は「ベレネッツに質問を残す」からご連絡ください。</p>
+          ) : !applied ? (
             <>
               <p className="text-sm">診断結果を読んで「進めたい」と思われたら、下のボタンを押してください。受付メールが届き、2営業日以内にベレネッツから申込書・契約書と請求書をメールでお送りします。</p>
               <form action={applyProgram} className="mt-4">
@@ -263,7 +265,7 @@ export default async function DiagnosisPage() {
                 : "お申し込みを受け付けました（受付メールをお送りしています）。2営業日以内に、ベレネッツから申込書・契約書と請求書をメールでお送りします。届かない場合は「ベレネッツに質問を残す」からお知らせください。"}
             </p>
           ) : d.chosen_date ? (
-            <p className="text-sm">キックオフは <span className="num font-semibold">{fmtMeeting(d.chosen_date)}</span> で承りました。ベレネッツから会議URLをお送りします。</p>
+            <p className="text-sm">キックオフは <span className="num font-semibold">{fmtMeeting(d.chosen_date)}</span> で承りました。会議URLは決まりしだい、画面左の「次の面談」に表示します。</p>
           ) : dates.length > 0 ? (
             <>
               <p className="text-sm">入金を確認しました。キックオフ（3時間・オンライン）の日を選んでください。</p>

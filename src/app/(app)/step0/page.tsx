@@ -15,6 +15,7 @@ import { ProfileItems } from "@/components/ProfileItems";
 import { loadBQuestions } from "@/server/profile";
 import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const maxDuration = 60;
 
@@ -38,6 +39,9 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
     loadBQuestions(),
   ]);
   const drafted = (items ?? []).some((i) => i.status !== "empty");
+  // 適合診断の記録（ベレネッツが聞き取った内容）があれば、資料が無くても下書きを作れる。中身はお客様に見せず、有無だけ見る
+  const { count: intakeCount } = await createAdminClient().from("diagnosis_intakes").select("company_id", { count: "exact", head: true }).eq("company_id", company.id);
+  const hasIntake = (intakeCount ?? 0) > 0;
   const aiErr = await lastAiError(supabase, company.id, "profile.draft");
   const gate = stepGate("step0", ctx);
   const u = await getUsage();
@@ -126,14 +130,14 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
             <p className="text-sm text-ink-2 mt-1 max-w-[40em]">上の資料をAIが読んで下書きします。項目ごとに「直す／承認／保留」してください。一括承認はありません。</p>
           </div>
           <form action={requestProfileDraft}>
-            <button className="btn-primary" type="submit" disabled={!docs?.length}>{drafted ? "資料から下書きを作り直す" : "資料から下書きを作る"}</button>
+            <button className="btn-primary" type="submit" disabled={!docs?.length && !hasIntake}>{drafted ? "資料から下書きを作り直す" : "資料から下書きを作る"}</button>
           </form>
         </div>
         {!docs?.length && <p className="text-[12px] text-warm mt-2">まず資料を1つ以上登録してください。</p>}
         <AiNotice message={aiErr} />
         {drafted && <p className="text-[12px] text-ink-3 mt-2">作り直しても、承認済み・直した・保留の項目は変わりません。画像の資料は読めないので、文字はテキストで貼ってください。</p>}
         <div className="mt-6 max-w-[880px]">
-          <ProfileItems items={items ?? []} bq={bq} oneLiner={summary?.q1_before ?? null} review={reviewProfileItem} />
+          <ProfileItems items={items ?? []} bq={bq} oneLiner={summary?.q1_before ?? null} review={reviewProfileItem} drafted={!!drafted} />
         </div>
       </section>
 

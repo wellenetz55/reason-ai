@@ -7,8 +7,12 @@ export default async function AdminHome() {
   const { supabase } = await requireOperator();
   const { data: companies } = await supabase.from("companies").select("*").order("created_at", { ascending: false });
   const ids = (companies ?? []).map((c) => c.id);
-  const [{ data: last }, { data: hw }, { data: alerts }, { data: qs }, { data: errs }] = await Promise.all([
-    supabase.from("activity_log").select("company_id, created_at").in("company_id", ids).order("created_at", { ascending: false }),
+  // 最終操作は、会社ごとにお客様の操作だけで数える（AIのエラー記録・ベレネッツ側の操作は含めない）
+  const lastRows = await Promise.all(ids.map((id) =>
+    supabase.from("activity_log").select("company_id, created_at").eq("company_id", id).not("event", "like", "%.error").not("event", "like", "intake.%").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+  ));
+  const last = lastRows.map((r) => r.data).filter((r): r is { company_id: string; created_at: string } => !!r);
+  const [{ data: hw }, { data: alerts }, { data: qs }, { data: errs }] = await Promise.all([
     supabase.from("homeworks").select("company_id").in("company_id", ids).eq("status", "open"),
     supabase.from("alerts").select("company_id, kind, payload, created_at").in("company_id", ids).is("resolved_at", null).order("created_at", { ascending: false }),
     supabase.from("questions_to_operator").select("company_id, read_at, answered_at").in("company_id", ids),
@@ -21,7 +25,7 @@ export default async function AdminHome() {
   const totalUnanswered = Object.values(msg).reduce((a, x) => a + x.unanswered, 0);
   const totalErrOpen = Object.values(msg).reduce((a, x) => a + x.errOpen, 0);
   const lastBy: Record<string, string> = {};
-  for (const l of last ?? []) if (!lastBy[l.company_id]) lastBy[l.company_id] = l.created_at;
+  for (const l of last) if (!lastBy[l.company_id]) lastBy[l.company_id] = l.created_at;
   const hwBy: Record<string, number> = {};
   for (const h of hw ?? []) hwBy[h.company_id] = (hwBy[h.company_id] ?? 0) + 1;
   const ALERT: Record<string, string> = { stale7: "7日操作なし", no_internal_meeting: "社内打合せ未登録", homework_overdue: "宿題の期限超過", attitude_flag: "姿勢シグナル", disclosure_request: "開示要求", quota_reached: "生成上限", grace_ending: "猶予終了間近", extension_ending: "延長終了間近", escalation: "要対応" };
@@ -62,7 +66,7 @@ export default async function AdminHome() {
             const stale = lastAt ? (Date.now() - lastAt.getTime()) / 86400000 : null;
             const waiting = (msg[c.id]?.unanswered ?? 0) + (msg[c.id]?.errOpen ?? 0) > 0;
             return (
-              <tr key={c.id} className={`align-top ${stale !== null && stale >= 7 ? "bg-warm-soft" : ""}`}>
+              <tr key={c.id} className={`align-top ${stale !== null && stale >= 7 && ["onboarding", "week1_2", "week3_5", "week6_8", "extended"].includes(c.status) ? "bg-warm-soft" : ""}`}>
                 <td className={`py-3 pl-3 border-l-4 ${waiting ? "border-warm" : "border-transparent"}`}>
                   <Link href={`/admin/${c.id}`} className={`hover:underline ${waiting ? "font-semibold" : ""}`}>{c.name}</Link>
                   {waiting && <span className="block text-[11px] text-warm font-semibold mt-0.5">返事待ち</span>}

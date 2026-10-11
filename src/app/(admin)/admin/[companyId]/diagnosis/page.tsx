@@ -126,7 +126,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
             <input type="hidden" name="company_id" value={c.id} />
             <label className="flex-1 min-w-[240px]"><span className="text-xs text-ink-2">担当者メール</span><input type="email" name="email" className={inp} /></label>
             <label className="w-48"><span className="text-xs text-ink-2">お名前</span><input name="display_name" className={inp} /></label>
-            <button className="btn-primary" type="submit" disabled={!d}>{d?.published_at ? "再送して公開を更新" : "公開して招待する"}</button>
+            <button className="btn-primary" type="submit" disabled={!d}>{d?.published_at ? "公開を更新（メールがあれば招待も）" : "公開して招待する"}</button>
             {!d && <p className="w-full text-xs text-warm">先に上の内容を「保存する」で保存してください。</p>}
           </form>
         ) : (
@@ -134,12 +134,6 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
             <p className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-[13px] text-ink-2 max-w-[44em]">
               {gate.reason}。結果の下書きは、判定が固まる前でも保存しておけます。<Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 ml-1">適合診断の記録へ</Link>
             </p>
-            {(members?.length ?? 0) > 0 && d && (
-              <form action={publishDiagnosis} className="mt-3">
-                <input type="hidden" name="company_id" value={c.id} />
-                <button className="btn-text" type="submit">登録済みの担当者に向けて公開だけ更新する</button>
-              </form>
-            )}
           </>
         )}
         {d?.published_at && <p className="text-xs text-ink-3 mt-2 num">公開済み {fmtMeeting(d.published_at)}{d.chosen_date ? `　／　顧客が選んだキックオフ日 ${fmtMeeting(d.chosen_date)}` : ""}</p>}

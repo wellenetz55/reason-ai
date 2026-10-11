@@ -61,11 +61,11 @@ export async function publishDiagnosis(formData: FormData) {
   const admin = createAdminClient();
   const back = (msg: string) => redirect(`/admin/${companyId}/diagnosis?error=${encodeURIComponent(msg)}`);
   const { data: co } = await supabase.from("companies").select("status").eq("id", companyId).single();
-  // 新しいメールアドレスを入れるときだけ、適合の判定を確かめる（登録済みの担当者への公開更新は止めない）
-  if (email) {
-    const gate = await (await import("@/server/intake")).inviteGate(companyId, co?.status ?? "diagnosed");
-    if (!gate.ok) back(gate.reason);
-  }
+  // 公開・招待は、適合の判定が「適合」のときだけ（判定が変わったのに ◎適合 の結果を出し続けないため）
+  const gate = await (await import("@/server/intake")).inviteGate(companyId, co?.status ?? "diagnosed");
+  if (!gate.ok) back(gate.reason);
+  const { count: memberCount } = await admin.from("profiles").select("id", { count: "exact", head: true }).eq("company_id", companyId);
+  if (!email && !memberCount) back("お客様の担当者がまだいません。担当者のメールアドレスを入れてください");
   if (email) {
     const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
     const existing = list?.users.find((u) => u.email?.toLowerCase() === email);
@@ -74,12 +74,12 @@ export async function publishDiagnosis(formData: FormData) {
       const { data: prof } = await admin.from("profiles").select("role, company_id, display_name").eq("id", existing.id).maybeSingle();
       if (prof?.role === "operator") back("そのメールアドレスは運営者です。顧客の担当者には登録できません");
       if (prof?.company_id && prof.company_id !== companyId) back("そのメールアドレスは別の会社の担当者として登録済みです");
-      await admin.from("profiles").upsert({ id: existing.id, company_id: companyId, role: prof?.role ?? "customer_admin", display_name: name || prof?.display_name || email });
+      await admin.from("profiles").upsert({ id: existing.id, company_id: companyId, role: prof?.role ?? (memberCount ? "customer_member" : "customer_admin"), display_name: name || prof?.display_name || email });
       await admin.auth.signInWithOtp({ email, options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`, shouldCreateUser: false } });
     } else {
       const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback` });
       if (error || !invited?.user) back(`招待できませんでした（${error?.message ?? "不明なエラー"}）`);
-      await admin.from("profiles").upsert({ id: invited!.user!.id, company_id: companyId, role: "customer_admin", display_name: name || email });
+      await admin.from("profiles").upsert({ id: invited!.user!.id, company_id: companyId, role: memberCount ? "customer_member" : "customer_admin", display_name: name || email });
     }
   }
   await supabase.from("diagnosis_results").update({ published_at: new Date().toISOString() }).eq("company_id", companyId);

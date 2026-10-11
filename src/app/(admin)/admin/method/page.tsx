@@ -1,4 +1,4 @@
-import { requireOperator } from "@/lib/session";
+import { requireSuperAdmin } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { savePrompt, saveFixedText } from "./actions";
 import { PROFILE_ITEMS } from "@/lib/profileItems";
@@ -24,7 +24,7 @@ const FIXED_KEYS: { key: string; label: string; stage?: string }[] = [
 ];
 
 export default async function MethodPage() {
-  await requireOperator();
+  await requireSuperAdmin();
   const admin = createAdminClient();
   const [{ data: prompts }, { data: texts }, { data: facets }, { count: techniques }] = await Promise.all([
     admin.from("method_prompts").select("key, version, body, is_active, created_at").order("key").order("version", { ascending: false }),

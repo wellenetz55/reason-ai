@@ -19,7 +19,16 @@ export async function setStatus(formData: FormData) {
     revalidatePath(`/admin/${id}`);
     return;
   }
-  await supabase.from("companies").update({ status, status_changed_at: new Date().toISOString() }).eq("id", id);
+  const nowD = new Date();
+  const patch: Record<string, string> = { status, status_changed_at: nowD.toISOString() };
+  // 猶予・延長は終わりの日を決める（毎朝の自動処理がこの日を過ぎたら次の状態に移す）。期限は会社ページで変えられる
+  if (status === "grace") { const d = new Date(nowD); d.setMonth(d.getMonth() + 1); patch.grace_until = d.toISOString(); }
+  if (status === "extended") patch.extension_until = new Date(nowD.getTime() + 28 * 86_400_000).toISOString();
+  await supabase.from("companies").update(patch).eq("id", id);
+  // 進行中の状態を抜けたら「7日操作なし」は済みにする（毎朝の処理は進行中の会社しか見ないため）
+  if (!["onboarding", "week1_2", "week3_5", "week6_8", "extended"].includes(status)) {
+    await supabase.from("alerts").update({ resolved_at: nowD.toISOString() }).eq("company_id", id).eq("kind", "stale7").is("resolved_at", null);
+  }
   // 状態が変わったら、解約後の一時再アクセスは閉じる（列が無い環境ではエラーを無視）
   await supabase.from("companies").update({ reaccess_until: null }).eq("id", id).not("reaccess_until", "is", null);
   // 契約前を抜けたら、契約前の要対応アラート（申込・診断閲覧・キックオフ選択）を済みにする
@@ -89,6 +98,14 @@ export async function setContractStep(formData: FormData) {
   }
   await supabase.from("companies").update(patch).eq("id", id);
   // 申込以降のどの段階を記録しても、「申込がありました」は対応済み。契約以降なら「診断結果を開きました」も済み
+  // 入金を確認したら、お客様にキックオフ日を選んでもらう案内を送る
+  if (!clear && step === "paid") {
+    const { customerEmails, notifyCustomer } = await import("@/server/notify");
+    const { data: co } = await supabase.from("companies").select("name").eq("id", id).single();
+    for (const to of await customerEmails(id)) {
+      await notifyCustomer({ to, subject: "ご入金を確認しました。キックオフ日をお選びください", lines: [co?.name ?? "", "ご担当者様", "", "ご入金を確認しました。ありがとうございます。", "選ばれる理由AIにサインインし、診断結果の画面でキックオフ（3時間・オンライン）の日をお選びください。", "", "株式会社ベレネッツ"], path: "/diagnosis" });
+    }
+  }
   if (!clear) {
     await supabase.from("alerts").update({ resolved_at: now }).eq("company_id", id).is("resolved_at", null).contains("payload", { type: "program_applied" });
     if (step !== "applied") await supabase.from("alerts").update({ resolved_at: now }).eq("company_id", id).is("resolved_at", null).contains("payload", { type: "diagnosis_viewed" });
@@ -192,4 +209,25 @@ export async function setReaccess(formData: FormData) {
   if (error) redirect(`/admin/${id}?status_error=${encodeURIComponent("保存できませんでした（migration 0016 が未適用の可能性があります）：" + error.message)}`);
   revalidatePath(`/admin/${id}`);
   revalidatePath("/", "layout");
+}
+
+/** 猶予・延長の終わりの日を変える（日本時間の日付。その日の終わりまで） */
+export async function setPhaseEnd(formData: FormData) {
+  const { supabase } = await requireOperator();
+  const id = String(formData.get("company_id"));
+  const col = String(formData.get("col"));
+  const day = String(formData.get("until") || "").trim();
+  if (!["grace_until", "extension_until"].includes(col) || !day) return;
+  await supabase.from("companies").update({ [col]: new Date(`${day}T23:59:00+09:00`).toISOString() }).eq("id", id);
+  revalidatePath(`/admin/${id}`);
+}
+
+/** アラートを手で「済み」にする */
+export async function resolveAlert(formData: FormData) {
+  const { supabase } = await requireOperator();
+  const id = String(formData.get("id"));
+  const companyId = String(formData.get("company_id") || "");
+  await supabase.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("id", id).is("resolved_at", null);
+  revalidatePath("/admin");
+  if (companyId) revalidatePath(`/admin/${companyId}`);
 }

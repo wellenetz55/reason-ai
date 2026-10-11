@@ -4,10 +4,10 @@ import { fmtMeeting } from "@/lib/meetings";
 const FROM = "選ばれる理由AI（ベレネッツ） <noreply@reason-ai.wellenetz.co.jp>";
 
 /** オペレータ全員のメールアドレス */
-async function operatorEmails(): Promise<string[]> {
+async function operatorEmails(onlySuper = false): Promise<string[]> {
   const admin = createAdminClient();
   const { data: ops } = await admin.from("profiles").select("*").eq("role", "operator");
-  const ids = new Set((ops ?? []).filter((p) => !p.disabled_at).map((p) => p.id));
+  const ids = new Set((ops ?? []).filter((p) => !p.disabled_at && (!onlySuper || p.is_super_admin)).map((p) => p.id));
   if (ids.size === 0) return [];
   const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
   return (list?.users ?? []).filter((u) => ids.has(u.id) && u.email).map((u) => u.email!);
@@ -19,11 +19,11 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
  * 運営向けの即時通知メール（Resend）。失敗してもアプリの処理は止めない。
  * 本文に手法名・内部タグ名を含めないこと（spec 06）。
  */
-export async function notifyOperators(opts: { subject: string; lines: string[]; path: string }) {
+export async function notifyOperators(opts: { subject: string; lines: string[]; path: string; onlySuper?: boolean }) {
   const key = process.env.RESEND_API_KEY;
   if (!key) return;
   try {
-    const to = await operatorEmails();
+    const to = await operatorEmails(!!opts.onlySuper);
     if (to.length === 0) return;
     const url = `${process.env.NEXT_PUBLIC_APP_URL}${opts.path}`;
     const html = `<div style="font-family:'Noto Sans JP',system-ui,sans-serif;font-size:14px;line-height:1.7;color:#1c1c1e">
@@ -67,4 +67,14 @@ ${url ? `<p style="margin:16px 0 0"><a href="${url}" style="color:#1e2a5a">選�
   } catch (e) {
     console.error("notifyCustomer error", e);
   }
+}
+
+/** その会社の担当者（お客様）のメールアドレス */
+export async function customerEmails(companyId: string): Promise<string[]> {
+  const admin = createAdminClient();
+  const { data: ps } = await admin.from("profiles").select("id, disabled_at").eq("company_id", companyId).neq("role", "operator");
+  const ids = new Set((ps ?? []).filter((p) => !p.disabled_at).map((p) => p.id));
+  if (ids.size === 0) return [];
+  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  return (list?.users ?? []).filter((u) => ids.has(u.id) && u.email).map((u) => u.email!);
 }

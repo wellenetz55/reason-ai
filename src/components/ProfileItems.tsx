@@ -10,11 +10,11 @@ const tagCls: Record<string, string> = { fact: "tag-fact", verify: "tag-verify",
  * 「御社の説明」の項目一覧。A は AI 下書き → 直す／承認／保留。B は問いに御社が答える（AI の仮説は薄く）。
  * 一括承認は置かない（設計方針）。
  */
-export function ProfileItems({ items, bq, oneLiner, review }: {
+export function ProfileItems({ items, bq, oneLiner, review, drafted = true }: {
   items: Item[];
   bq: Record<string, string>;
   oneLiner: string | null;
-  review: (fd: FormData) => Promise<void>;
+  review: (fd: FormData) => Promise<void>; drafted?: boolean;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const byKey = new Map(items.map((i) => [i.key, i]));
@@ -43,7 +43,7 @@ export function ProfileItems({ items, bq, oneLiner, review }: {
         ) : (
           <>
             <p className={`tag-line ${status === "empty" ? "tag-none" : tagCls[tag] ?? "tag-hypo"} pl-4 mt-2 text-sm leading-relaxed whitespace-pre-line ${shown ? "" : "text-ink-3"}`}>
-              {shown || (def.fixed ? "適合診断の記録がまだありません" : "資料に見つかりませんでした。「直す」から書けます")}
+              {shown || (def.fixed ? "適合診断の記録がまだありません" : drafted ? "資料に見つかりませんでした。「直す」から書けます" : "まだ下書きがありません。上の「下書きを作る」を押すか、「直す」から書けます")}
             </p>
             {!def.fixed && (
               <div className="mt-2 flex gap-1">

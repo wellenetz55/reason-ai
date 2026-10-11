@@ -46,7 +46,7 @@ export default async function Home() {
         )}
         {company.status === "locked" && <a href="/api/export?step=deploy" className="btn-primary inline-block mt-6">提供価値シートをダウンロード</a>}
         {!["locked", "cancelled"].includes(company.status) && <p className="text-[13px] text-ink-3 mt-6 max-w-[40em] leading-relaxed">
-          ステップは STEP 0 から順に進みます。各画面のいちばん下に「次のステップ」があり、条件を満たすとボタンが押せます。ベレネッツとの面談のあとに開くステップもあります。
+          ステップは STEP 0 から順に進みます。各画面のいちばん下に「次のステップ」があり、条件を満たすとボタンが押せます。画面が準備中の段階は、面談でご案内します。ベレネッツとの面談のあとに開くステップもあります。
         </p>}
       </section>
 

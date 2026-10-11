@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 
-type S = { key: string; step: string; label: string; href: string; open: boolean; now: boolean };
+type S = { key: string; step: string; label: string; href: string; open: boolean; now: boolean; ready?: boolean };
 
 /**
  * 左の進捗レール。
@@ -40,13 +40,14 @@ export function NavRail({ stages }: { stages: S[] }) {
           const base = "flex items-center gap-2.5 py-[7px] pl-3 -ml-3 border-l-2 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-navy rounded-sm";
           return (
             <li key={s.key}>
-              {s.open ? (
+              {s.open && s.ready !== false ? (
                 <Link href={s.href} className={clsx(base, active ? "border-navy text-ink" : "border-transparent text-ink-2 hover:text-ink")}>
                   {inner}
                 </Link>
               ) : (
-                <span className={clsx(base, "border-transparent text-ink-3")} title="前の段階が終わると開きます">
+                <span className={clsx(base, "border-transparent text-ink-3")} title={s.open ? "この段階の画面は準備中です。進め方は面談でご案内します" : "面談のあと、ベレネッツが開きます"}>
                   {inner}
+                  {s.open && <span className="ml-auto text-[10px] text-ink-3 border hairline rounded-full px-1.5 py-[1px] shrink-0">準備中</span>}
                 </span>
               )}
             </li>

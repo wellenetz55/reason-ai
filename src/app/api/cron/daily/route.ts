@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   // stale7 alerts
   const { data: companies } = await admin.from("companies").select("id, status").in("status", ["onboarding", "week1_2", "week3_5", "week6_8", "extended"]);
   for (const c of companies ?? []) {
-    const { data: last } = await admin.from("activity_log").select("created_at").eq("company_id", c.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const { data: last } = await admin.from("activity_log").select("created_at").eq("company_id", c.id).not("event", "like", "%.error").not("event", "like", "intake.%").order("created_at", { ascending: false }).limit(1).maybeSingle();
     const lastAt = last ? new Date(last.created_at) : null;
     if (!lastAt || now.getTime() - lastAt.getTime() > 7 * 86400000) {
       const { data: existing } = await admin.from("alerts").select("id").eq("company_id", c.id).eq("kind", "stale7").is("resolved_at", null).maybeSingle();

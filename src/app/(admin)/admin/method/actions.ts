@@ -1,11 +1,11 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireOperator } from "@/lib/session";
+import { requireSuperAdmin } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /** プロンプトを新版として保存し、有効化（旧版は残る） */
 export async function savePrompt(formData: FormData) {
-  await requireOperator();
+  await requireSuperAdmin();
   const key = String(formData.get("key") || "").trim();
   const body = String(formData.get("body") || "").trim();
   if (!key || !body) return;
@@ -18,7 +18,7 @@ export async function savePrompt(formData: FormData) {
 }
 
 export async function saveFixedText(formData: FormData) {
-  await requireOperator();
+  await requireSuperAdmin();
   const key = String(formData.get("key") || "").trim();
   const body = String(formData.get("body") || "").trim();
   if (!key) return;

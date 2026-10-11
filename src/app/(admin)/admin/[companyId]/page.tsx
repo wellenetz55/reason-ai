@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
-import { setStatus, setReaccess, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink, setContractStep, inviteCustomer } from "../actions";
+import { setStatus, setReaccess, setPhaseEnd, resolveAlert, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink, setContractStep, inviteCustomer } from "../actions";
 import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
 import { createHomework, updateHomework, withdrawHomework, reopenHomework } from "./homework-actions";
 import { ClearQuery } from "@/components/ClearQuery";
@@ -38,6 +38,9 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const { data: userList } = await (await import("@/lib/supabase/admin")).createAdminClient().auth.admin.listUsers({ perPage: 1000 });
   const emailOf = (id: string) => userList?.users.find((u) => u.id === id)?.email ?? "";
   const intake = await loadIntake(companyId).catch(() => null);
+  const { data: openAlerts } = await supabase.from("alerts").select("id, kind, payload, created_at").eq("company_id", companyId).is("resolved_at", null).order("created_at", { ascending: false });
+  const ALERT_LABEL: Record<string, string> = { stale7: "7日操作なし", escalation: "要対応", homework_overdue: "宿題の期限超過", attitude_flag: "姿勢シグナル", disclosure_request: "開示要求", quota_reached: "生成上限", grace_ending: "猶予終了間近", extension_ending: "延長終了間近", no_internal_meeting: "社内打合せ未登録" };
+  const alertText = (a: { kind: string; payload: unknown }) => { const t = (a.payload as { type?: string } | null)?.type; return t === "program_applied" ? "申込がありました" : t === "kickoff_chosen" ? "キックオフ日が選ばれました" : t === "diagnosis_viewed" ? "診断結果を開きました" : ALERT_LABEL[a.kind] ?? a.kind; };
   const gate = c ? await inviteGate(companyId, c.status) : { ok: false, reason: "" };
   const { data: diag } = await supabase.from("diagnosis_results").select("published_at, first_viewed_at, last_viewed_at, view_count").eq("company_id", companyId).maybeSingle();
   if (!c) notFound();
@@ -75,6 +78,21 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
         <div><p className="text-xs text-ink-3">未回収宿題</p><p className="serif text-[28px]">{openHw}</p></div>
         <div><p className="text-xs text-ink-3">質問</p><p className="serif text-[28px]">{(qs ?? []).filter((q) => !q.answered_at).length}</p></div>
       </section>
+
+      {(openAlerts ?? []).length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-sm text-ink-2">要対応（{(openAlerts ?? []).length}）</h2>
+          <ul className="mt-2 divide-y divide-hair text-sm max-w-[880px]">
+            {(openAlerts ?? []).map((a) => (
+              <li key={a.id} className="py-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span>{alertText(a)}</span>
+                <span className="num text-xs text-ink-3">{fmtMeeting(a.created_at)}</span>
+                <form action={resolveAlert} className="ml-auto"><input type="hidden" name="id" value={a.id} /><input type="hidden" name="company_id" value={c.id} /><button className="btn-text text-xs" type="submit">済みにする</button></form>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">姿勢シグナル</h2>
@@ -119,7 +137,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
         <form action={createHomework} className="mt-3 grid gap-2 max-w-[44em] text-sm">
           <input type="hidden" name="company_id" value={c.id} />
           <input name="title" required placeholder="宿題（例：最近の受注3件、決め手を営業担当に聞いてください）" className="border-b hairline py-1" />
-          <input name="why" placeholder="効く場所（任意。例：STEP 2 の「なぜなら」の裏づけ）" className="border-b hairline py-1" />
+          <input name="why" placeholder="効く場所（任意。例：STEP 5 の「なぜなら」の裏づけ）" className="border-b hairline py-1" />
           <input name="ask_whom_hint" placeholder="誰に聞くか（任意。「まず○○に聞いてください」と出ます。例：営業担当）" className="border-b hairline py-1" />
           <div className="flex flex-wrap gap-4 items-center">
             <label className="flex items-center gap-2 text-xs text-ink-3">期限<input type="date" name="due_at" className="border-b hairline py-1 num text-sm text-ink" /></label>
@@ -196,6 +214,20 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
           </select>
           <button className="btn-text" type="submit">変更</button>
         </form>
+        {(c.status === "grace" || c.status === "extended") && (() => {
+          const col = c.status === "grace" ? "grace_until" : "extension_until";
+          const until = c.status === "grace" ? c.grace_until : c.extension_until;
+          return (
+            <form action={setPhaseEnd} className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+              <input type="hidden" name="company_id" value={c.id} />
+              <input type="hidden" name="col" value={col} />
+              <span className="text-xs text-ink-3">{c.status === "grace" ? "猶予の終わり（過ぎると「編集終了」に）" : "延長の終わり（過ぎると「顧問」に）"}</span>
+              <input type="date" name="until" required defaultValue={until ? toLocalInput(until).slice(0, 10) : ""} className="border-b hairline py-1 num" />
+              <button className="btn-text" type="submit">保存</button>
+              {!until && <span className="text-xs text-warm">未設定です。日付を入れてください</span>}
+            </form>
+          );
+        })()}
         {c.status === "cancelled" && (
           <div className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-sm max-w-[44em]">
             <p className="font-semibold text-[13px]">解約後のデータへの再アクセス</p>

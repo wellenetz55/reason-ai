@@ -13,7 +13,8 @@ async function nextSeq(supabase: Awaited<ReturnType<typeof requireWritableCustom
 export async function addRow(formData: FormData) {
   const { supabase, company, user } = await requireWritableCustomer();
   const value = String(formData.get("value") || "").trim();
-  const facet = String(formData.get("facet") || "functional") as FacetKey;
+  const facetIn = String(formData.get("facet") || "functional");
+  const facet = (FACETS.some((f) => f.key === facetIn) ? facetIn : "functional") as FacetKey;
   const round = Number(formData.get("round") || 1);
   const target = String(formData.get("target") || "").trim() || null;
   const experience = String(formData.get("experience") || "").trim() || null;
@@ -62,7 +63,8 @@ export async function reviewRow(formData: FormData) {
 
 export async function requestDraft(formData: FormData) {
   const { supabase, company, user } = await requireWritableCustomer();
-  const facet = String(formData.get("facet") || "functional") as FacetKey;
+  const facetIn = String(formData.get("facet") || "functional");
+  const facet = (FACETS.some((f) => f.key === facetIn) ? facetIn : "functional") as FacetKey;
   const round = Number(formData.get("round") || 1);
   if (!FACETS.some((f) => f.key === facet)) return;
   const [summary, { data: rows }] = await Promise.all([

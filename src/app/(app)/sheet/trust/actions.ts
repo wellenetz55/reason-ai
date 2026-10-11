@@ -17,10 +17,13 @@ export async function requestBecauseDrafts() {
   const targets = (rows ?? []).filter((r) => r.value_raw).map((r) => ({ id: r.id, value: r.value_raw as string, experience: r.experience_value ?? r.experience_value_v1 }));
   const drafts = await aiGuard(supabase, company.id, user.id, "because.draft", () => draftBecause({ companyName: company.name, profile, rows: targets }));
   if (!drafts) { revalidatePath("/sheet/trust"); return; }
+  const TAGS = ["fact", "verify", "hypothesis"];
   for (const d of drafts) {
-    if (!targets.some((t) => t.id === d.id)) continue;
-    const patch: Record<string, unknown> = { because_phrase: d.because, because_tag: d.tag ?? "hypothesis", because_only_us: !!d.only_us, because_by: "ai", trust_axis: d.type ?? null };
-    if (d.experience) patch.experience_value = d.experience;
+    const t = targets.find((x) => x.id === d.id);
+    if (!t || !d.because) continue;
+    const patch: Record<string, unknown> = { because_phrase: d.because, because_tag: TAGS.includes(String(d.tag)) ? d.tag : "hypothesis", because_only_us: !!d.only_us, because_by: "ai", trust_axis: d.type ?? null };
+    // お客様の体験価値は上書きしない（空のときだけAIの下書きを入れる）
+    if (d.experience && !t.experience) patch.experience_value = d.experience;
     await supabase.from("sheet_rows").update(patch).eq("id", d.id).eq("company_id", company.id);
   }
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "because.draft", payload: { n: drafts.length } });

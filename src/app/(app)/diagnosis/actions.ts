@@ -9,6 +9,10 @@ import { fmtMeeting } from "@/lib/meetings";
 export async function applyProgram() {
   const { company, user, profile } = await requireCustomer();
   const admin = createAdminClient();
+  // 契約前で、結果が公開されていて、閲覧期限内のときだけ受け付ける
+  if (company.status !== "diagnosed") { revalidatePath("/diagnosis"); return; }
+  const { data: dr } = await admin.from("diagnosis_results").select("published_at, expires_at").eq("company_id", company.id).maybeSingle();
+  if (!dr?.published_at || (dr.expires_at && new Date(dr.expires_at) < new Date())) { revalidatePath("/diagnosis"); return; }
   // 二度押しでも1回だけ：まだ申込が入っていない行だけを更新し、更新できたときだけ知らせる
   const { data: won } = await admin.from("companies").update({ applied_at: new Date().toISOString() }).eq("id", company.id).is("applied_at", null).select("id");
   if (!won?.length) {
@@ -53,9 +57,10 @@ export async function chooseKickoff(formData: FormData) {
     return;
   }
   await admin.from("diagnosis_results").update({ chosen_date: iso, chosen_at: new Date().toISOString() }).eq("company_id", company.id);
-  // 既存のキックオフ予定があれば差し替え
-  await admin.from("company_meetings").delete().eq("company_id", company.id).eq("kind", "kickoff").is("held_at", null);
-  await admin.from("company_meetings").insert({ company_id: company.id, kind: "kickoff", scheduled_at: iso, created_by: user.id });
+  // 既存のキックオフ予定があれば日時だけ差し替える（ベレネッツが入れた会議URLは残す）
+  const { data: km } = await admin.from("company_meetings").select("id").eq("company_id", company.id).eq("kind", "kickoff").is("held_at", null).order("created_at").limit(1).maybeSingle();
+  if (km) await admin.from("company_meetings").update({ scheduled_at: iso }).eq("id", km.id);
+  else await admin.from("company_meetings").insert({ company_id: company.id, kind: "kickoff", scheduled_at: iso, created_by: user.id });
   await admin.from("alerts").insert({ company_id: company.id, kind: "escalation", payload: { type: "kickoff_chosen", date: iso, by: user.id } });
   await notifyOperators({ subject: `${company.name} がキックオフ日を選びました（${fmtMeeting(iso)}）`, lines: [`${company.name} の担当者が、キックオフの日程を ${fmtMeeting(iso)} に決めました。`, "面談に会議URLを入れ、状態を「キックオフ前」に変えると STEP 0 が開きます。"], path: `/admin/${company.id}` });
   revalidatePath("/diagnosis");
@@ -66,6 +71,8 @@ export async function chooseKickoff(formData: FormData) {
 export async function recordDiagnosisView() {
   const { company, user, profile } = await requireCustomer();
   const admin = createAdminClient();
+  // 契約後に開いたときは、閲覧の記録・通知をしない（申込前の検討状況を知るための記録のため）
+  if (company.status !== "diagnosed") return;
   const { data: d } = await admin.from("diagnosis_results").select("first_viewed_at, last_viewed_at, view_count, published_at").eq("company_id", company.id).maybeSingle();
   if (!d || !d.published_at) return;
   const now = new Date();
@@ -76,7 +83,7 @@ export async function recordDiagnosisView() {
   }
   const count = (d.view_count ?? 0) + 1;
   await admin.from("diagnosis_results").update({ first_viewed_at: d.first_viewed_at ?? now.toISOString(), last_viewed_at: now.toISOString(), view_count: count }).eq("company_id", company.id);
-  if (!d.first_viewed_at) await admin.from("alerts").insert({ company_id: company.id, kind: "escalation", payload: { type: "diagnosis_viewed", by: user.id } });
+  if (!d.first_viewed_at && company.status === "diagnosed") await admin.from("alerts").insert({ company_id: company.id, kind: "escalation", payload: { type: "diagnosis_viewed", by: user.id } });
   const who = profile.display_name ?? "担当者";
   await notifyOperators({
     subject: count === 1 ? `${company.name} が適合診断の結果を開きました` : `${company.name} が適合診断の結果を再び開きました（${count}回目）`,
