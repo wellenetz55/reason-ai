@@ -43,7 +43,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <p className="text-[13px] text-ink-2 mt-1">{profile.display_name} <span className="text-ink-3">さん</span></p>
         <div className="mt-3 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-3.5 py-2.5">
           <p className="text-[11px] font-semibold text-navy tracking-wide">現在のフェーズ</p>
-          <p className="text-[13px] text-ink mt-0.5">{STATUS_LABEL[company.status] ?? company.status}</p>
+          <p className="text-[13px] text-ink mt-0.5">{company.status === "diagnosed" ? "適合診断の結果をご確認ください" : STATUS_LABEL[company.status] ?? company.status}</p>
         </div>
         {/* 宿題：フェーズのすぐ下。未回答があれば暖色で目立たせる（契約前は出さない） */}
         {!["diagnosed", "locked", "cancelled"].includes(company.status) && (openHomework > 0 ? (

@@ -16,7 +16,6 @@ export async function saveIntake(formData: FormData) {
   const answers: Record<string, string> = {};
   for (const k of [...Q_KEYS, "extra", "memo", "attendees"]) answers[k] = String(formData.get(k) || "").trim();
   const targetName = String(formData.get("target_name") || "").trim();
-  if (kind !== "company" && !targetName) back(companyId, `error=${encodeURIComponent("事業部・ブランド、商品・サービスを選んだときは、対象の名前を入れてください")}`);
   const heldOn = String(formData.get("held_on") || "").trim();
   const verdict = String(formData.get("verdict") || "").trim();
   const { error } = await supabase.from("diagnosis_intakes").upsert({
@@ -32,10 +31,13 @@ export async function saveIntake(formData: FormData) {
     updated_at: new Date().toISOString(),
   });
   if (error) back(companyId, `error=${encodeURIComponent("保存できませんでした（SQL 0021 が未実行の可能性があります）：" + error.message)}`);
+  revalidatePath(`/admin/${companyId}/intake`);
+  revalidatePath(`/admin/${companyId}`);
+  revalidatePath("/step0");
 
   // URL → 会社の資料（website）。末尾の / を揃えて比べ、同じURLは二重に入れない。形の壊れたURLは飛ばして知らせる
   const norm = (u: string) => { try { const x = new URL(u); return x.protocol.startsWith("http") ? x.href.replace(/\/$/, "") : null; } catch { return null; } };
-  const tokens = String(formData.get("urls") || "").split(/\s+/).map((u) => u.trim()).filter(Boolean);
+  const tokens = String(formData.get("urls") || "").split(/\s+/).map((u) => u.trim()).filter(Boolean).map((u) => (/^https?:\/\//i.test(u) ? u : `https://${u}`));
   const bad = tokens.filter((u) => !norm(u));
   const wanted = [...new Set(tokens.map(norm).filter((u): u is string => !!u))];
   if (wanted.length) {
@@ -48,6 +50,7 @@ export async function saveIntake(formData: FormData) {
     }
   }
   if (bad.length) back(companyId, `error=${encodeURIComponent("記録は保存しました。次のURLは形が正しくないため登録していません：" + bad.join(" "))}`);
+  if (kind !== "company" && !targetName) back(companyId, `error=${encodeURIComponent("記録は保存しました。事業部・ブランド、商品・サービスを選んだときは、対象の名前も入れてください（AIが会社全体と取り違えないため）")}`);
   revalidatePath(`/admin/${companyId}/intake`);
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/step0");
@@ -85,6 +88,9 @@ export async function saveTranscript(formData: FormData) {
     { onConflict: "company_id" },
   );
   if (error) back(companyId, `error=${encodeURIComponent("保存できませんでした（SQL 0021 が未実行の可能性があります）：" + error.message)}`);
+  revalidatePath(`/admin/${companyId}/intake`);
+  revalidatePath(`/admin/${companyId}`);
+  revalidatePath("/step0");
   await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "intake.transcript", payload: { name, chars: Math.min(text.length, MAX_TRANSCRIPT) } });
   revalidatePath(`/admin/${companyId}/intake`);
   back(companyId, "ok=transcript");

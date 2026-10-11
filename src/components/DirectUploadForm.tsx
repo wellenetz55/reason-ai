@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { prepareUpload, finishUpload } from "@/app/(app)/step0/actions";
 import { FilePicker } from "@/components/FilePicker";
 
+class Known extends Error {}
+
 /** STEP 0 の資料アップロード。ブラウザから保管場所へ直接送る（25MBまで） */
 export function DirectUploadForm({ disabled, kindSelect, accept }: { disabled: boolean; kindSelect: ReactNode; accept: string }) {
   const router = useRouter();
@@ -26,9 +28,9 @@ export function DirectUploadForm({ disabled, kindSelect, accept }: { disabled: b
         setState("sending");
         try {
           const prep = await prepareUpload({ name: file.name, size: file.size, type: file.type });
-          if (!prep.ok) throw new Error(prep.error);
+          if (!prep?.ok) throw new Known(prep?.error ?? "登録できませんでした。");
           const { error: upErr } = await createClient().storage.from("company-docs").uploadToSignedUrl(prep.path, prep.token, file, { contentType: file.type });
-          if (upErr) throw new Error("送れませんでした。通信を確かめて、もう一度お試しください。");
+          if (upErr) throw new Known("送れませんでした。通信を確かめて、もう一度お試しください。");
           const done = new FormData();
           done.set("path", prep.path);
           done.set("title", String(fd.get("title") || ""));
@@ -37,13 +39,13 @@ export function DirectUploadForm({ disabled, kindSelect, accept }: { disabled: b
           done.set("file_type", file.type);
           done.set("file_size", String(file.size));
           const fin = await finishUpload(done);
-          if (!fin.ok) throw new Error(fin.error ?? "登録できませんでした。");
+          if (!fin?.ok) throw new Known(fin?.error ?? "登録できませんでした。");
           form.reset();
           setResetKey((k) => k + 1);
           setState("done");
           router.refresh();
         } catch (err) {
-          setError(err instanceof Error ? err.message : "登録できませんでした。");
+          setError(err instanceof Known ? err.message : "登録できませんでした。通信を確かめて、もう一度お試しください。");
           setState("idle");
         }
       }}

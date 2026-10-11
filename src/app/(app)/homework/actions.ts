@@ -9,9 +9,13 @@ export async function answerHomework(formData: FormData) {
   const answer = String(formData.get("answer") || "").trim();
   const askedWhom = String(formData.get("asked_whom") || "").trim();
   // 早く戻るときも画面を描き直す（送信中表示が残らないように）
-  if (!askedWhom || (mode !== "pass" && !answer) || company.status === "locked" || company.status === "cancelled") {
+  if (company.status === "locked" || company.status === "cancelled") {
     revalidatePath("/homework");
     return;
+  }
+  if (!askedWhom || !answer) {
+    const { redirect } = await import("next/navigation");
+    redirect(`/homework?error=${encodeURIComponent(!askedWhom ? "「誰に聞いたか」を入れてください" : mode === "pass" ? "パスする理由を回答欄に書いてください" : "回答を書いてください")}`);
   }
   await supabase
     .from("homeworks")

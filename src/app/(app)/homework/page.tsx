@@ -1,7 +1,10 @@
 import { requireCustomer } from "@/lib/session";
 import { answerHomework } from "./actions";
+import { ClearQuery } from "@/components/ClearQuery";
 
-export default async function HomeworkPage() {
+export default async function HomeworkPage({ searchParams }: PageProps<"/homework">) {
+  const sp = await searchParams;
+  const formError = typeof sp?.error === "string" ? sp.error : null;
   const { supabase, company } = await requireCustomer();
   const { data: items } = await supabase.from("homeworks").select("*").eq("company_id", company.id).order("priority", { ascending: false }).order("due_at");
   const open = (items ?? []).filter((h) => h.status === "open");
@@ -9,7 +12,9 @@ export default async function HomeworkPage() {
   const closed = company.status === "locked" || company.status === "cancelled";
   return (
     <div>
+      <ClearQuery keys={["error"]} />
       <h1 className="serif text-[28px] leading-tight">宿題</h1>
+      {formError && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[40em]">{formError}。入力した内容は送られていません。</p>}
       <p className="text-ink-2 text-sm mt-2 max-w-[40em]">一人で決めないでください。周りの人に聞いてから書いてください。誰に聞いたかも残します。</p>
       {open.length === 0 && <p className="mt-10 text-sm text-ink-3">いま出ている宿題はありません。</p>}
       <ul className="mt-8 divide-y divide-hair">
@@ -26,11 +31,11 @@ export default async function HomeworkPage() {
             <form action={answerHomework} className="mt-4 space-y-3 max-w-[40em]">
               <input type="hidden" name="id" value={h.id} />
               {(h.answer || h.pass_reason) && <p className="text-[12px] text-ink-3">ベレネッツからもう一度お願いしている宿題です。前回の回答を残してあります。書き足してください。</p>}
-              <textarea name="answer" rows={3} required defaultValue={h.answer ?? h.pass_reason ?? ""} placeholder="回答（パスする場合は理由）" className="w-full border-b hairline py-2 text-sm" />
+              <textarea name="answer" rows={3} defaultValue={h.answer ?? h.pass_reason ?? ""} placeholder="回答（パスする場合は理由）" className="w-full border-b hairline py-2 text-sm" />
               <input name="asked_whom" defaultValue={h.asked_whom ?? ""} required pattern=".*\S.*" title="誰に聞いたかを入力してください" placeholder="誰に聞いたか（必須）" className="w-full border-b hairline py-2 text-sm" />
               <div className="flex gap-2">
                 <button className="btn-primary" name="mode" value="answer" type="submit">回答する</button>
-                <button className="btn-text" name="mode" value="pass" type="submit" formNoValidate>今回はパス（理由を回答欄に）</button>
+                <button className="btn-text" name="mode" value="pass" type="submit">今回はパス（理由を回答欄に）</button>
               </div>
             </form>
             )}

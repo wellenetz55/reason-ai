@@ -35,33 +35,6 @@ function kindOf(v: FormDataEntryValue | null) {
   return (KINDS as readonly string[]).includes(k) ? k : "other";
 }
 
-/** ファイル（PDF・画像・テキスト）を非公開バケットに保存し、company_documents に記録 */
-export async function uploadDocument(formData: FormData) {
-  const { company, user, supabase } = await requireWritableCustomer();
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) fail("ファイルを選んでください。");
-  const f = file as File;
-  if (f.size > MAX_BYTES) fail("ファイルが大きすぎます（25MBまで）。");
-  if (!ALLOWED.includes(f.type)) fail("このファイルの形式は登録できません（PDF・画像・テキスト）。");
-  const u = await usage(supabase, company.id);
-  if (u.files >= LIMITS.files || u.bytes + f.size > LIMITS.totalBytes) fail("登録できるファイルの数か容量の上限に達しています。不要な資料を取り下げてください。");
-  const admin = createAdminClient();
-  const path = `${company.id}/${randomUUID()}-${f.name.replace(/[^\w.\-ぁ-んァ-ン一-龠]/g, "_")}`;
-  const { error } = await admin.storage.from("company-docs").upload(path, Buffer.from(await f.arrayBuffer()), { contentType: f.type, upsert: false });
-  if (error) fail("保存できませんでした。しばらくしてからもう一度お試しください。");
-  await supabase.from("company_documents").insert({
-    company_id: company.id,
-    kind: kindOf(formData.get("kind")),
-    title: String(formData.get("title") || f.name).trim() || f.name,
-    storage_path: path,
-    mime_type: f.type,
-    size_bytes: f.size,
-    uploaded_by: user.id,
-  });
-  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "doc.upload" });
-  revalidatePath("/step0");
-}
-
 /**
  * 大きなファイルは、サーバを通さずブラウザから保管場所へ直接送る（サーバの受け取り上限 約4.5MB を避けるため）。
  * ① prepareUpload で検査と送り先の発行 → ② ブラウザが送る → ③ finishUpload で記録。
@@ -73,7 +46,9 @@ export async function prepareUpload(meta: { name: string; size: number; type: st
   if (!ALLOWED.includes(meta.type)) return { ok: false, error: "このファイルの形式は登録できません（PDF・画像・テキスト）。" };
   const u = await usage(supabase, company.id);
   if (u.files >= LIMITS.files || u.bytes + meta.size > LIMITS.totalBytes) return { ok: false, error: "登録できるファイルの数か容量の上限に達しています。不要な資料を取り下げてください。" };
-  const path = `${company.id}/${randomUUID()}-${meta.name.replace(/[^\w.\-ぁ-んァ-ン一-龠]/g, "_")}`;
+  // 保管場所のキーは英数字だけにする（日本語のキーを受け付けない環境があるため）。元の名前は記録の題名に残す
+  const ext = (meta.name.match(/\.([A-Za-z0-9]{1,5})$/)?.[1] ?? "bin").toLowerCase();
+  const path = `${company.id}/${randomUUID()}.${ext}`;
   const { data, error } = await createAdminClient().storage.from("company-docs").createSignedUploadUrl(path);
   if (error || !data) return { ok: false, error: "送り先を用意できませんでした。しばらくしてからもう一度お試しください。" };
   return { ok: true, path: data.path ?? path, token: data.token };
@@ -82,7 +57,11 @@ export async function prepareUpload(meta: { name: string; size: number; type: st
 export async function finishUpload(formData: FormData): Promise<{ ok: boolean; error?: string }> {
   const { company, user, supabase } = await requireWritableCustomer();
   const path = String(formData.get("path") || "");
-  if (!path.startsWith(`${company.id}/`)) return { ok: false, error: "登録できませんでした。" };
+  // prepareUpload が発行した形（自社フォルダ直下の uuid.拡張子）だけを受け付ける
+  const re = new RegExp(`^${company.id}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.[a-z0-9]{1,5}$`);
+  if (!re.test(path)) return { ok: false, error: "登録できませんでした。" };
+  const { data: dup } = await supabase.from("company_documents").select("id").eq("company_id", company.id).eq("storage_path", path).maybeSingle();
+  if (dup) return { ok: true };
   // 本当に保管場所に届いたかを確かめ、実際の大きさ・形式を使う
   const dir = path.slice(0, path.lastIndexOf("/"));
   const name = path.slice(path.lastIndexOf("/") + 1);
@@ -90,7 +69,13 @@ export async function finishUpload(formData: FormData): Promise<{ ok: boolean; e
   const obj = (objs ?? []).find((o) => o.name === name);
   if (!obj) return { ok: false, error: "ファイルが届いていません。もう一度お試しください。" };
   const meta = (obj.metadata ?? {}) as { size?: number; mimetype?: string };
-  const fileName = String(formData.get("file_name") || name);
+  // 上限を、実際に届いた大きさでもう一度確かめる（超えていたら届いたファイルを消す）
+  const u = await usage(supabase, company.id);
+  if (u.files >= LIMITS.files || u.bytes + (meta.size ?? 0) > LIMITS.totalBytes) {
+    await createAdminClient().storage.from("company-docs").remove([path]);
+    return { ok: false, error: "登録できるファイルの数か容量の上限に達しています。不要な資料を取り下げてください。" };
+  }
+  const fileName = String(formData.get("file_name") || name).slice(0, 200);
   await supabase.from("company_documents").insert({
     company_id: company.id,
     kind: kindOf(formData.get("kind")),
