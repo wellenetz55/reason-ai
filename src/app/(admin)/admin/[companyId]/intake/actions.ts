@@ -14,7 +14,7 @@ export async function saveIntake(formData: FormData) {
   const companyId = String(formData.get("company_id"));
   const kind = String(formData.get("target_kind") || "company");
   const answers: Record<string, string> = {};
-  for (const k of [...Q_KEYS, "extra"]) answers[k] = String(formData.get(k) || "").trim();
+  for (const k of [...Q_KEYS, "extra", "attendees"]) answers[k] = String(formData.get(k) || "").trim();
   const heldOn = String(formData.get("held_on") || "").trim();
   const verdict = String(formData.get("verdict") || "").trim();
   const { data: cur } = await supabase.from("diagnosis_intakes").select("transcript, transcript_name").eq("company_id", companyId).maybeSingle();

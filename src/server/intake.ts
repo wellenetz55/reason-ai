@@ -49,6 +49,7 @@ export async function loadIntakeContext(companyId: string, companyName: string, 
   const target = describeTarget(i, companyName);
   const q = await loadDiagQuestions();
   const lines: string[] = [];
+  if (i.held_on) lines.push(`診断日：${i.held_on}${i.answers?.attendees ? "／面談した相手：" + i.answers.attendees : ""}`);
   for (const k of Q_KEYS) {
     const a = (i.answers?.[k] ?? "").trim();
     if (a) lines.push(`${q[k] ? "問：" + q[k] + "\n" : ""}答：${a}`);

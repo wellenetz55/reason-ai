@@ -39,6 +39,14 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
       <form action={saveIntake} className="mt-8 space-y-10 max-w-[880px]">
         <input type="hidden" name="company_id" value={c.id} />
 
+        <section className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+            <label className="flex items-center gap-2"><span className="font-semibold">診断日</span><input type="date" name="held_on" required defaultValue={intake?.held_on ?? ""} className="border-b hairline py-1 num text-sm bg-transparent" /></label>
+            <label className="flex items-center gap-2 flex-1 min-w-[240px]"><span className="font-semibold whitespace-nowrap">面談した相手</span><input name="attendees" defaultValue={a.attendees ?? ""} className="border-b hairline py-1 text-sm flex-1 bg-transparent" placeholder="例：矢野副社長、営業部長の○○さん" /></label>
+          </div>
+          {intake?.updated_at && <p className="text-[11px] text-ink-3 mt-2 num">最終更新 {new Date(intake.updated_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}</p>}
+        </section>
+
         <section>
           <h2 className="serif text-[17px]">1. 対象（何の「選ばれる理由」をつくるか）</h2>
           <p className="text-xs text-ink-3 mt-1">会社全体でなく、買収したブランドや一つの商品が対象のときは、ここで決めます。AIは対象以外（親会社・他の事業）の話を混ぜません。</p>
@@ -82,7 +90,6 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
         <section>
           <h2 className="serif text-[17px]">4. 判定（ベレネッツ用メモ）</h2>
           <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
-            <label className="flex items-center gap-2 text-xs text-ink-3">診断日<input type="date" name="held_on" defaultValue={intake?.held_on ?? ""} className="border-b hairline py-1 num text-sm text-ink" /></label>
             <select name="verdict" defaultValue={intake?.verdict ?? ""} className="border-b hairline py-1 text-sm">
               <option value="">（未判定）</option>
               {Object.entries(VERDICT_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}

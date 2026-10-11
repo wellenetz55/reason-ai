@@ -65,7 +65,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
       <h1 className="serif text-[28px] leading-tight">{c.name}</h1>
       <p className="text-sm text-ink-2 mt-1">{STATUS_LABEL[c.status]} · <Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 hover:text-ink">適合診断の記録</Link> · <Link href={`/admin/${c.id}/diagnosis`} className="underline underline-offset-4 hover:text-ink">適合診断の結果を書く</Link></p>
       <p className="text-xs text-ink-3 mt-1">
-        {intake ? <>対象：{describeTarget(intake, c.name) || "会社全体"}{intake.transcript ? " · 書き起こしあり" : " · 書き起こしなし"}{intake.verdict ? ` · 判定 ${VERDICT_LABEL[intake.verdict] ?? intake.verdict}` : ""}</> : <span className="text-warm">適合診断の記録がまだありません（対象・URL・聞き取りを入れると、AIの下書きがそれを使います）</span>}
+        {intake ? <>{intake.held_on && <>診断日 <span className="num">{new Date(intake.held_on + "T00:00:00+09:00").toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "numeric", day: "numeric" })}</span> · </>}対象：{describeTarget(intake, c.name) || "会社全体"}{intake.transcript ? " · 書き起こしあり" : " · 書き起こしなし"}{intake.verdict ? ` · 判定 ${VERDICT_LABEL[intake.verdict] ?? intake.verdict}` : ""}</> : <span className="text-warm">適合診断の記録がまだありません（対象・URL・聞き取りを入れると、AIの下書きがそれを使います）</span>}
       </p>
 
       <section className="mt-8 grid grid-cols-4 gap-6 text-sm">
