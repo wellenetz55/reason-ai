@@ -1,5 +1,8 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+
+const fail = (msg: string): never => redirect(`/step0?error=${encodeURIComponent(msg)}`);
 import { randomUUID } from "node:crypto";
 import { requireCustomer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -36,23 +39,26 @@ function kindOf(v: FormDataEntryValue | null) {
 export async function uploadDocument(formData: FormData) {
   const { company, user, supabase } = await requireCustomer();
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return;
-  if (file.size > MAX_BYTES || !ALLOWED.includes(file.type)) return;
+  if (!(file instanceof File) || file.size === 0) fail("ファイルを選んでください。");
+  const f = file as File;
+  if (f.size > MAX_BYTES) fail("ファイルが大きすぎます（25MBまで）。");
+  if (!ALLOWED.includes(f.type)) fail("このファイルの形式は登録できません（PDF・画像・テキスト）。");
   const u = await usage(supabase, company.id);
-  if (u.files >= LIMITS.files || u.bytes + file.size > LIMITS.totalBytes) return;
+  if (u.files >= LIMITS.files || u.bytes + f.size > LIMITS.totalBytes) fail("登録できるファイルの数か容量の上限に達しています。不要な資料を取り下げてください。");
   const admin = createAdminClient();
-  const path = `${company.id}/${randomUUID()}-${file.name.replace(/[^\w.\-ぁ-んァ-ン一-龠]/g, "_")}`;
-  const { error } = await admin.storage.from("company-docs").upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: false });
-  if (error) return;
+  const path = `${company.id}/${randomUUID()}-${f.name.replace(/[^\w.\-ぁ-んァ-ン一-龠]/g, "_")}`;
+  const { error } = await admin.storage.from("company-docs").upload(path, Buffer.from(await f.arrayBuffer()), { contentType: f.type, upsert: false });
+  if (error) fail("保存できませんでした。しばらくしてからもう一度お試しください。");
   await supabase.from("company_documents").insert({
     company_id: company.id,
     kind: kindOf(formData.get("kind")),
-    title: String(formData.get("title") || file.name).trim() || file.name,
+    title: String(formData.get("title") || f.name).trim() || f.name,
     storage_path: path,
-    mime_type: file.type,
-    size_bytes: file.size,
+    mime_type: f.type,
+    size_bytes: f.size,
     uploaded_by: user.id,
   });
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "doc.upload" });
   revalidatePath("/step0");
 }
 
@@ -62,8 +68,10 @@ export async function addUrl(formData: FormData) {
   let url = String(formData.get("url") || "").trim();
   if (!url) return;
   if (!/^https?:\/\//i.test(url)) url = "https://" + url;
-  try { new URL(url); } catch { return; }
-  if ((await usage(supabase, company.id)).urls >= LIMITS.urls) return;
+  let ok = true;
+  try { new URL(url); } catch { ok = false; }
+  if (!ok) fail("URLの形式が正しくありません。");
+  if ((await usage(supabase, company.id)).urls >= LIMITS.urls) fail("登録できるURLの数の上限に達しています。");
   await supabase.from("company_documents").insert({
     company_id: company.id,
     kind: kindOf(formData.get("kind")),
@@ -71,6 +79,7 @@ export async function addUrl(formData: FormData) {
     url,
     uploaded_by: user.id,
   });
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "doc.url" });
   revalidatePath("/step0");
 }
 
@@ -79,7 +88,7 @@ export async function addText(formData: FormData) {
   const { company, user, supabase } = await requireCustomer();
   const text = String(formData.get("text") || "").trim();
   if (!text) return;
-  if ((await usage(supabase, company.id)).texts >= LIMITS.texts) return;
+  if ((await usage(supabase, company.id)).texts >= LIMITS.texts) fail("登録できるテキストの数の上限に達しています。");
   await supabase.from("company_documents").insert({
     company_id: company.id,
     kind: kindOf(formData.get("kind")),
@@ -87,6 +96,7 @@ export async function addText(formData: FormData) {
     text_content: text.slice(0, 200_000),
     uploaded_by: user.id,
   });
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "doc.text" });
   revalidatePath("/step0");
 }
 
@@ -132,7 +142,9 @@ export async function reviewProfileItem(formData: FormData) {
   else if (action === "fix" || action === "answer") { if (!after) return; patch.value = after; patch.status = "fixed"; if (action === "answer") patch.tag = "fact"; }
   else if (action === "hold") { patch.status = "held"; }
   // 戻す：自分で書いた（または承認した）文は残す
-  else if (action === "reopen") { patch.status = cur?.value ? "fixed" : cur?.draft ? "draft" : "empty"; }
+  // 戻す：確定・承認した文は消さずに下書きへ戻す（状態は「下書き」。もう一度承認・修正できる）
+  else if (action === "reopen") { const keep = cur?.value ?? cur?.draft ?? null; patch.draft = keep; patch.value = null; patch.status = keep ? "draft" : "empty"; }
   await supabase.from("profile_items").upsert({ ...(cur ?? {}), ...patch }, { onConflict: "company_id,key" });
+  await supabase.from("activity_log").insert({ company_id: company.id, event: "profile.review" });
   revalidatePath("/step0");
 }

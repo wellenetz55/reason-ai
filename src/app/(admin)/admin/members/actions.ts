@@ -12,6 +12,16 @@ export async function inviteOperator(formData: FormData) {
   const name = String(formData.get("display_name") || "").trim();
   if (!email || !name) return;
   const admin = createAdminClient();
+  // 既に顧客の担当者として登録されている人は、運営者にしない
+  const { data: list0 } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const ex = list0?.users.find((u) => u.email?.toLowerCase() === email);
+  if (ex) {
+    const { data: p } = await admin.from("profiles").select("role").eq("id", ex.id).maybeSingle();
+    if (p && p.role !== "operator") {
+      const { redirect } = await import("next/navigation");
+      redirect(`/admin/members?error=${encodeURIComponent("そのメールアドレスは顧客の担当者として登録済みです。運営者には招待できません")}`);
+    }
+  }
   const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${APP()}/auth/callback` });
   let uid = invited?.user?.id;
   if (error) {

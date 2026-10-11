@@ -26,7 +26,8 @@ export default async function Page() {
   const gate = stepGate("merge", ctx);
   const aiErr = await lastAiError(supabase, company.id, "vague_check.run");
   const active = rows ?? [];
-  const dlist = (diags ?? []).map((d) => ({ ...d, issues: (d.issues ?? []) as string[] }));
+  const shownIds = new Set(active.map((r) => r.id));
+  const dlist = (diags ?? []).filter((d) => shownIds.has(d.row_id)).map((d) => ({ ...d, issues: (d.issues ?? []) as string[] }));
   const lastChecked = dlist.map((d) => d.checked_at).sort().at(-1);
   const open = dlist.filter((d) => d.resolved == null && d.vague_score >= 1).length;
 

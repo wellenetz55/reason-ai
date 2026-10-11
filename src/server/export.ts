@@ -60,7 +60,7 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
     const byKey = new Map((items ?? []).map((i) => [i.key, i]));
     const rows = PROFILE_ITEMS.map((d) => {
       const it = byKey.get(d.key);
-      const text = d.fixed ? (sum?.q1_after ?? sum?.q1_before ?? "") : (["approved", "fixed"].includes(it?.status ?? "") ? it?.value : it?.draft) ?? "";
+      const text = d.fixed ? (sum?.q1_after ?? sum?.q1_before ?? "") : (["approved", "fixed"].includes(it?.status ?? "") ? it?.value : it?.status === "held" ? (it?.value ?? it?.draft) : it?.draft) ?? "";
       return { group: d.group === "A" ? "資料から" : "御社に聞く", item: d.label, value: text, status: d.fixed ? (text ? "適合診断の記録" : "") : STATUS_I[it?.status ?? "empty"], tag: d.fixed ? "" : TAG[it?.tag ?? ""] ?? "", source: it?.source ?? "" };
     });
     addSheet("0 会社", [{ header: "区分", key: "group", width: 10 }, { header: "項目", key: "item", width: 26 }, { header: "内容", key: "value", width: 80 }, { header: "状態", key: "status", width: 12 }, { header: "根拠", key: "tag", width: 8 }, { header: "出所", key: "source", width: 24 }], rows);
@@ -73,9 +73,16 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
   if (has("diverge")) {
     const cols = [
       { header: "No", key: "seq", width: 6 }, { header: "面", key: "facet", width: 14 }, { header: "周", key: "round", width: 5 },
-      { header: "提供価値（御社は〜できる）", key: "raw", width: 44 }, { header: "体験価値（だから、お客様は〜と感じることができる）", key: "exp1", width: 44 }, { header: "誰向け", key: "target", width: 16 },
+      { header: "提供価値（御社は〜できる）", key: "raw", width: 44 }, { header: "体験価値（だから、お客様は〜と感じられる）", key: "exp1", width: 44 }, { header: "誰向け", key: "target", width: 16 },
     ];
-    if (has("merge")) cols.push({ header: "統合後", key: "merged", width: 40 }, { header: "最終案", key: "final", width: 40 }, { header: "一言で", key: "one", width: 30 }, { header: "状態", key: "status", width: 12 }, { header: "順位", key: "rank", width: 6 });
+    if (has("merge")) {
+      // 統合・最終案・順位は機能が準備中のあいだ空なので、値がある場合だけ列を出す
+      const any = (k: "value_merged" | "value_final" | "rank") => (rows ?? []).some((r) => r[k] != null && r[k] !== "");
+      if (any("value_merged")) cols.push({ header: "統合後", key: "merged", width: 40 });
+      if (any("value_final")) cols.push({ header: "最終案", key: "final", width: 40 });
+      cols.push({ header: "一言で", key: "one", width: 30 }, { header: "状態", key: "status", width: 12 });
+      if (any("rank")) cols.push({ header: "順位", key: "rank", width: 6 });
+    }
     if (has("trust")) cols.push({ header: "体験価値（磨いた後）", key: "exp", width: 44 }, { header: "なぜなら（根拠）", key: "because", width: 44 }, { header: "根拠タグ", key: "btag", width: 8 }, { header: "当社しか", key: "onlyus", width: 8 }, { header: "根拠の種類", key: "axis", width: 14 });
     addSheet(has("merge") ? "1-2 提供価値" : "1 提供価値", cols, (rows ?? []).map((r) => ({
       seq: r.seq, facet: facetLabel(r.facet), round: r.round, raw: r.value_raw, exp1: r.experience_value_v1, target: r.target,
@@ -89,7 +96,7 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
     const { data: brakes } = await supabase.from("brakes").select("*, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId).eq("status", "active");
     const cols = [{ header: "行No", key: "seq", width: 6 }, { header: "提供価値", key: "raw", width: 36 }, { header: "種類", key: "kind", width: 18 }, { header: "お客様の言葉（ブレーキ）", key: "words", width: 40 }];
     if (has("counter")) cols.push({ header: "先回りの答え", key: "counter", width: 44 }, { header: "なぜなら", key: "because", width: 36 }, { header: "根拠", key: "tag", width: 8 });
-    addSheet(has("counter") ? "3-4 ブレーキ" : "3 ブレーキ", cols, (brakes ?? []).map((b) => ({
+    if (brakes?.length) addSheet(has("counter") ? "3-4 ブレーキ" : "3 ブレーキ", cols, (brakes ?? []).map((b) => ({
       seq: byId.get(b.row_id)?.seq, raw: byId.get(b.row_id)?.value_final ?? byId.get(b.row_id)?.value_raw,
       kind: KIND[b.kind] ?? b.kind, words: b.customer_words, counter: b.counter_message, because: b.because, tag: TAG[b.evidence_tag] ?? b.evidence_tag,
     })));
@@ -110,7 +117,7 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
     ]);
     const m = new Map((lm ?? []).map((x) => [x.row_id, x]));
     const ids = new Set([...(ln ?? []).map((x) => x.row_id), ...(lm ?? []).map((x) => x.row_id)]);
-    addSheet("6 リトマス試験紙", [
+    if (ids.size) addSheet("6 リトマス試験紙", [
       { header: "行No", key: "seq", width: 6 }, { header: "提供価値", key: "raw", width: 36 },
       { header: "痛みは切実か", key: "q1", width: 12 }, { header: "探しているか", key: "q2", width: 12 },
       { header: "投資", key: "a", width: 6 }, { header: "強み", key: "b", width: 6 }, { header: "実現", key: "c", width: 6 }, { header: "競合に勝つ", key: "d", width: 8 }, { header: "社内の熱", key: "e", width: 8 }, { header: "目的合致", key: "f", width: 8 },
@@ -124,7 +131,7 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
   // STEP 7 証拠
   if (has("evidence")) {
     const { data: ev } = await supabase.from("evidences").select("*, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId);
-    addSheet("7 証拠", [{ header: "行No", key: "seq", width: 6 }, { header: "提供価値", key: "raw", width: 36 }, { header: "何の証拠か", key: "what", width: 24 }, { header: "内容", key: "content", width: 50 }, { header: "種類", key: "kind", width: 14 }, { header: "出どころ", key: "source", width: 24 }, { header: "強さ", key: "strength", width: 8 }],
+    if (ev?.length) addSheet("7 証拠", [{ header: "行No", key: "seq", width: 6 }, { header: "提供価値", key: "raw", width: 36 }, { header: "何の証拠か", key: "what", width: 24 }, { header: "内容", key: "content", width: 50 }, { header: "種類", key: "kind", width: 14 }, { header: "出どころ", key: "source", width: 24 }, { header: "強さ", key: "strength", width: 8 }],
       (ev ?? []).map((e) => ({ seq: byId.get(e.row_id)?.seq, raw: byId.get(e.row_id)?.value_final ?? byId.get(e.row_id)?.value_raw, what: e.what, content: e.content, kind: EV[e.kind] ?? e.kind, source: e.source, strength: e.strength })));
   }
 

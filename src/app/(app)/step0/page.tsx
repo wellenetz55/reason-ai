@@ -23,7 +23,9 @@ const KIND_LABEL: Record<string, string> = {
 const fmtSize = (n?: number | null) => (n ? (n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.round(n / 1e3)} KB`) : "");
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" });
 
-export default async function Page() {
+export default async function Page({ searchParams }: PageProps<"/step0">) {
+  const sp = await searchParams;
+  const docError = typeof sp?.error === "string" ? sp.error : null;
   const { supabase, company } = await requireCustomer();
   if (!isStageOpen(STAGES.find((x) => x.key === "step0")!, company.status)) return <ClosedStage stageKey="step0" status={company.status} />;
   const [{ data: docs }, ctx, { data: items }, { data: summary }, bq] = await Promise.all([
@@ -50,6 +52,7 @@ export default async function Page() {
   return (
     <div>
       <h1 className="serif text-[28px] leading-tight">会社を知る</h1>
+      {docError && <p role="alert" className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[64ch]">{docError}</p>}
       <StepGuide stageKey="step0" />
       <div className="mt-3"><ExportButton stageKey="step0" /></div>
 

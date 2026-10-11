@@ -48,7 +48,7 @@ export default async function DiagnosisPage() {
     { key: "apply", label: "申し込む", at: company.applied_at, done: applied, now: !applied },
     { key: "contract", label: "契約書を取り交わす", at: company.contracted_at, done: contracted, now: applied && !contracted },
     { key: "pay", label: "入金", at: company.paid_at, done: paid, now: contracted && !paid },
-    { key: "kickoff", label: "キックオフ日を選ぶ", at: d.chosen_date, done: !!d.chosen_date, now: paid && !d.chosen_date },
+    { key: "kickoff", label: "キックオフ日を選ぶ", at: d.chosen_date, done: paid && !!d.chosen_date, now: paid && !d.chosen_date },
   ];
   const tagCls: Record<string, string> = { fact: "tag-fact", verify: "tag-verify", hypothesis: "tag-hypo" };
 

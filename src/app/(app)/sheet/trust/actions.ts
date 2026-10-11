@@ -50,5 +50,6 @@ export async function saveTriple(formData: FormData) {
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "because_phrase", action: "approve", before_text: row.because_phrase, after_text: row.because_phrase, reviewer_id: user.id });
   }
   await supabase.from("sheet_rows").update(patch).eq("id", rowId);
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "because.save" });
   revalidatePath("/sheet/trust");
 }

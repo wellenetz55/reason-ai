@@ -41,7 +41,8 @@ export async function reviewRow(formData: FormData) {
   if (action === "fix" && after) {
     update.value_raw = after;
     // STEP 1 で体験価値を直したら、STEP 5 で表示する体験価値も同じにそろえる
-    if (afterExp !== null) { update.experience_value_v1 = afterExp || null; update.experience_value = afterExp || null; }
+    // 体験価値を実際に書き換えたときだけ、STEP 5 で表示する体験価値もそろえる（提供価値だけ直したときは STEP 5 の文を残す）
+    if (afterExp !== null && afterExp !== (row.experience_value_v1 ?? "")) { update.experience_value_v1 = afterExp || null; update.experience_value = afterExp || null; }
     update.status = "active";
     update.confirmed_at = null; // 直したら確定は外れる
   }
@@ -55,6 +56,7 @@ export async function reviewRow(formData: FormData) {
   if (action === "fix" && afterExp !== null && afterExp !== (row.experience_value_v1 ?? "")) {
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "experience_value_v1", action, before_text: row.experience_value_v1, after_text: afterExp, reviewer_id: user.id });
   }
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "row.review" });
   revalidatePath("/sheet/diverge");
 }
 

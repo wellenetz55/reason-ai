@@ -4,7 +4,9 @@ import { inviteOperator, resendInvite, removeOperator } from "./actions";
 
 const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—");
 
-export default async function MembersPage() {
+export default async function MembersPage({ searchParams }: PageProps<"/admin/members">) {
+  const sp = await searchParams;
+  const err = typeof sp?.error === "string" ? sp.error : null;
   const { user } = await requireOperator();
   const admin = createAdminClient();
   const [{ data: ops }, { data: users }] = await Promise.all([
@@ -17,6 +19,7 @@ export default async function MembersPage() {
     <div>
       <h1 className="serif text-[28px] leading-tight">ベレネッツのメンバー</h1>
       <p className="text-sm text-ink-2 mt-2 max-w-[64ch]">ここに登録した人は、全社の管理画面を使えます（顧客画面には入れません）。招待するとマジックリンクのメールが届きます。</p>
+      {err && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[64ch]">{err}</p>}
 
       <ul className="mt-8 divide-y divide-hair max-w-[760px] text-sm">
         {(ops ?? []).map((p) => {

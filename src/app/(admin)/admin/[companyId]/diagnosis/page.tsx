@@ -116,6 +116,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
         <h2 className="serif text-[17px]">公開して招待する</h2>
         <p className="text-sm text-ink-2 mt-1">担当者のメールにマジックリンクが届き、ログインするとこの診断結果が最初に開きます。登録済みの担当者がいる場合はメールを空のままで公開だけできます。</p>
         {members?.length ? <p className="text-xs text-ink-3 mt-2">登録済み担当者：{members.map((m) => m.display_name).join("、")}</p> : null}
+        <p className="mt-3 text-xs text-warm">公開されるのは「保存」した内容です。上で編集した場合は、先に「保存」を押してください。</p>
         <form action={publishDiagnosis} className="mt-4 flex flex-wrap gap-3 items-end">
           <input type="hidden" name="company_id" value={c.id} />
           <label className="flex-1 min-w-[240px]"><span className="text-xs text-ink-2">担当者メール</span><input type="email" name="email" className={inp} /></label>

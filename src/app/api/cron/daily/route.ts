@@ -19,6 +19,9 @@ export async function GET(request: Request) {
     if (!lastAt || now.getTime() - lastAt.getTime() > 7 * 86400000) {
       const { data: existing } = await admin.from("alerts").select("id").eq("company_id", c.id).eq("kind", "stale7").is("resolved_at", null).maybeSingle();
       if (!existing) await admin.from("alerts").insert({ company_id: c.id, kind: "stale7", payload: { last_at: lastAt?.toISOString() ?? null } });
+    } else {
+      // 操作が再開していれば「7日操作なし」は済みにする
+      await admin.from("alerts").update({ resolved_at: iso }).eq("company_id", c.id).eq("kind", "stale7").is("resolved_at", null);
     }
   }
   return NextResponse.json({ ok: true, at: iso });

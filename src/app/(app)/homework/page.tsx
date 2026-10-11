@@ -25,7 +25,7 @@ export default async function HomeworkPage() {
             {closed ? <p className="mt-3 text-[13px] text-ink-3">編集できる期間が終わったため、回答はできません。</p> : (
             <form action={answerHomework} className="mt-4 space-y-3 max-w-[64ch]">
               <input type="hidden" name="id" value={h.id} />
-              <textarea name="answer" rows={3} placeholder="回答" className="w-full border-b hairline py-2 text-sm" />
+              <textarea name="answer" rows={3} placeholder="回答（パスする場合は理由）" className="w-full border-b hairline py-2 text-sm" />
               <input name="asked_whom" required pattern=".*\S.*" title="誰に聞いたかを入力してください" placeholder="誰に聞いたか（必須）" className="w-full border-b hairline py-2 text-sm" />
               <div className="flex gap-2">
                 <button className="btn-primary" name="mode" value="answer" type="submit">回答する</button>

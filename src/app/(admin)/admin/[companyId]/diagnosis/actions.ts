@@ -10,7 +10,9 @@ const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const strip = (v: string, prefixes: string[]) => {
   let t = v.trim();
   for (const p of prefixes) if (t.startsWith(p)) t = t.slice(p.length).replace(/^[、,\s]+/, "");
-  return t.replace(/^[「『"]+/, "").replace(/[」』"]+$/, "").trim();
+  // 全体が1組のカギ括弧で囲まれているときだけ外す（文中の「速さ」と「品質」などは残す）
+  const m = /^「([^「」]*)」$/.exec(t) ?? /^『([^『』]*)』$/.exec(t) ?? /^"([^"]*)"$/.exec(t);
+  return (m ? m[1] : t).trim();
 };
 
 /** 診断結果を保存（公開はしない） */
@@ -36,7 +38,7 @@ export async function saveDiagnosis(formData: FormData) {
   const expiresLocal = s(formData, "expires_at");
   await supabase.from("diagnosis_results").upsert({
     company_id: companyId,
-    one_liner_before: s(formData, "one_liner_before") || null,
+    one_liner_before: strip(s(formData, "one_liner_before"), []) || null,
     seeds, brakes, fit_reasons: fit, competitor, candidate_dates: dates,
     operator_note: s(formData, "operator_note") || null,
     expires_at: expiresLocal ? jst(expiresLocal) : null,
@@ -44,7 +46,7 @@ export async function saveDiagnosis(formData: FormData) {
     updated_at: new Date().toISOString(),
   });
   // 面談で聞いた「一言」は Q1 before としても固定（空にしたら消す）
-  await supabase.from("company_profile_summary").upsert({ company_id: companyId, q1_before: s(formData, "one_liner_before") || null, updated_at: new Date().toISOString() });
+  await supabase.from("company_profile_summary").upsert({ company_id: companyId, q1_before: strip(s(formData, "one_liner_before"), []) || null, updated_at: new Date().toISOString() });
   revalidatePath(`/admin/${companyId}/diagnosis`);
   if (dropped.length) redirect(`/admin/${companyId}/diagnosis?error=${encodeURIComponent(`保存しましたが、次の入力は使われていません：${dropped.join("／")}`)}`);
   redirect(`/admin/${companyId}/diagnosis?notice=${encodeURIComponent("保存しました")}`);
@@ -77,4 +79,5 @@ export async function publishDiagnosis(formData: FormData) {
   await supabase.from("diagnosis_results").update({ published_at: new Date().toISOString() }).eq("company_id", companyId);
   revalidatePath(`/admin/${companyId}/diagnosis`);
   revalidatePath(`/admin/${companyId}`);
+  redirect(`/admin/${companyId}/diagnosis?notice=${encodeURIComponent(email ? "公開しました。招待メールを送りました" : "公開しました")}`);
 }

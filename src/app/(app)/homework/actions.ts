@@ -9,7 +9,7 @@ export async function answerHomework(formData: FormData) {
   const answer = String(formData.get("answer") || "").trim();
   const askedWhom = String(formData.get("asked_whom") || "").trim();
   // 早く戻るときも画面を描き直す（送信中表示が残らないように）
-  if (!askedWhom || company.status === "locked" || company.status === "cancelled") {
+  if (!askedWhom || (mode !== "pass" && !answer) || company.status === "locked" || company.status === "cancelled") {
     revalidatePath("/homework");
     return;
   }
@@ -25,5 +25,6 @@ export async function answerHomework(formData: FormData) {
     })
     .eq("id", id)
     .eq("company_id", company.id);
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "homework.answer" });
   revalidatePath("/homework");
 }
