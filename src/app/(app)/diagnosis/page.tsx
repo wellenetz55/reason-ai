@@ -55,7 +55,20 @@ export default async function DiagnosisPage() {
   return (
     <article className="max-w-[760px]">
       <p className="inline-block rounded-full bg-navy text-on-accent text-[13px] font-semibold tracking-wide px-4 py-1.5">適合診断の結果</p>
-      <h1 className="serif text-[30px] leading-tight mt-4"><span className="text-warm mr-1">◎</span>{company.name}様は、<span className="text-warm">「選ばれる理由」をつくれる会社</span>です。</h1>
+      {/* 判定：左に「◎ 適合」のスタンプ、右に結論。社名は結論から外して上に小さく（結論が1行で読めるように） */}
+      <div className="mt-6 flex items-center gap-4 sm:gap-6">
+        <div aria-hidden className="shrink-0 -rotate-6 w-[84px] h-[84px] sm:w-[104px] sm:h-[104px] rounded-full border-[3px] border-warm text-warm flex flex-col items-center justify-center leading-none">
+          <span className="text-[30px] sm:text-[38px]">◎</span>
+          <span className="serif text-[15px] sm:text-[18px] tracking-[0.2em] pl-[0.2em] mt-1">適合</span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-[13px] text-ink-2">{company.name} 様<span className="sr-only">：判定 適合</span></p>
+          <h1 className="serif text-[21px] sm:text-[28px] leading-snug mt-1 [word-break:keep-all] [overflow-wrap:anywhere]">
+            <span className="text-warm">「選ばれる理由」</span>は、<wbr />もう御社の中に<wbr />あります。
+          </h1>
+          {seeds.length > 0 && <p className="text-[14px] text-ink-2 mt-1.5">初回ヒアリングで、すでに<span className="num font-semibold text-ink mx-0.5">{seeds.length}</span>組の芽が見つかりました。</p>}
+        </div>
+      </div>
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-ink-3">
         {d.published_at && <span className="num">{fmtMeeting(d.published_at)} 公開</span>}
         {d.expires_at && company.status === "diagnosed" && new Date(d.expires_at) > new Date() && <span>このページは <span className="num">{fmtMeeting(d.expires_at)}</span> まで</span>}
