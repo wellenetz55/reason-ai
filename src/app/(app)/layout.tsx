@@ -83,6 +83,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </>
         )}
         <Link href="/ask" className="btn-primary mt-8 block text-center">ベレネッツに質問を残す</Link>
+        <p className="mt-1.5 text-[11px] text-ink-3 text-center">ベレネッツからの回答は、質問と同じ画面に表示されます。</p>
         <div className="mt-auto pt-8 text-[13px] text-ink-2 space-y-2">
           {["locked", "cancelled"].includes(company.status) ? null : shownMeeting ? (
             <div className="rounded-[var(--radius)] bg-warm-soft px-4 py-3 -mx-1">
