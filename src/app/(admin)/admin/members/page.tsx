@@ -97,6 +97,15 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
       ) : (
         <p className="mt-12 text-[13px] text-ink-3">メンバーの追加・削除は、スーパー管理者に依頼してください。</p>
       )}
+
+      {isSuper && (
+        <section className="mt-16 border-t hairline pt-8 max-w-[880px]">
+          <h2 className="text-sm text-ink-2">全データのバックアップ（スーパー管理者のみ）</h2>
+          <p className="text-[13px] text-ink-2 mt-2 max-w-[44em]">全社のデータ（会社・シート・宿題・質問・面談・診断結果・メソッド資産など）と、お客様がアップロードした資料を、1つのZIPファイルにまとめてダウンロードします。中に復元用のデータ（JSON）と、見るためのExcelが入っています。</p>
+          <a href="/api/admin/backup" className="btn-primary inline-block mt-4">全データをダウンロード</a>
+          <p className="text-xs text-ink-3 mt-2">作るのに数十秒かかることがあります。メソッド資産を含むため、社外に出さないでください。</p>
+        </section>
+      )}
     </div>
   );
 }
