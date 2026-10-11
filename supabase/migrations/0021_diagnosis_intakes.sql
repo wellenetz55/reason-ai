@@ -2,8 +2,8 @@
 create table if not exists diagnosis_intakes (
   company_id uuid primary key references companies(id) on delete cascade,
   target_kind text not null default 'company',  -- company（会社全体）/ brand（事業部・ブランド）/ product（商品・サービス）
-  target_name text,                              -- 対象の名前（例：VALX GYM）
-  target_note text,                              -- 運営会社・グループ内の関係（例：株式会社Fitcrew が買収した子会社ブランド）
+  target_name text,                              -- 対象の名前（例：○○ジム）
+  target_note text,                              -- 運営会社・グループ内の関係（例：親会社が買収した子会社ブランド）
   answers jsonb not null default '{}'::jsonb,    -- {"q1":"…","q7":"…","extra":"追加で聞いたこと"}
   transcript text,                               -- 録音の書き起こし（お客様の発言そのまま）
   transcript_name text,
