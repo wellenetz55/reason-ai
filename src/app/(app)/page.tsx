@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireCustomer } from "@/lib/session";
-import { STAGES, currentStep } from "@/lib/stages";
+import { STAGES, currentStep, NOT_READY } from "@/lib/stages";
 
 function greeting() {
   const h = Number(new Intl.DateTimeFormat("ja-JP", { hour: "numeric", hour12: false, timeZone: "Asia/Tokyo" }).format(new Date()));
@@ -30,10 +30,13 @@ export default async function Home() {
         <p className="text-[13px] text-ink-3">いま進めること</p>
         <h2 className="serif text-[22px] mt-1">{step.title}</h2>
         <p className="text-ink-2 mt-2 max-w-[56ch] leading-relaxed">{step.body}</p>
-        {stage && (
+        {stage && !NOT_READY.has(stage.key) && (
           <Link href={stage.href} className="btn-primary inline-block mt-6">
-            {step.title}へ
+            {step.title} →
           </Link>
+        )}
+        {stage && NOT_READY.has(stage.key) && (
+          <p className="mt-6 rounded-[var(--radius)] bg-paper-2 px-5 py-4 text-sm text-ink-2 max-w-[56ch]">この段階の画面は準備中です。進め方は次の面談でご案内します。それまでは宿題と、前の段階の見直しを進めてください。</p>
         )}
         {company.status === "locked" && <a href="/api/export?step=deploy" className="btn-primary inline-block mt-6">提供価値シートをダウンロード</a>}
         <p className="text-[13px] text-ink-3 mt-6 max-w-[56ch] leading-relaxed">

@@ -28,7 +28,7 @@ export default async function ReportPage() {
       {reports?.length ? (
         <section className="mt-12 max-w-[64ch]">
           <h2 className="text-sm text-ink-2">送信したレポート</h2>
-          <ul className="mt-2 divide-y hairline text-sm">
+          <ul className="mt-2 divide-y divide-hair text-sm">
             {reports.map((r) => (
               <li key={r.id} className="py-3">
                 <p className="whitespace-pre-line">{r.body}</p>

@@ -140,3 +140,4 @@ button[data-busy]::after {
   color: var(--busy-color, var(--ink));
   white-space: nowrap; font-size: inherit;
 }
+button[data-busy="short"]::after { content: "…"; }

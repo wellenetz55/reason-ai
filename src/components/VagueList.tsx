@@ -26,9 +26,10 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
     return { r, d, dict, concrete, score, show: (dict.length > 0 || score >= 1 || !concrete) && d?.resolved !== "kept" && d?.resolved !== "accepted" };
   }).filter((x) => x.show).sort((a, b) => b.score - a.score || b.dict.length - a.dict.length);
 
+  if (rows.length === 0) return <p className="text-sm text-ink-2 mt-3">まだ組がありません。先に STEP 1 で提供価値・体験価値の組を出してください。</p>;
   if (flagged.length === 0) return <p className="text-sm text-ink-2 mt-3">印のつく組はありません。</p>;
   return (
-    <ol className="mt-4 divide-y hairline">
+    <ol className="mt-4 divide-y divide-hair">
       {flagged.map(({ r, d, dict, concrete, score }) => (
         <li key={r.id} className="py-4 pl-4 tag-line tag-hypo">
           <div className="flex items-start gap-4">

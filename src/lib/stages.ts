@@ -36,10 +36,13 @@ export const STATUS_LABEL: Record<string, string> = {
   week6_8: "仕上げる（6〜8週目）",
   extended: "延長中",
   grace: "猶予期間",
-  locked: "閲覧のみ",
+  locked: "ダウンロードのみ",
   advisor: "顧問",
   cancelled: "解約",
 };
+
+/** 画面がまだ準備中の段階（ホームの「いま進めること」からボタンで案内しない） */
+export const NOT_READY = new Set(["brakes", "counter", "litmus", "evidence", "deploy"]);
 
 export function isStageOpen(stage: Stage, status: string) {
   return stage.statuses.includes(status);

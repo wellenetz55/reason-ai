@@ -27,7 +27,8 @@ export function PendingBar({ stamp }: { stamp: number }) {
     const onSubmit = (e: Event) => {
       const form = e.target as HTMLFormElement | null;
       if (!form || form.tagName !== "FORM") return;
-      if (form.method?.toLowerCase() === "get") return;
+      // クライアントで描かれたフォーム（関数の action）には method 属性が付かず form.method が "get" を返すため、属性で判定する
+      if (form.getAttribute("method")?.toLowerCase() === "get") return;
       if (form.dataset.busy) {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -40,7 +41,8 @@ export function PendingBar({ stamp }: { stamp: number }) {
       const target = submitter ?? (buttons.length === 1 ? buttons[0] : null);
       if (target) {
         target.style.setProperty("--busy-color", getComputedStyle(target).color);
-        target.dataset.busy = "1";
+        // 幅の狭いボタン（承認・確定など）は文言を入れず「…」だけ重ねる
+        target.dataset.busy = target.offsetWidth < 140 ? "short" : "1";
       }
       // 万一応答が無いときのため、60秒で解除
       setTimeout(() => {

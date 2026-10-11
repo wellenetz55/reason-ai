@@ -11,7 +11,7 @@ export default async function HomeworkPage() {
       <h1 className="serif text-[28px] leading-tight">宿題</h1>
       <p className="text-ink-2 text-sm mt-2 max-w-[56ch]">一人で決めないでください。周りの人に聞いてから書いてください。誰に聞いたかも残します。</p>
       {open.length === 0 && <p className="mt-10 text-sm text-ink-3">いま出ている宿題はありません。</p>}
-      <ul className="mt-8 divide-y hairline">
+      <ul className="mt-8 divide-y divide-hair">
         {open.map((h) => (
           <li key={h.id} className="py-6">
             <div className="flex items-baseline gap-3">
@@ -36,7 +36,7 @@ export default async function HomeworkPage() {
       {done.length > 0 && (
         <details className="mt-10">
           <summary className="text-sm text-ink-3 cursor-pointer">済んだ宿題 {done.length}</summary>
-          <ul className="mt-3 divide-y hairline">
+          <ul className="mt-3 divide-y divide-hair">
             {done.map((h) => (
               <li key={h.id} className="py-3 text-sm">
                 <span className="text-ink-2">{h.status === "passed" ? "パス" : "回答済み"}</span> · {h.title}

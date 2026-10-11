@@ -45,7 +45,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <p className="text-[13px] text-ink mt-0.5">{STATUS_LABEL[company.status] ?? company.status}</p>
         </div>
         {/* 宿題：フェーズのすぐ下。未回答があれば暖色で目立たせる（契約前は出さない） */}
-        {company.status !== "diagnosed" && (openHomework > 0 ? (
+        {!["diagnosed", "locked", "cancelled"].includes(company.status) && (openHomework > 0 ? (
           <Link href="/homework" className={`mt-3 block rounded-[var(--radius)] border-2 px-3.5 py-3 hover:brightness-[0.98] ${overdue > 0 ? "border-warm bg-warm text-white" : "border-warm bg-warm-soft"}`}>
             <p className={`flex items-center gap-2 text-[12px] font-bold tracking-wide ${overdue > 0 ? "text-white" : "text-warm"}`}>
               {overdue === 0 && <span className="now-dot" aria-hidden />}
@@ -73,7 +73,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </nav>
         ) : (
           <>
-            <NavRail stages={stages} />
+            {!["locked", "cancelled"].includes(company.status) && <NavRail stages={stages} />}
             {diag && (
               <Link href="/diagnosis" className="mt-4 block text-[12px] text-ink-2 hover:text-ink border-t hairline pt-3">
                 適合診断の結果<span className="text-ink-3">（初回ヒアリング）</span> →

@@ -46,7 +46,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   if (approves >= 10 && fixes === 0) signals.push(`${approves}件を修正なしで承認`);
   if (fixes > 0 && fixChars <= fixes * 2) signals.push("修正が句読点程度");
   if (fastApproves >= 5) signals.push(`${fastApproves}件を5秒未満で承認`);
-  if (hypoApproved >= 5) signals.push(`仮説${hypoApproved}件をそのまま承認`);
+  if (hypoApproved >= 5) signals.push(`「仮説」のままの組が${hypoApproved}件`);
   if (passedHw >= 3) signals.push(`宿題を${passedHw}件パス`);
 
   return (
@@ -64,7 +64,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">姿勢シグナル</h2>
         {signals.length === 0 ? <p className="text-sm text-ink-3 mt-2">該当なし</p> : (
-          <p className="mt-2 text-sm">{signals.length}つが重なっています：{signals.join("／")}</p>
+          <p className="mt-2 text-sm">{signals.length >= 2 ? `${signals.length}つが重なっています：` : "注意："}{signals.join("／")}</p>
         )}
       </section>
 
@@ -153,7 +153,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">面談</h2>
-        <ul className="mt-2 divide-y hairline text-sm">
+        <ul className="mt-2 divide-y divide-hair text-sm">
           {(meetings ?? []).map((m) => (
             <li key={m.id} className={`py-3 ${m.held_at ? "text-ink-3" : ""}`}>
               <form action={updateMeeting} className="flex flex-wrap gap-3 items-center">
@@ -184,7 +184,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">提供価値（{(rows ?? []).length}行）</h2>
-        <ol className="mt-2 divide-y hairline text-sm">
+        <ol className="mt-2 divide-y divide-hair text-sm">
           {(rows ?? []).map((r) => (
             <li key={r.id} className={`py-2 flex gap-3 ${r.status === "held" ? "text-ink-3" : ""}`}>
               <span className="num w-6 text-ink-3 shrink-0">{r.seq}</span>
@@ -202,7 +202,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">エラーレポート（未対応 {(errs ?? []).filter((e) => !e.resolved_at).length}）</h2>
-        <ul className="mt-2 divide-y hairline text-sm">
+        <ul className="mt-2 divide-y divide-hair text-sm">
           {(errs ?? []).map((e) => (
             <li key={e.id} className={`py-3 ${e.resolved_at ? "text-ink-3" : ""}`}>
               <p className="whitespace-pre-line">{e.body}</p>
@@ -223,7 +223,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">質問（未返答 {(qs ?? []).filter((q) => !q.answered_at).length}）</h2>
-        <ul className="mt-2 divide-y hairline text-sm">
+        <ul className="mt-2 divide-y divide-hair text-sm">
           {(qs ?? []).map((q) => (
             <li key={q.id} className="py-4">
               <p className="whitespace-pre-line">{q.body}</p>

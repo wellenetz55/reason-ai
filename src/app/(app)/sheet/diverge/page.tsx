@@ -39,7 +39,7 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
 
   return (
     <div>
-      <header className="flex items-end justify-between gap-8">
+      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-8">
         <div>
           <h1 className="serif text-[28px] leading-tight">提供価値・体験価値を出す</h1>
           <p className="text-ink-2 text-sm mt-2 max-w-[56ch]">
@@ -48,7 +48,7 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
             {confirmed > 0 && <span className="text-navy">　確定 {confirmed}組。</span>}
           </p>
         </div>
-        <div className="text-right shrink-0">
+        <div className="sm:text-right shrink-0">
           <div className="serif leading-none">
             <span className="text-[56px]">{count}</span>
             <span className="text-[20px] text-ink-3"> / 30<span className="text-[13px] font-normal ml-1">組</span></span>
@@ -88,8 +88,8 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
               <input name="experience" placeholder="〜と感じることができる（体験価値）" className="block w-full border-b hairline py-2 text-base" />
             </label>
           </div>
-          <div className="mt-3 flex gap-3 items-end">
-            <label className="w-48">
+          <div className="mt-3 flex flex-wrap gap-3 items-end">
+            <label className="w-full sm:w-48">
               <span className="text-xs text-ink-2">誰向け（任意）</span>
               <input name="target" className="block w-full border-b hairline py-2 text-sm" />
             </label>

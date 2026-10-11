@@ -15,7 +15,7 @@ export function TripleList({ rows }: { rows: Row[] }) {
   const [editing, setEditing] = useState<string | null>(null);
   if (rows.length === 0) return <p className="text-sm text-ink-3">まだ組がありません。STEP 1 で提供価値・体験価値を出してください。</p>;
   return (
-    <ol className="divide-y hairline">
+    <ol className="divide-y divide-hair">
       {rows.map((r) => {
         const exp = r.experience_value ?? r.experience_value_v1;
         const hasB = !!r.because_phrase;

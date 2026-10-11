@@ -11,7 +11,7 @@ export function FacetBars({ facets }: { facets: { key: string; label: string; sh
   const empty = facets.filter((f) => f.n === 0).map((f) => f.label);
   return (
     <div className="mt-3 relative" aria-label="7つの面ごとの行数">
-      <p className="text-[11px] text-ink-3 text-right flex items-center justify-end gap-1.5">
+      <p className="text-[11px] text-ink-3 sm:text-right flex items-center sm:justify-end gap-1.5">
         7つの面ごとの行数
         <button
           type="button"
@@ -23,7 +23,7 @@ export function FacetBars({ facets }: { facets: { key: string; label: string; sh
           ?
         </button>
       </p>
-      <div className="mt-1.5 flex gap-2.5 items-end justify-end">
+      <div className="mt-1.5 flex gap-2.5 items-end sm:justify-end">
         {facets.map((f) => (
           <div key={f.key} className="flex flex-col items-center gap-1 w-8" title={`${f.label} ${f.n}行`}>
             <span className="text-[11px] num text-ink-2">{f.n}</span>

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { DwellField } from "@/components/DwellField";
 import clsx from "clsx";
 import { reviewRow } from "@/app/(app)/sheet/diverge/actions";
 
@@ -15,7 +16,7 @@ export function RowList({ rows, facets }: { rows: Row[]; facets: { key: string; 
     return <p className="text-sm text-ink-3">まだ1組もありません。上の問いに答えるか、AIに下書きを出させてください。</p>;
   }
   return (
-    <ol className="divide-y hairline">
+    <ol className="divide-y divide-hair">
       {visible.map((r) => <RowItem key={r.id} row={r} facetLabel={label(r.facet)} />)}
     </ol>
   );
@@ -35,14 +36,14 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
 
   return (
     <li className={clsx("py-4 pl-4 tag-line", confirmed ? "border-l-navy" : tag, held && "bg-grey-row opacity-70")}>
-      <div className="flex items-start gap-4">
+      <div className="flex flex-wrap sm:flex-nowrap items-start gap-x-4 gap-y-2">
         <span className="num text-xs text-ink-3 w-6 pt-1.5">{row.seq}</span>
         <div className="flex-1 min-w-0">
           {editing ? (
             <form action={reviewRow} onSubmit={() => setEditing(false)}>
               <input type="hidden" name="row_id" value={row.id} />
               <input type="hidden" name="action" value="fix" />
-              <input type="hidden" name="dwell_ms" value={Date.now() - shownAt.current} />
+              <DwellField since={shownAt} />
               <label className="block text-[11px] text-ink-3">御社は</label>
               <textarea name="after" value={text} onChange={(e) => setText(e.target.value)} rows={2} className="serif w-full text-[18px] leading-snug border-b hairline" />
               <label className="block text-[11px] text-ink-3 mt-3">だから、お客様は</label>
@@ -73,13 +74,13 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
           {row.one_liner && <p className="text-sm text-ink-2 mt-1">一言で：{row.one_liner}</p>}
         </div>
         {!editing && (
-          <div className="flex gap-1 shrink-0 pt-1">
+          <div className="flex flex-wrap gap-1 shrink-0 pt-1 w-full sm:w-auto pl-10 sm:pl-0">
             <button className="btn-text" onClick={() => setEditing(true)}>直す</button>
             {!isDraft && !held && !confirmed && (
               <form action={reviewRow}>
                 <input type="hidden" name="row_id" value={row.id} />
                 <input type="hidden" name="action" value="confirm" />
-                <input type="hidden" name="dwell_ms" value={Date.now() - shownAt.current} />
+                <DwellField since={shownAt} />
                 <button className="btn-text text-navy" type="submit">確定</button>
               </form>
             )}
@@ -94,7 +95,7 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
               <form action={reviewRow}>
                 <input type="hidden" name="row_id" value={row.id} />
                 <input type="hidden" name="action" value="approve" />
-                <input type="hidden" name="dwell_ms" value={Date.now() - shownAt.current} />
+                <DwellField since={shownAt} />
                 <button className="btn-text" type="submit">承認</button>
               </form>
             )}

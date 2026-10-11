@@ -97,10 +97,10 @@ export function ProfileItems({ items, bq, oneLiner, review }: {
 
   return (
     <div>
-      <ol className="divide-y hairline">{PROFILE_ITEMS.filter((d) => d.group === "A").map(renderA)}</ol>
+      <ol className="divide-y divide-hair">{PROFILE_ITEMS.filter((d) => d.group === "A").map(renderA)}</ol>
       <h3 className="serif text-[17px] mt-12">御社にお聞きしたいこと</h3>
       <p className="text-sm text-ink-2 mt-1 max-w-[64ch]">資料には書いていないことです。キックオフでも話題にしますので、いま思うところを書いておいてください。AIの仮説は参考までに。</p>
-      <ol className="divide-y hairline mt-2">{PROFILE_ITEMS.filter((d) => d.group === "B").map(renderB)}</ol>
+      <ol className="divide-y divide-hair mt-2">{PROFILE_ITEMS.filter((d) => d.group === "B").map(renderB)}</ol>
     </div>
   );
 }

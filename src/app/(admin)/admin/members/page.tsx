@@ -18,7 +18,7 @@ export default async function MembersPage() {
       <h1 className="serif text-[28px] leading-tight">ベレネッツのメンバー</h1>
       <p className="text-sm text-ink-2 mt-2 max-w-[64ch]">ここに登録した人は、全社の管理画面を使えます（顧客画面には入れません）。招待するとマジックリンクのメールが届きます。</p>
 
-      <ul className="mt-8 divide-y hairline max-w-[760px] text-sm">
+      <ul className="mt-8 divide-y divide-hair max-w-[760px] text-sm">
         {(ops ?? []).map((p) => {
           const u = byId.get(p.id);
           return (

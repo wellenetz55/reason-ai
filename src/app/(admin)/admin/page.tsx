@@ -52,7 +52,7 @@ export default async function AdminHome() {
         <thead className="text-xs text-ink-3 text-left">
           <tr><th className="py-2 font-normal">会社</th><th className="font-normal">状態</th><th className="font-normal">最終操作</th><th className="font-normal">質問</th><th className="font-normal">エラー</th><th className="font-normal">未回収宿題</th><th className="font-normal w-[34%]">アラート</th></tr>
         </thead>
-        <tbody className="divide-y hairline">
+        <tbody className="divide-y divide-hair">
           {(companies ?? []).map((c) => {
             const lastAt = lastBy[c.id] ? new Date(lastBy[c.id]) : null;
             const stale = lastAt ? (Date.now() - lastAt.getTime()) / 86400000 : null;

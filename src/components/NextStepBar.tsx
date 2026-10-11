@@ -23,10 +23,10 @@ export function NextStepBar({ gate }: { gate: Gate }) {
       </div>
       {n && (
         gate.ready ? (
-          <Link href={n.href} className="btn-primary">{n.label}へ進む →</Link>
+          <Link href={n.href} className="btn-primary">次へ：{n.label} →</Link>
         ) : (
           <span className="btn-primary opacity-40 cursor-not-allowed" aria-disabled="true">
-            {gate.byOperator ? "面談のあとに開きます" : `${n.label}へ進む →`}
+            {gate.byOperator ? "面談のあとに開きます" : `次へ：${n.label} →`}
           </span>
         )
       )}

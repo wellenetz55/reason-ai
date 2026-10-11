@@ -99,11 +99,11 @@ export default async function Page() {
         {!docs?.length ? (
           <p className="text-sm text-ink-2 mt-3">まだ資料がありません。まず会社案内かWebサイトを1つ上げると、AIが御社の説明の下書きを作れます。</p>
         ) : (
-          <ul className="mt-3 divide-y hairline">
+          <ul className="mt-3 divide-y divide-hair">
             {docs.map((d) => (
-              <li key={d.id} className="py-3 flex items-center gap-4 text-sm">
-                <span className="text-[11px] text-ink-3 w-28 shrink-0">{KIND_LABEL[d.kind] ?? d.kind}</span>
-                <span className="flex-1 min-w-0 truncate">
+              <li key={d.id} className="py-3 flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-1 text-sm">
+                <span className="text-[11px] text-ink-3 sm:w-28 shrink-0">{KIND_LABEL[d.kind] ?? d.kind}</span>
+                <span className="basis-full sm:basis-auto sm:flex-1 min-w-0 truncate order-first sm:order-none">
                   {d.storage_path ? <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="underline underline-offset-4">{d.title}</a>
                     : d.url ? <a href={d.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{d.title} ↗</a>
                     : <span title={d.text_content?.slice(0, 200)}>{d.title}</span>}
