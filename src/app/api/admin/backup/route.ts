@@ -1,101 +1,20 @@
 import { NextResponse } from "next/server";
-import { zipSync, strToU8 } from "fflate";
-import ExcelJS from "exceljs";
 import { requireSuperAdmin } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildBackup } from "@/server/backup";
 
 export const maxDuration = 60;
 
-/** バックアップに含める表（public スキーマの全テーブル。表を足したらここにも足す） */
-const TABLES = [
-  "companies", "profiles", "company_meetings", "company_documents", "company_profile_summary", "profile_items",
-  "diagnosis_results", "sheet_rows", "sheet_row_reviews", "row_diagnoses", "sheet_locks", "sheet_lock_history",
-  "brakes", "evidences", "litmus_market", "litmus_niche", "competitors", "competitor_comparisons",
-  "deployments", "activation_packages", "disclosure_requests", "homeworks", "questions_to_operator", "member_notes",
-  "error_reports", "alerts", "activity_log", "generation_counters",
-  "method_facets", "method_fixed_texts", "method_prompts", "method_techniques",
-];
-
-const cell = (v: unknown) => (v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : (v as string | number | boolean));
-
-/**
- * GET /api/admin/backup — スーパー管理者のみ。全データを1つのZIPにして返す。
- * 中身：data/<表>.json（復元用）、全データ.xlsx（閲覧用）、users.json（サインイン用アカウント）、files/（アップロードされた資料）
- */
+/** GET /api/admin/backup — スーパー管理者のみ。全データを1つのZIPにして返す */
 export async function GET() {
   const { user } = await requireSuperAdmin();
   const admin = createAdminClient();
-  const files: Record<string, Uint8Array> = {};
-  const wb = new ExcelJS.Workbook();
-  const counts: string[] = [];
-  const failed: string[] = [];
-
-  for (const t of TABLES) {
-    const rows: Record<string, unknown>[] = [];
-    let ok = true;
-    for (let from = 0; ; from += 1000) {
-      const { data, error } = await admin.from(t).select("*").range(from, from + 999);
-      if (error) { ok = false; failed.push(`${t}: ${error.message}`); break; }
-      rows.push(...(data ?? []));
-      if (!data || data.length < 1000) break;
-    }
-    if (!ok) continue;
-    files[`data/${t}.json`] = strToU8(JSON.stringify(rows, null, 1));
-    counts.push(`${t}\t${rows.length}`);
-    const ws = wb.addWorksheet(t.slice(0, 31));
-    const cols = rows.length ? Object.keys(rows[0]) : [];
-    if (cols.length) {
-      ws.addRow(cols).font = { bold: true };
-      for (const r of rows) ws.addRow(cols.map((c) => cell(r[c])));
-    }
-  }
-
-  // サインイン用アカウント（パスワード等は含めない）
-  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  files["users.json"] = strToU8(JSON.stringify((list?.users ?? []).map((u) => ({ id: u.id, email: u.email, created_at: u.created_at, last_sign_in_at: u.last_sign_in_at })), null, 1));
-
-  // アップロードされた資料（company-docs バケット。フォルダをたどる）
-  const fileErrors: string[] = [];
-  async function walk(prefix: string) {
-    const { data, error } = await admin.storage.from("company-docs").list(prefix, { limit: 1000 });
-    if (error) { fileErrors.push(`${prefix}: ${error.message}`); return; }
-    for (const o of data ?? []) {
-      const path = prefix ? `${prefix}/${o.name}` : o.name;
-      if (o.id === null) { await walk(path); continue; } // フォルダ
-      const { data: blob, error: de } = await admin.storage.from("company-docs").download(path);
-      if (de || !blob) { fileErrors.push(`${path}: ${de?.message ?? "download failed"}`); continue; }
-      files[`files/${path}`] = new Uint8Array(await blob.arrayBuffer());
-    }
-  }
-  await walk("");
-
-  const now = new Date();
-  const stamp = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(now).replace(/[-: ]/g, "").slice(0, 12);
-  files["全データ.xlsx"] = new Uint8Array(await wb.xlsx.writeBuffer());
-  files["README.txt"] = strToU8([
-    "選ばれる理由AI 全データのバックアップ",
-    `作成：${now.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}（日本時間）`,
-    "",
-    "data/<表>.json  … 復元用。1つの表＝1ファイル",
-    "全データ.xlsx   … 閲覧用。1つの表＝1シート",
-    "users.json      … サインイン用アカウント（メールアドレスのみ。パスワードは含みません）",
-    "files/          … お客様がアップロードした資料・エラーレポートの画像",
-    "",
-    "件数：",
-    ...counts,
-    ...(failed.length ? ["", "読めなかった表：", ...failed] : []),
-    ...(fileErrors.length ? ["", "読めなかったファイル：", ...fileErrors] : []),
-    "",
-    "注意：メソッド資産（method_*）を含みます。社外に出さないでください。",
-  ].join("\r\n"));
-
-  const zip = zipSync(files, { level: 6 });
-  await admin.from("activity_log").insert({ company_id: null, user_id: user.id, event: "admin.backup", payload: { tables: counts.length, files: Object.keys(files).filter((k) => k.startsWith("files/")).length } });
-
-  return new NextResponse(zip as unknown as BodyInit, {
+  const b = await buildBackup(admin);
+  await admin.from("activity_log").insert({ company_id: null, user_id: user.id, event: "admin.backup", payload: { tables: b.tables, files: b.fileCount } });
+  return new NextResponse(b.zip as unknown as BodyInit, {
     headers: {
       "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(`選ばれる理由AI_バックアップ_${stamp}.zip`)}`,
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(b.filename)}`,
       "Cache-Control": "no-store",
     },
   });

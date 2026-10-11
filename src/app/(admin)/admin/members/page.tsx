@@ -1,9 +1,10 @@
 import { requireOperator } from "@/lib/session";
 import { ClearQuery } from "@/components/ClearQuery";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { inviteOperator, resendInvite, removeOperator, setOperatorRole } from "./actions";
+import { inviteOperator, resendInvite, removeOperator, setOperatorRole, backupNow, disconnectDropbox } from "./actions";
+import { getSetting, dropboxConfigured, KEEP, type BackupLast } from "@/server/dropbox";
 
-const OK: Record<string, string> = { invited: "追加して、招待メールを送りました。", resent: "招待メールを再送しました。", removed: "メンバーを削除しました（サインインできなくなりました）。", role: "権限を変えました。" };
+const OK: Record<string, string> = { invited: "追加して、招待メールを送りました。", resent: "招待メールを再送しました。", removed: "メンバーを削除しました（サインインできなくなりました）。", role: "権限を変えました。", dropbox: "Dropbox と接続しました。毎週月曜 3:00 に自動で保存します。", dropbox_off: "Dropbox との接続を切りました（Dropbox 内のファイルは残っています）。", backup: "Dropbox に保存しました。" };
 
 const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—");
 
@@ -17,6 +18,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
     admin.from("profiles").select("*").eq("role", "operator").order("created_at"),
     admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);
+  const [dbx, last] = isSuper ? await Promise.all([getSetting<{ account_email?: string; connected_at: string }>("dropbox").catch(() => null), getSetting<BackupLast>("backup_last").catch(() => null)]) : [null, null];
   const byId = new Map((users?.users ?? []).map((u) => [u.id, u]));
   const active = (ops ?? []).filter((p) => !p.disabled_at);
   const removed = (ops ?? []).filter((p) => p.disabled_at);
@@ -99,11 +101,29 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
       )}
 
       {isSuper && (
-        <section className="mt-16 border-t hairline pt-8 max-w-[880px]">
+        <section id="backup" className="mt-16 border-t hairline pt-8 max-w-[880px] scroll-mt-6">
           <h2 className="text-sm text-ink-2">全データのバックアップ（スーパー管理者のみ）</h2>
           <p className="text-[13px] text-ink-2 mt-2 max-w-[44em]">全社のデータ（会社・シート・宿題・質問・面談・診断結果・メソッド資産など）と、お客様がアップロードした資料を、1つのZIPファイルにまとめてダウンロードします。中に復元用のデータ（JSON）と、見るためのExcelが入っています。</p>
           <a href="/api/admin/backup" className="btn-primary inline-block mt-4">全データをダウンロード</a>
           <p className="text-xs text-ink-3 mt-2">作るのに数十秒かかることがあります。メソッド資産を含むため、社外に出さないでください。</p>
+
+          <h3 className="mt-8 text-[13px] font-semibold">Dropbox への自動バックアップ</h3>
+          <p className="text-[13px] text-ink-2 mt-1 max-w-[44em]">毎週月曜 3:00（日本時間）に、同じZIPを Dropbox の専用フォルダ（アプリ / 選ばれる理由AIのバックアップ用フォルダ）に保存します。新しい{KEEP}回分を残し、古いものから消します。失敗したときはベレネッツのメンバーにメールで知らせます。</p>
+          {!dropboxConfigured() ? (
+            <p className="mt-3 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-[13px] text-ink-2">準備中：Vercel に DROPBOX_APP_KEY と DROPBOX_APP_SECRET を設定すると、ここに「Dropbox と接続する」が出ます。</p>
+          ) : dbx ? (
+            <div className="mt-3 text-[13px] space-y-2">
+              <p>接続先：<span className="num">{dbx.account_email ?? "（アカウント名を取得できませんでした）"}</span> <span className="text-ink-3 num ml-2">{fmt(dbx.connected_at)} 接続</span></p>
+              <p>前回：{last ? <>{last.ok ? <span className="text-navy">保存しました</span> : <span className="text-warm">失敗しました</span>} <span className="num text-ink-3 ml-1">{fmt(last.at)}（{last.by === "schedule" ? "自動" : "手動"}）</span>{last.path && <span className="num text-ink-3 ml-2 break-all">{last.path}</span>}{last.error && <span className="block text-[12px] text-warm mt-0.5">{last.error}</span>}</> : <span className="text-ink-3">まだありません</span>}</p>
+              <div className="flex flex-wrap gap-3 items-center pt-1">
+                <form action={backupNow}><button className="btn-primary" type="submit">今すぐDropboxに保存</button></form>
+                <a href="/api/admin/dropbox/connect" className="btn-text">接続し直す</a>
+                <form action={disconnectDropbox}><button className="btn-text" type="submit">接続を切る</button></form>
+              </div>
+            </div>
+          ) : (
+            <a href="/api/admin/dropbox/connect" className="btn-primary inline-block mt-3">Dropbox と接続する</a>
+          )}
         </section>
       )}
     </div>

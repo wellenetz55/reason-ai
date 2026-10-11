@@ -83,3 +83,21 @@ export async function setOperatorRole(formData: FormData) {
   revalidatePath("/admin/members");
   back("ok=role");
 }
+
+/** 今すぐ Dropbox に保存（スーパー管理者のみ） */
+export async function backupNow() {
+  await requireSuperAdmin();
+  const { backupToDropbox } = await import("@/server/dropbox");
+  const r = await backupToDropbox("manual");
+  revalidatePath("/admin/members");
+  redirect(r.ok ? "/admin/members?ok=backup#backup" : `/admin/members?error=${encodeURIComponent("Dropbox に保存できませんでした：" + (r.error ?? ""))}#backup`);
+}
+
+/** Dropbox との接続を切る（スーパー管理者のみ）。Dropbox 側のファイルは消さない */
+export async function disconnectDropbox() {
+  await requireSuperAdmin();
+  const { deleteSetting } = await import("@/server/dropbox");
+  await deleteSetting("dropbox");
+  revalidatePath("/admin/members");
+  redirect("/admin/members?ok=dropbox_off#backup");
+}
