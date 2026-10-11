@@ -70,7 +70,7 @@ async function fetchUrlText(url: string) {
   }
 }
 
-async function pdfText(buf: Buffer): Promise<{ text: string; error?: string }> {
+export async function pdfText(buf: Buffer): Promise<{ text: string; error?: string }> {
   try {
     const { extractText, getDocumentProxy } = await import("unpdf");
     const pdf = await getDocumentProxy(new Uint8Array(buf));

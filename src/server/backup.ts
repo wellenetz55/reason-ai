@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /** バックアップに含める表（public スキーマの全テーブル。表を足したらここにも足す） */
 const TABLES = [
   "companies", "profiles", "company_meetings", "company_documents", "company_profile_summary", "profile_items",
-  "diagnosis_results", "sheet_rows", "sheet_row_reviews", "row_diagnoses", "sheet_locks", "sheet_lock_history",
+  "diagnosis_results", "diagnosis_intakes", "sheet_rows", "sheet_row_reviews", "row_diagnoses", "sheet_locks", "sheet_lock_history",
   "brakes", "evidences", "litmus_market", "litmus_niche", "competitors", "competitor_comparisons",
   "deployments", "activation_packages", "disclosure_requests", "homeworks", "questions_to_operator", "member_notes",
   "error_reports", "alerts", "activity_log", "generation_counters",

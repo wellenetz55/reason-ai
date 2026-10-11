@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { complete, parseJson, loadFixedText } from "@/server/ai/client";
 import { extractCompanyDocs } from "@/server/extract";
 import { PROFILE_ITEMS } from "@/lib/profileItems";
+import { loadIntakeContext, targetRule } from "@/server/intake";
 
 type DraftItem = { key: string; draft: string; tag: "fact" | "verify" | "hypothesis"; source: string };
 
@@ -14,16 +15,21 @@ export async function loadBQuestions() {
 
 /** 資料から「御社の説明」の下書きを作る */
 export async function draftProfile(companyId: string, companyName: string): Promise<{ items: DraftItem[]; skipped: string[]; errors: string[]; docCount: number }> {
-  const { docs, skipped, errors } = await extractCompanyDocs(companyId);
-  if (docs.length === 0) return { items: [], skipped, errors, docCount: 0 };
+  const [{ docs, skipped, errors }, intake] = await Promise.all([extractCompanyDocs(companyId), loadIntakeContext(companyId, companyName)]);
+  // 適合診断の聞き取り（お客様の発言）も資料の一つとして渡す
+  const all = [...docs];
+  if (intake.notes) all.unshift({ title: "適合診断で聞いたこと（面談で聞いたまま）", kind: "diagnosis_memo", text: intake.notes });
+  if (intake.transcript) all.push({ title: "適合診断の書き起こし（お客様の発言そのまま）", kind: "diagnosis_memo", text: intake.transcript });
+  if (all.length === 0) return { items: [], skipped, errors, docCount: 0 };
   const bq = await loadBQuestions();
-  const corpus = docs.map((d, i) => `### 資料${i + 1}: ${d.title}（${d.kind}）\n${d.text}`).join("\n\n").slice(0, 120_000);
+  const corpus = all.map((d, i) => `### 資料${i + 1}: ${d.title}（${d.kind}）\n${d.text}`).join("\n\n").slice(0, 160_000);
   const itemList = PROFILE_ITEMS.filter((i) => !i.fixed)
     .map((i) => `- ${i.key} [${i.group}] ${i.label}${i.hint ? "（" + i.hint + "）" : ""}${i.group === "B" && bq[i.key] ? "：問い「" + bq[i.key] + "」" : ""}`)
     .join("\n");
   const user = `会社: ${companyName}
+${targetRule(intake.target)}
 
-次の項目について、資料から下書きを書く。
+次の項目について、資料から下書きを書く。「適合診断で聞いたこと」「書き起こし」はお客様自身の発言なので、資料と同じ重さで使う（発言の言葉を生かす）。
 A の項目は資料に書いてあることだけを、資料の言葉を生かして2〜4文で。書いていなければ draft は空文字。
 B の項目は「御社に答えてもらう問い」。資料から読み取れる範囲で仮説を1〜2文、必ず tag は "hypothesis"。読み取れなければ空文字。
 tag: 資料に明記＝"fact"／資料にあるが確認が要る（古い・曖昧）＝"verify"／推測＝"hypothesis"。
@@ -38,7 +44,7 @@ ${corpus}
 JSONのみで返す: [{"key":"a1","draft":"...","tag":"fact","source":"資料1 会社概要"}, ...]`;
   const text = await complete({ promptKey: "step0_summary", user, maxTokens: 3000 });
   const items = (parseJson<DraftItem[]>(text) ?? []).filter((x) => x && typeof x.key === "string" && PROFILE_ITEMS.some((i) => i.key === x.key && !i.fixed));
-  return { items, skipped, errors, docCount: docs.length };
+  return { items, skipped, errors, docCount: all.length };
 }
 
 /**
@@ -52,6 +58,9 @@ export async function loadProfileContext(supabase: { from: SupabaseClient["from"
     supabase.from("company_profile_summary").select("q1_before").eq("company_id", companyId).maybeSingle(),
   ]);
   const ctx: Record<string, string> = {};
+  const { data: cname } = await supabase.from("companies").select("name").eq("id", companyId).maybeSingle();
+  const intake = await loadIntakeContext(companyId, cname?.name ?? "", 6000);
+  if (intake.target) ctx["対象（これ以外の事業・親会社の話は含めない）"] = intake.target;
   if (sum?.q1_before) ctx["一言で言うと"] = sum.q1_before;
   for (const it of items ?? []) {
     const def = PROFILE_ITEMS.find((d) => d.key === it.key);
@@ -61,5 +70,7 @@ export async function loadProfileContext(supabase: { from: SupabaseClient["from"
   }
   const docText = (docs ?? []).map((d) => `[${d.title}] ${(d.text_content ?? "").slice(0, 1500)}`).join("\n");
   if (docText) ctx["資料の抜粋"] = docText.slice(0, 6000);
+  if (intake.notes) ctx["適合診断で聞いたこと（お客様の発言）"] = intake.notes.slice(0, 4000);
+  if (intake.transcript) ctx["適合診断の書き起こし（抜粋）"] = intake.transcript;
   return ctx;
 }

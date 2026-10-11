@@ -1,0 +1,119 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { requireOperator } from "@/lib/session";
+import { ClearQuery } from "@/components/ClearQuery";
+import { loadFixedText } from "@/server/ai/client";
+import { loadIntake, loadDiagQuestions, Q_KEYS, TARGET_KIND_LABEL, VERDICT_LABEL } from "@/server/intake";
+import { saveIntake, saveTranscript, removeTranscript } from "./actions";
+
+const OK: Record<string, string> = { saved: "保存しました。対象と聞き取りは、次のAI下書きから使われます。", transcript: "書き起こしを登録しました。", removed: "書き起こしを外しました。" };
+
+export default async function IntakePage({ params, searchParams }: PageProps<"/admin/[companyId]/intake">) {
+  const { companyId } = await params;
+  const sp = await searchParams;
+  const err = typeof sp?.error === "string" ? sp.error : null;
+  const ok = typeof sp?.ok === "string" ? OK[sp.ok] ?? null : null;
+  const { supabase } = await requireOperator();
+  const [{ data: c }, intake, q, intro, guide, { data: urls }] = await Promise.all([
+    supabase.from("companies").select("id, name, status").eq("id", companyId).single(),
+    loadIntake(companyId),
+    loadDiagQuestions(),
+    loadFixedText("diag_intro"),
+    loadFixedText("diag_guide"),
+    supabase.from("company_documents").select("url, title").eq("company_id", companyId).not("url", "is", null).order("created_at"),
+  ]);
+  if (!c) notFound();
+  const a = intake?.answers ?? {};
+  const inp = "block w-full border-b hairline py-2 text-sm";
+  const ta = "block w-full border-b hairline py-2 text-sm leading-relaxed";
+
+  return (
+    <div>
+      <ClearQuery keys={["error", "ok"]} />
+      <p className="text-xs text-ink-3"><Link href={`/admin/${c.id}`} className="hover:text-ink">{c.name}</Link> / 適合診断の記録</p>
+      <h1 className="serif text-[28px] leading-tight mt-1">適合診断の記録<span className="text-[14px] text-ink-3 font-normal ml-3">ベレネッツだけが見ます。お客様には出ません</span></h1>
+      <p className="text-sm text-ink-2 mt-2 max-w-[44em]">45分の診断で聞いたことを、ここに残します。AIはこの記録（対象・7問の答え・書き起こし）と会社資料から、STEP 0 と STEP 1 の下書きを作ります。お客様に見せる結果は「<Link href={`/admin/${c.id}/diagnosis`} className="underline underline-offset-4">適合診断の結果を書く</Link>」で別に書きます。</p>
+      {err && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[44em]">{err}</p>}
+      {ok && <p className="mt-4 text-sm text-navy">{ok}</p>}
+
+      <form action={saveIntake} className="mt-8 space-y-10 max-w-[880px]">
+        <input type="hidden" name="company_id" value={c.id} />
+
+        <section>
+          <h2 className="serif text-[17px]">1. 対象（何の「選ばれる理由」をつくるか）</h2>
+          <p className="text-xs text-ink-3 mt-1">会社全体でなく、買収したブランドや一つの商品が対象のときは、ここで決めます。AIは対象以外（親会社・他の事業）の話を混ぜません。</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[180px_1fr]">
+            <select name="target_kind" defaultValue={intake?.target_kind ?? "company"} className="border-b hairline py-2 text-sm">
+              {Object.entries(TARGET_KIND_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+            <input name="target_name" defaultValue={intake?.target_name ?? ""} className={inp} placeholder="対象の名前（会社全体なら空でよい。例：VALX GYM）" />
+          </div>
+          <input name="target_note" defaultValue={intake?.target_note ?? ""} className={inp + " mt-3"} placeholder="運営会社・グループ内の関係（例：株式会社Fitcrew が買収した子会社ブランド。親会社は上場・大阪）" />
+        </section>
+
+        <section>
+          <h2 className="serif text-[17px]">2. URL（対象の公式サイトなど）</h2>
+          <p className="text-xs text-ink-3 mt-1">保存すると、お客様のSTEP 0の資料に「Webサイト」として最初から入ります。1行に1つ。</p>
+          <textarea name="urls" rows={3} className={ta + " mt-2 num"} placeholder={"https://…\nhttps://…"} />
+          {(urls ?? []).length > 0 && (
+            <p className="text-xs text-ink-3 mt-2">登録済み：{(urls ?? []).map((u) => u.url).join("　")}</p>
+          )}
+        </section>
+
+        <section>
+          <h2 className="serif text-[17px]">3. 7つの質問の答え（面談で聞いたまま・要点でよい）</h2>
+          <p className="text-xs text-ink-3 mt-1">録音の書き起こしがあれば、ここは空でも構いません。書き起こしに無い深掘りの答えや、こちらの気づきを残す欄です。</p>
+          {intro && <details className="mt-3 text-[13px] text-ink-2"><summary className="cursor-pointer text-ink-3">冒頭の説明（読み上げ用）</summary><p className="mt-2 whitespace-pre-line border-l-2 hairline pl-4 max-w-[44em]">{intro}</p></details>}
+          <div className="mt-4 space-y-5">
+            {Q_KEYS.map((k, i) => (
+              <label key={k} className="block">
+                <span className="text-[13px] font-semibold">問{i + 1}{q[k] ? `　${q[k]}` : ""}</span>
+                <textarea name={k} rows={2} defaultValue={a[k] ?? ""} className={ta + " mt-1"} />
+              </label>
+            ))}
+            <label className="block">
+              <span className="text-[13px] font-semibold">追加で聞いたこと・深掘り</span>
+              <textarea name="extra" rows={4} defaultValue={a.extra ?? ""} className={ta + " mt-1"} placeholder="7問以外に聞いたこと、詰まった場面、社内とお客様の言葉のズレ" />
+            </label>
+          </div>
+          {guide && <details className="mt-4 text-[13px] text-ink-2"><summary className="cursor-pointer text-ink-3">各問で見ているもの・判定の手引き</summary><p className="mt-2 whitespace-pre-line border-l-2 hairline pl-4 max-w-[44em]">{guide}</p></details>}
+        </section>
+
+        <section>
+          <h2 className="serif text-[17px]">4. 判定（ベレネッツ用メモ）</h2>
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
+            <label className="flex items-center gap-2 text-xs text-ink-3">診断日<input type="date" name="held_on" defaultValue={intake?.held_on ?? ""} className="border-b hairline py-1 num text-sm text-ink" /></label>
+            <select name="verdict" defaultValue={intake?.verdict ?? ""} className="border-b hairline py-1 text-sm">
+              <option value="">（未判定）</option>
+              {Object.entries(VERDICT_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+          <textarea name="verdict_note" rows={3} defaultValue={intake?.verdict_note ?? ""} className={ta + " mt-3"} placeholder="素材・言語化・姿勢のそれぞれについて一言。保留なら、時期を改める理由" />
+          <p className="text-xs text-ink-3 mt-1">この欄はAIに渡しません。</p>
+        </section>
+
+        <button className="btn-primary" type="submit">保存</button>
+      </form>
+
+      <section className="mt-16 border-t hairline pt-8 max-w-[880px]">
+        <h2 className="serif text-[17px]">5. 録音の書き起こし（お客様の発言そのまま）</h2>
+        <p className="text-xs text-ink-3 mt-1">テキストを貼り付けるか、ファイル（.txt / .md / .vtt / .pdf）を選んでください。新しく登録すると前のものは置き換わります。AIには先頭から約4万字を渡します。</p>
+        {intake?.transcript ? (
+          <div className="mt-3 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-sm">
+            <p>登録済み：<span className="font-medium">{intake.transcript_name || "書き起こし"}</span><span className="num text-ink-3 ml-2">{intake.transcript.length.toLocaleString()} 字</span></p>
+            <p className="text-[12px] text-ink-2 mt-2 whitespace-pre-line line-clamp-6">{intake.transcript.slice(0, 600)}{intake.transcript.length > 600 ? "…" : ""}</p>
+            <form action={removeTranscript} className="mt-2"><input type="hidden" name="company_id" value={c.id} /><button className="btn-text text-xs" type="submit">外す</button></form>
+          </div>
+        ) : <p className="mt-3 text-sm text-ink-3">まだ登録されていません。</p>}
+        <form action={saveTranscript} className="mt-4 space-y-3">
+          <input type="hidden" name="company_id" value={c.id} />
+          <textarea name="transcript_text" rows={6} className={ta} placeholder="ここに貼り付け（ファイルを選ぶ場合は空のまま）" />
+          <div className="flex flex-wrap items-center gap-3">
+            <input type="file" name="transcript_file" accept=".txt,.md,.vtt,.pdf,text/plain,text/markdown,text/vtt,application/pdf" className="text-sm" />
+            <button className="btn-primary" type="submit">書き起こしを登録</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}

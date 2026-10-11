@@ -6,6 +6,7 @@ import { setStatus, setReaccess, createMeeting, updateMeeting, answerQuestion, r
 import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
 import { createHomework, updateHomework, withdrawHomework, reopenHomework } from "./homework-actions";
 import { ClearQuery } from "@/components/ClearQuery";
+import { loadIntake, describeTarget, VERDICT_LABEL } from "@/server/intake";
 
 const HW_OK: Record<string, string> = { created: "宿題を出しました。お客様の左メニューと「宿題」画面に表示されます。", updated: "宿題を直しました。", withdrawn: "宿題を取り下げました。", reopened: "宿題をもう一度出しました（前の回答は残しています）。" };
 const toDateInput = (iso: string) => toLocalInput(iso).slice(0, 10);
@@ -36,6 +37,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const { data: members } = await supabase.from("profiles").select("id, display_name, role, created_at").eq("company_id", companyId).order("created_at");
   const { data: userList } = await (await import("@/lib/supabase/admin")).createAdminClient().auth.admin.listUsers({ perPage: 1000 });
   const emailOf = (id: string) => userList?.users.find((u) => u.id === id)?.email ?? "";
+  const intake = await loadIntake(companyId).catch(() => null);
   const { data: diag } = await supabase.from("diagnosis_results").select("published_at, first_viewed_at, last_viewed_at, view_count").eq("company_id", companyId).maybeSingle();
   if (!c) notFound();
   // 開いたら既読にする（未返信は返事するまで残る）
@@ -61,7 +63,10 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
     <div>
       <ClearQuery keys={["member_ok", "member_error", "link_error", "hw_ok", "hw_error", "status_error"]} />
       <h1 className="serif text-[28px] leading-tight">{c.name}</h1>
-      <p className="text-sm text-ink-2 mt-1">{STATUS_LABEL[c.status]} · <Link href={`/admin/${c.id}/diagnosis`} className="underline underline-offset-4 hover:text-ink">適合診断の結果を書く</Link></p>
+      <p className="text-sm text-ink-2 mt-1">{STATUS_LABEL[c.status]} · <Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 hover:text-ink">適合診断の記録</Link> · <Link href={`/admin/${c.id}/diagnosis`} className="underline underline-offset-4 hover:text-ink">適合診断の結果を書く</Link></p>
+      <p className="text-xs text-ink-3 mt-1">
+        {intake ? <>対象：{describeTarget(intake, c.name) || "会社全体"}{intake.transcript ? " · 書き起こしあり" : " · 書き起こしなし"}{intake.verdict ? ` · 判定 ${VERDICT_LABEL[intake.verdict] ?? intake.verdict}` : ""}</> : <span className="text-warm">適合診断の記録がまだありません（対象・URL・聞き取りを入れると、AIの下書きがそれを使います）</span>}
+      </p>
 
       <section className="mt-8 grid grid-cols-4 gap-6 text-sm">
         <div><p className="text-xs text-ink-3">行数</p><p className="serif text-[28px]">{progress?.row_count ?? 0}</p></div>

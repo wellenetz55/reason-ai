@@ -17,6 +17,9 @@ const FIXED_KEYS: { key: string; label: string; stage?: string }[] = [
   { key: "round2_counter_intro", label: "STEP 4 冒頭の固定文", stage: "counter" },
   { key: "round2_trust_intro", label: "STEP 5 冒頭の固定文", stage: "trust" },
   { key: "round3_evidence_intro", label: "STEP 7 冒頭の固定文", stage: "evidence" },
+  { key: "diag_intro", label: "適合診断 冒頭の説明（読み上げ用）" },
+  ...["q1", "q2", "q3", "q4", "q5", "q6", "q7"].map((k, i) => ({ key: `diag_${k}`, label: `適合診断 問${i + 1}` })),
+  { key: "diag_guide", label: "適合診断 各問で見ているもの・判定の手引き" },
   ...PROFILE_ITEMS.filter((i) => i.group === "B").map((i) => ({ key: `step0_${i.key}`, label: `STEP 0 問い：${i.label}` })),
 ];
 
@@ -58,7 +61,7 @@ export default async function MethodPage() {
           <form key={key} action={saveFixedText} className="max-w-[820px]">
             <input type="hidden" name="key" value={key} />
             <p className="text-sm">{label} <span className="num text-[11px] text-ink-3 ml-2">{key}{fixed.get(key) ? "" : "（未設定）"}</span></p>
-            <textarea name="body" defaultValue={fixed.get(key)?.body ?? ""} rows={key.startsWith("step0_b") ? 2 : 5} className={ta + " mt-2"} />
+            <textarea name="body" defaultValue={fixed.get(key)?.body ?? ""} rows={key.startsWith("step0_b") || /^diag_q\d$/.test(key) ? 2 : 5} className={ta + " mt-2"} />
             <button className="btn-text mt-2 -ml-1.5" type="submit">保存</button>
           </form>
         ))}

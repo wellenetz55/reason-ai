@@ -55,3 +55,12 @@
 
 - 7面の問いテンプレ（周回別）、各塗りの固定文、回天×脳科学の手法表、システムプロンプト（バージョン管理）
 - ここで投入した本文はサーバ側のみで使い、顧客向けAPIには出ない
+
+## 適合診断の記録（/admin/[companyId]/intake）
+
+operator だけが見る。顧客には出さない（`diagnosis_intakes`、customer ポリシー無し）。
+- 対象：会社全体／事業部・ブランド／商品・サービス、対象の名前、運営会社・グループ内の関係。AIの下書き（STEP 0・STEP 1）は対象以外（親会社・他事業）の話を混ぜない
+- URL：保存時に `company_documents`（kind=website）へ登録 → 顧客のSTEP 0に最初から入る
+- 7問の答え（面談で聞いたまま）＋追加で聞いたこと。問いの文面は `method_fixed_texts`（diag_intro / diag_q1〜q7 / diag_guide）
+- 録音の書き起こし（貼り付け or .txt/.md/.vtt/.pdf）。AIには先頭約4万字を渡す
+- 判定メモ（適合／不適合／保留、3軸の一言）はAIに渡さない
