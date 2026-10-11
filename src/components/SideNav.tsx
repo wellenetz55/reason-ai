@@ -18,7 +18,7 @@ export function SideNav({ brand, children }: { brand: ReactNode; children: React
           {open ? "閉じる" : "メニュー"}
         </button>
       </div>
-      <aside className={`${open ? "flex" : "hidden"} md:flex print:hidden w-full md:w-[260px] shrink-0 border-b md:border-b-0 md:border-r hairline px-6 py-8 flex-col`}>
+      <aside onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setOpen(false); }} className={`${open ? "flex" : "hidden"} md:flex print:hidden w-full md:w-[260px] shrink-0 border-b md:border-b-0 md:border-r hairline px-6 py-8 flex-col`}>
         {children}
       </aside>
     </>

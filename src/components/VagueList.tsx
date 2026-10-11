@@ -57,7 +57,7 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
                     <p className="text-[11px] text-navy">AIの言い直し案</p>
                     <p className="text-sm mt-1">{d.suggestion_value}</p>
                     {d.suggestion_experience && <p className="text-sm text-ink-2 mt-0.5">だから、お客様は {d.suggestion_experience}</p>}
-                    <div className="mt-2 flex gap-1">
+                    <div className="mt-2 flex flex-wrap gap-1">
                       <button type="button" className="btn-text text-navy" onClick={() => setEditing(r.id)}>この案で直す</button>
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className="btn-text" type="submit">そのままでよい</button></form>
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className="btn-text" type="submit">保留にする</button></form>

@@ -8,7 +8,11 @@ export async function answerHomework(formData: FormData) {
   const mode = String(formData.get("mode"));
   const answer = String(formData.get("answer") || "").trim();
   const askedWhom = String(formData.get("asked_whom") || "").trim();
-  if (!askedWhom) return;
+  // 早く戻るときも画面を描き直す（送信中表示が残らないように）
+  if (!askedWhom || company.status === "locked" || company.status === "cancelled") {
+    revalidatePath("/homework");
+    return;
+  }
   await supabase
     .from("homeworks")
     .update({

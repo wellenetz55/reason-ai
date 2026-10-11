@@ -27,6 +27,12 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
   const [text, setText] = useState(row.value_raw ?? "");
   const [exp, setExp] = useState(row.experience_value_v1 ?? "");
   const hasExp = !!row.experience_value_v1;
+  // 開くたびに最新の行の内容で入力欄を埋める（AIの下書きが後から付いた場合に空欄で上書きしないため）
+  const startEdit = () => {
+    setText(row.value_raw ?? "");
+    setExp(row.experience_value_v1 ?? "");
+    setEditing(true);
+  };
   const shownAt = useRef<number>(Date.now());
   useEffect(() => { shownAt.current = Date.now(); }, [row.id]);
   const isDraft = row.created_by === "ai";
@@ -40,7 +46,7 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
         <span className="num text-xs text-ink-3 w-6 pt-1.5">{row.seq}</span>
         <div className="flex-1 min-w-0">
           {editing ? (
-            <form action={reviewRow} onSubmit={() => setEditing(false)}>
+            <form action={async (fd) => { await reviewRow(fd); setEditing(false); }}>
               <input type="hidden" name="row_id" value={row.id} />
               <input type="hidden" name="action" value="fix" />
               <DwellField since={shownAt} />
@@ -59,7 +65,7 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
               {hasExp ? (
                 <p className="text-[16px] leading-snug mt-1 text-ink"><span className="text-[12px] text-ink-3 mr-1.5">だから、お客様は</span>{row.experience_value_v1}</p>
               ) : (
-                <button type="button" onClick={() => setEditing(true)} className="mt-1 text-[14px] text-warm hover:underline underline-offset-4 text-left">だから、お客様は…？　← 体験価値を書くと1組になります</button>
+                <button type="button" onClick={startEdit} className="mt-1 text-[14px] text-warm hover:underline underline-offset-4 text-left">だから、お客様は…？　← 体験価値を書くと1組になります</button>
               )}
             </>
           )}
@@ -75,7 +81,7 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
         </div>
         {!editing && (
           <div className="flex flex-wrap gap-1 shrink-0 pt-1 w-full sm:w-auto pl-10 sm:pl-0">
-            <button className="btn-text" onClick={() => setEditing(true)}>直す</button>
+            <button className="btn-text" onClick={startEdit}>直す</button>
             {!isDraft && !held && !confirmed && (
               <form action={reviewRow}>
                 <input type="hidden" name="row_id" value={row.id} />

@@ -35,7 +35,7 @@ export function FacetBars({ facets }: { facets: { key: string; label: string; sh
         ))}
       </div>
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-10 w-[340px] rounded-[var(--radius)] bg-navy-soft px-5 py-4 text-left shadow-sm">
+        <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 z-10 w-[min(340px,calc(100vw-2rem))] rounded-[var(--radius)] bg-navy-soft px-5 py-4 text-left shadow-sm">
           <p className="serif text-[14px] leading-snug">このグラフの読み方</p>
           <p className="text-[13px] text-ink-2 leading-relaxed mt-2">
             提供価値は、7つの「面」（問いの角度）から順番に書き出します。棒は、面ごとにいま何行出ているかです。

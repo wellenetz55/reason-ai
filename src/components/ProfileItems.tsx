@@ -27,7 +27,7 @@ export function ProfileItems({ items, bq, oneLiner, review }: {
     const open = editing === def.key;
     return (
       <li key={def.key} className={`py-5 ${status === "held" ? "opacity-50" : ""}`}>
-        <div className="flex items-baseline gap-3">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <h3 className="serif text-[15px]">{def.label}</h3>
           <span className="text-[11px] text-ink-3">{STATUS_LABEL_ITEM[status]}</span>
           {status !== "empty" && !def.fixed && <span className="text-[11px] text-ink-3">· {TAG[tag] ?? tag}</span>}
@@ -71,7 +71,7 @@ export function ProfileItems({ items, bq, oneLiner, review }: {
     const open = editing === def.key || (!answered && editing === null && false);
     return (
       <li key={def.key} className="py-5">
-        <div className="flex items-baseline gap-3">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <h3 className="serif text-[15px]">{def.label}</h3>
           <span className="text-[11px] text-ink-3">{answered ? "回答済み" : "未回答"}</span>
         </div>

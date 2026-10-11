@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const WAIT = "少々お待ちください…";
 
@@ -19,9 +19,11 @@ function clearBusy(root: ParentNode = document) {
 
 export function PendingBar({ stamp }: { stamp: number }) {
   const [pending, setPending] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     setPending(false);
     clearBusy();
+    if (timer.current) clearTimeout(timer.current);
   }, [stamp]);
   useEffect(() => {
     const onSubmit = (e: Event) => {
@@ -45,7 +47,8 @@ export function PendingBar({ stamp }: { stamp: number }) {
         target.dataset.busy = target.offsetWidth < 140 ? "short" : "1";
       }
       // 万一応答が無いときのため、60秒で解除
-      setTimeout(() => {
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => {
         setPending(false);
         clearBusy();
       }, 60_000);

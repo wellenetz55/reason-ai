@@ -83,7 +83,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         )}
         <Link href="/ask" className="btn-primary mt-8 block text-center">ベレネッツに質問を残す</Link>
         <div className="mt-auto pt-8 text-[13px] text-ink-2 space-y-2">
-          {shownMeeting ? (
+          {["locked", "cancelled"].includes(company.status) ? null : shownMeeting ? (
             <div className="rounded-[var(--radius)] bg-warm-soft px-4 py-3 -mx-1">
               <p className="text-[11px] font-semibold tracking-wide text-warm">次の面談 · {MEETING_LABEL[shownMeeting.kind] ?? shownMeeting.kind}</p>
               <p className="num text-[17px] font-semibold text-ink mt-1 leading-tight">{fmtMeeting(shownMeeting.scheduled_at)}</p>

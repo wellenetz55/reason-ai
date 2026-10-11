@@ -58,13 +58,14 @@ export function currentStep(status: string, rows: number) {
         ? { key: "diverge", title: "提供価値・体験価値を出す", body: `「御社は〜できる。だから、お客様は〜と感じられる」を対で書き出す段階です。あと${20 - rows}組で次に進めます（目標30組）。` }
         : { key: "merge", title: "まとめて絞る", body: `提供価値・体験価値が${rows}組そろいました。似たものをまとめ、残す言葉を選ぶ段階です。` };
     case "week3_5":
-      return { key: "brakes", title: "お客様のブレーキを書き出す", body: "お客様が御社を選ぶ直前に感じる不安や迷いを書き出し、先回りの答えを用意する段階です。" };
+      return { key: "trust", title: "体験価値を磨く", body: "STEP 1 の組に「なぜなら」（根拠）を足して、約束が浮つかない言葉にする段階です。お客様のブレーキの書き出しは、次の面談で一緒に進めます。" };
+    // 証拠集め・展開の画面は準備中のため、使える「体験価値を磨く」へ案内する（NOT_READY が外れたら戻す）
     case "week6_8":
     case "extended":
-      return { key: "evidence", title: "証拠を集める", body: "ここまで決めた言葉の裏づけ（お客様の声・数字・事実）を集め、営業やWebの言葉に展開する段階です。" };
+      return { key: "trust", title: "体験価値を磨く", body: "「なぜなら」の根拠を固める段階です。裏づけ（お客様の声・数字・事実）の集め方と、営業やWebへの展開は、面談で一緒に進めます。" };
     case "grace":
     case "advisor":
-      return { key: "deploy", title: "接点に展開する", body: "完成した提供価値を、営業トーク・価格説明・Webなどの言葉に変換する段階です。" };
+      return { key: "trust", title: "体験価値を磨く", body: "完成した提供価値シートの見直しと、営業トーク・価格説明・Webへの展開を、面談で一緒に進めます。" };
     case "locked":
       return { key: "", title: "シートのダウンロード", body: "編集できる期間は終わりました。これまでに作った提供価値シートは、Excelでダウンロードできます。続けて使いたい場合は、ベレネッツにお問い合わせください。" };
     case "cancelled":
