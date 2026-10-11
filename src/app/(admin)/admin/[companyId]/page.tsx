@@ -6,7 +6,7 @@ import { setStatus, setReaccess, createMeeting, updateMeeting, answerQuestion, r
 import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
 import { createHomework, updateHomework, withdrawHomework, reopenHomework } from "./homework-actions";
 import { ClearQuery } from "@/components/ClearQuery";
-import { loadIntake, describeTarget, VERDICT_LABEL } from "@/server/intake";
+import { loadIntake, describeTarget, VERDICT_LABEL, inviteGate } from "@/server/intake";
 
 const HW_OK: Record<string, string> = { created: "宿題を出しました。お客様の左メニューと「宿題」画面に表示されます。", updated: "宿題を直しました。", withdrawn: "宿題を取り下げました。", reopened: "宿題をもう一度出しました（前の回答は残しています）。" };
 const toDateInput = (iso: string) => toLocalInput(iso).slice(0, 10);
@@ -38,6 +38,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const { data: userList } = await (await import("@/lib/supabase/admin")).createAdminClient().auth.admin.listUsers({ perPage: 1000 });
   const emailOf = (id: string) => userList?.users.find((u) => u.id === id)?.email ?? "";
   const intake = await loadIntake(companyId).catch(() => null);
+  const gate = c ? await inviteGate(companyId, c.status) : { ok: false, reason: "" };
   const { data: diag } = await supabase.from("diagnosis_results").select("published_at, first_viewed_at, last_viewed_at, view_count").eq("company_id", companyId).maybeSingle();
   if (!c) notFound();
   // 開いたら既読にする（未返信は返事するまで残る）
@@ -236,12 +237,18 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
             ))}
           </ul>
         )}
-        <form action={inviteCustomer} className="mt-3 flex flex-wrap gap-3 items-center">
-          <input type="hidden" name="company_id" value={c.id} />
-          <input type="email" name="email" required placeholder="メールアドレス" className="border-b hairline py-1 text-sm num w-72" />
-          <input name="display_name" placeholder="お名前（任意）" className="border-b hairline py-1 text-sm w-40" />
-          <button className="btn-primary" type="submit">追加して招待する</button>
-        </form>
+        {gate.ok ? (
+          <form action={inviteCustomer} className="mt-3 flex flex-wrap gap-3 items-center">
+            <input type="hidden" name="company_id" value={c.id} />
+            <input type="email" name="email" required placeholder="メールアドレス" className="border-b hairline py-1 text-sm num w-72" />
+            <input name="display_name" placeholder="お名前（任意）" className="border-b hairline py-1 text-sm w-40" />
+            <button className="btn-primary" type="submit">追加して招待する</button>
+          </form>
+        ) : (
+          <p className="mt-3 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-[13px] text-ink-2 max-w-[44em]">
+            {gate.reason}。お客様のメールアドレスは、適合が固まってから入れます。<Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 ml-1">適合診断の記録へ</Link>
+          </p>
+        )}
         {memberError && <p className="text-xs text-warm mt-2">{memberError}</p>}
         {memberOk && <p className="text-xs text-navy mt-2">招待メールを送りました。</p>}
       </section>

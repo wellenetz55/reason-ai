@@ -96,7 +96,7 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
             </select>
           </div>
           <textarea name="verdict_note" rows={3} defaultValue={intake?.verdict_note ?? ""} className={ta + " mt-3"} placeholder="素材・言語化・姿勢のそれぞれについて一言。保留なら、時期を改める理由" />
-          <p className="text-xs text-ink-3 mt-1">この欄はAIに渡しません。</p>
+          <p className="text-xs text-ink-3 mt-1">この欄はAIに渡しません。判定を「適合」にして保存すると、会社ページと「適合診断の結果を書く」で、お客様のメールアドレスを登録して招待できるようになります。それまではメールアドレスを入れる欄が出ません。</p>
         </section>
 
         <button className="btn-primary" type="submit">保存</button>

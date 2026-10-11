@@ -60,6 +60,9 @@ export async function publishDiagnosis(formData: FormData) {
   const name = s(formData, "display_name");
   const admin = createAdminClient();
   const back = (msg: string) => redirect(`/admin/${companyId}/diagnosis?error=${encodeURIComponent(msg)}`);
+  const { data: co } = await supabase.from("companies").select("status").eq("id", companyId).single();
+  const gate = await (await import("@/server/intake")).inviteGate(companyId, co?.status ?? "diagnosed");
+  if (!gate.ok) back(gate.reason);
   if (email) {
     const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
     const existing = list?.users.find((u) => u.email?.toLowerCase() === email);

@@ -5,6 +5,7 @@ import { requireOperator } from "@/lib/session";
 import { saveDiagnosis, publishDiagnosis } from "./actions";
 import { toLocalInput, fmtMeeting } from "@/lib/meetings";
 import { BRAKE_LABEL, FIT_CONDITIONS } from "@/lib/diagnosis";
+import { inviteGate } from "@/server/intake";
 
 type Seed = { feature: string; experience: string; tag: string };
 type Brake = { kind: string; words: string };
@@ -22,6 +23,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
     supabase.from("profiles").select("display_name").eq("company_id", companyId),
   ]);
   if (!c) notFound();
+  const gate = await inviteGate(companyId, c.status);
   const seeds = ((d?.seeds ?? []) as Seed[]);
   const brakes = ((d?.brakes ?? []) as Brake[]);
   const fit = ((d?.fit_reasons ?? []) as Fit[]);
@@ -119,12 +121,18 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
         <p className="text-sm text-ink-2 mt-1">担当者のメールにマジックリンクが届き、ログインするとこの診断結果が最初に開きます。登録済みの担当者がいる場合はメールを空のままで公開だけできます。</p>
         {members?.length ? <p className="text-xs text-ink-3 mt-2">登録済み担当者：{members.map((m) => m.display_name).join("、")}</p> : null}
         <p className="mt-3 text-xs text-warm">公開されるのは「保存」した内容です。上で編集した場合は、先に「保存」を押してください。</p>
-        <form action={publishDiagnosis} className="mt-4 flex flex-wrap gap-3 items-end">
-          <input type="hidden" name="company_id" value={c.id} />
-          <label className="flex-1 min-w-[240px]"><span className="text-xs text-ink-2">担当者メール</span><input type="email" name="email" className={inp} /></label>
-          <label className="w-48"><span className="text-xs text-ink-2">お名前</span><input name="display_name" className={inp} /></label>
-          <button className="btn-primary" type="submit" disabled={!d}>{d?.published_at ? "再送して公開を更新" : "公開して招待する"}</button>
-        </form>
+        {gate.ok ? (
+          <form action={publishDiagnosis} className="mt-4 flex flex-wrap gap-3 items-end">
+            <input type="hidden" name="company_id" value={c.id} />
+            <label className="flex-1 min-w-[240px]"><span className="text-xs text-ink-2">担当者メール</span><input type="email" name="email" className={inp} /></label>
+            <label className="w-48"><span className="text-xs text-ink-2">お名前</span><input name="display_name" className={inp} /></label>
+            <button className="btn-primary" type="submit" disabled={!d}>{d?.published_at ? "再送して公開を更新" : "公開して招待する"}</button>
+          </form>
+        ) : (
+          <p className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-[13px] text-ink-2 max-w-[44em]">
+            {gate.reason}。結果の下書きは、判定が固まる前でも保存しておけます。<Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 ml-1">適合診断の記録へ</Link>
+          </p>
+        )}
         {d?.published_at && <p className="text-xs text-ink-3 mt-2 num">公開済み {fmtMeeting(d.published_at)}{d.chosen_date ? `　／　顧客が選んだキックオフ日 ${fmtMeeting(d.chosen_date)}` : ""}</p>}
       </section>
     </div>

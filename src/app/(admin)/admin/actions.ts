@@ -41,6 +41,9 @@ export async function inviteCustomer(formData: FormData) {
   const name = String(formData.get("display_name") || "").trim();
   const { redirect } = await import("next/navigation");
   if (!email) return;
+  const { data: co } = await supabase.from("companies").select("status").eq("id", companyId).single();
+  const gate = await (await import("@/server/intake")).inviteGate(companyId, co?.status ?? "diagnosed");
+  if (!gate.ok) redirect(`/admin/${companyId}?member_error=${encodeURIComponent(gate.reason)}`);
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const admin = createAdminClient();
   const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });

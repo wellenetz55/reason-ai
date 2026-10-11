@@ -67,3 +67,15 @@ export function targetRule(target: string): string {
   if (!target) return "";
   return `対象: ${target}\n資料や発言に、対象以外（親会社・グループ会社・他の事業）の話が混ざっていても、対象のことだけを書く。対象以外の実績・数字を対象のものとして書かない。`;
 }
+
+/**
+ * 契約前（diagnosed）の会社に担当者を登録・招待してよいか。
+ * 適合診断の記録で判定が「適合」になるまでは、顧客のメールアドレスを入れない運用。契約後の会社は常に可。
+ */
+export async function inviteGate(companyId: string, status: string): Promise<{ ok: boolean; reason: string }> {
+  if (status !== "diagnosed") return { ok: true, reason: "" };
+  const i = await loadIntake(companyId);
+  if (!i) return { ok: false, reason: "適合診断の記録がまだありません。先に「適合診断の記録」で判定を入れてください" };
+  if (i.verdict !== "fit") return { ok: false, reason: `判定が「${VERDICT_LABEL[i.verdict ?? ""] ?? "未判定"}」のため、担当者の登録・招待はできません。「適合診断の記録」で判定を「適合」にすると登録できます` };
+  return { ok: true, reason: "" };
+}
