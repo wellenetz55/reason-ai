@@ -22,7 +22,7 @@ export function ProfileItems({ items, bq, oneLiner, review }: {
   const renderA = (def: (typeof PROFILE_ITEMS)[number]) => {
     const it = byKey.get(def.key);
     const status = def.fixed ? (oneLiner ? "approved" : "empty") : (it?.status ?? "empty");
-    const shown = def.fixed ? oneLiner : (status === "approved" || status === "fixed" ? it?.value : it?.draft);
+    const shown = def.fixed ? oneLiner : (status === "approved" || status === "fixed" ? it?.value : status === "held" ? (it?.value ?? it?.draft) : it?.draft);
     const tag = status === "fixed" ? "fact" : (it?.tag ?? "hypothesis");
     const open = editing === def.key;
     return (

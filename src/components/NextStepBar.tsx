@@ -18,6 +18,8 @@ export function NextStepBar({ gate }: { gate: Gate }) {
             <span className="num text-[10px] font-semibold tracking-[0.12em] text-navy mr-2">{n.step}</span>
             <span className="serif text-[17px]">{n.label}</span>
           </p>
+        ) : gate.laterNotReady ? (
+          <p className="serif text-[17px] mt-0.5">面談でご案内します</p>
         ) : (
           <p className="serif text-[17px] mt-0.5">最終ステップ</p>
         )}

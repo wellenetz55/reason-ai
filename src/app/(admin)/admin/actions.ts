@@ -15,6 +15,13 @@ export async function setStatus(formData: FormData) {
   const id = String(formData.get("company_id"));
   const status = String(formData.get("status"));
   await supabase.from("companies").update({ status, status_changed_at: new Date().toISOString() }).eq("id", id);
+  // 契約前を抜けたら、契約前の要対応アラート（申込・診断閲覧・キックオフ選択）を済みにする
+  if (status !== "diagnosed") {
+    const now = new Date().toISOString();
+    for (const type of ["program_applied", "diagnosis_viewed", "kickoff_chosen"]) {
+      await supabase.from("alerts").update({ resolved_at: now }).eq("company_id", id).is("resolved_at", null).contains("payload", { type });
+    }
+  }
   revalidatePath(`/admin/${id}`);
   revalidatePath("/admin");
 }
@@ -32,10 +39,10 @@ export async function inviteCustomer(formData: FormData) {
   const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
   const existing = list?.users.find((u) => u.email?.toLowerCase() === email);
   if (existing) {
-    const { data: prof } = await admin.from("profiles").select("role, company_id").eq("id", existing.id).maybeSingle();
+    const { data: prof } = await admin.from("profiles").select("role, company_id, display_name").eq("id", existing.id).maybeSingle();
     if (prof?.role === "operator") redirect(`/admin/${companyId}?member_error=${encodeURIComponent("そのメールアドレスは運営者です。顧客の担当者には登録できません")}`);
     if (prof?.company_id && prof.company_id !== companyId) redirect(`/admin/${companyId}?member_error=${encodeURIComponent("そのメールアドレスは別の会社の担当者として登録済みです")}`);
-    await admin.from("profiles").upsert({ id: existing.id, company_id: companyId, role: prof?.role ?? "customer_member", display_name: name || existing.email });
+    await admin.from("profiles").upsert({ id: existing.id, company_id: companyId, role: prof?.role ?? "customer_member", display_name: name || prof?.display_name || existing.email });
     await admin.auth.signInWithOtp({ email, options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`, shouldCreateUser: false } });
   } else {
     const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback` });
@@ -65,8 +72,17 @@ export async function setContractStep(formData: FormData) {
     if ((step === "contracted" || step === "paid") && !cur?.applied_at) patch.applied_at = now;
     if (step === "paid" && !cur?.contracted_at) patch.contracted_at = now;
   }
+  if (clear) {
+    // 前の段階を取り消したら、後の段階もまとめて取り消す（顧客画面と食い違わないように）
+    if (step === "applied") { patch.contracted_at = null; patch.paid_at = null; }
+    if (step === "contracted") patch.paid_at = null;
+  }
   await supabase.from("companies").update(patch).eq("id", id);
-  if (step === "applied" && !clear) await supabase.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("company_id", id).is("resolved_at", null).contains("payload", { type: "program_applied" });
+  // 申込以降のどの段階を記録しても、「申込がありました」は対応済み。契約以降なら「診断結果を開きました」も済み
+  if (!clear) {
+    await supabase.from("alerts").update({ resolved_at: now }).eq("company_id", id).is("resolved_at", null).contains("payload", { type: "program_applied" });
+    if (step !== "applied") await supabase.from("alerts").update({ resolved_at: now }).eq("company_id", id).is("resolved_at", null).contains("payload", { type: "diagnosis_viewed" });
+  }
   revalidatePath(`/admin/${id}`);
   revalidatePath("/admin");
 }

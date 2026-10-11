@@ -17,7 +17,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const { supabase } = await requireOperator();
   const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }, { data: meetings }, { data: errs }] = await Promise.all([
     supabase.from("companies").select("*").eq("id", companyId).single(),
-    supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, because_phrase, status, created_by, target_tag, confirmed_at").eq("company_id", companyId).order("seq"),
+    supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, experience_value, because_phrase, status, created_by, target_tag, confirmed_at").eq("company_id", companyId).order("seq"),
     supabase.from("sheet_row_reviews").select("action, dwell_ms, before_text, after_text, created_at, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId).order("created_at", { ascending: false }).limit(200),
     supabase.from("homeworks").select("title, status, priority").eq("company_id", companyId),
     supabase.from("questions_to_operator").select("*").eq("company_id", companyId).order("created_at", { ascending: false }),
@@ -145,7 +145,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
         {linkError && <p className="text-xs text-warm mt-2">{linkError}</p>}
         {issuedLink && (
           <div className="mt-3 rounded-[var(--radius)] bg-navy-soft px-4 py-3">
-            <p className="text-[11px] text-navy font-semibold">発行しました（この表示を閉じると再表示できません）</p>
+            <p className="text-[11px] text-navy font-semibold">発行しました（2分間は再読み込みでも表示されます。本人にだけ送ってください）</p>
             <p className="num text-[12px] break-all mt-1 select-all">{issuedLink}</p>
           </div>
         )}
@@ -190,7 +190,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
               <span className="num w-6 text-ink-3 shrink-0">{r.seq}</span>
               <span className="flex-1 min-w-0">
                 <span className="serif block">{r.value_raw}</span>
-                {r.experience_value_v1 && <span className="block text-ink-2"><span className="text-[11px] text-ink-3 mr-1">だから</span>{r.experience_value_v1}</span>}
+                {(r.experience_value ?? r.experience_value_v1) && <span className="block text-ink-2"><span className="text-[11px] text-ink-3 mr-1">だから</span>{r.experience_value ?? r.experience_value_v1}</span>}
                 {r.because_phrase && <span className="block text-ink-2"><span className="text-[11px] text-ink-3 mr-1">なぜなら</span>{r.because_phrase}</span>}
               </span>
               <span className="text-xs text-ink-3 shrink-0">{r.created_by === "ai" ? "AI下書き" : ""}{r.confirmed_at ? " 確定" : ""}{r.status === "held" ? " 保留" : ""}</span>

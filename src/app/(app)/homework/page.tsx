@@ -43,7 +43,7 @@ export default async function HomeworkPage() {
             {done.map((h) => (
               <li key={h.id} className="py-3 text-sm">
                 <span className="text-ink-2">{h.status === "passed" ? "パス" : "回答済み"}</span> · {h.title}
-                {h.answer && <p className="text-ink-2 mt-1 whitespace-pre-line">{h.answer}</p>}
+                {(h.answer || h.pass_reason) && <p className="text-ink-2 mt-1 whitespace-pre-line">{h.answer ?? `パスの理由：${h.pass_reason}`}</p>}
               </li>
             ))}
           </ul>

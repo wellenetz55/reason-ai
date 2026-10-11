@@ -131,7 +131,8 @@ export async function reviewProfileItem(formData: FormData) {
   if (action === "approve") { patch.value = cur?.draft ?? null; patch.status = "approved"; }
   else if (action === "fix" || action === "answer") { if (!after) return; patch.value = after; patch.status = "fixed"; if (action === "answer") patch.tag = "fact"; }
   else if (action === "hold") { patch.status = "held"; }
-  else if (action === "reopen") { patch.status = cur?.draft ? "draft" : "empty"; patch.value = null; }
+  // 戻す：自分で書いた（または承認した）文は残す
+  else if (action === "reopen") { patch.status = cur?.value ? "fixed" : cur?.draft ? "draft" : "empty"; }
   await supabase.from("profile_items").upsert({ ...(cur ?? {}), ...patch }, { onConflict: "company_id,key" });
   revalidatePath("/step0");
 }

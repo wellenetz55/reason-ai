@@ -40,7 +40,8 @@ export async function reviewRow(formData: FormData) {
   if (action === "unconfirm") update.confirmed_at = null;
   if (action === "fix" && after) {
     update.value_raw = after;
-    if (afterExp !== null) update.experience_value_v1 = afterExp || null;
+    // STEP 1 で体験価値を直したら、STEP 5 で表示する体験価値も同じにそろえる
+    if (afterExp !== null) { update.experience_value_v1 = afterExp || null; update.experience_value = afterExp || null; }
     update.status = "active";
     update.confirmed_at = null; // 直したら確定は外れる
   }

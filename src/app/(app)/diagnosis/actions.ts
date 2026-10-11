@@ -26,7 +26,11 @@ export async function chooseKickoff(formData: FormData) {
   if (!c?.paid_at) return;
   const { data: d } = await admin.from("diagnosis_results").select("candidate_dates, chosen_date").eq("company_id", company.id).maybeSingle();
   const candidates = (d?.candidate_dates ?? []) as string[];
-  if (!d || !candidates.includes(iso)) return;
+  // 過ぎた候補日は選べない
+  if (!d || !candidates.includes(iso) || new Date(iso) <= new Date()) {
+    revalidatePath("/diagnosis");
+    return;
+  }
   await admin.from("diagnosis_results").update({ chosen_date: iso, chosen_at: new Date().toISOString() }).eq("company_id", company.id);
   // 既存のキックオフ予定があれば差し替え
   await admin.from("company_meetings").delete().eq("company_id", company.id).eq("kind", "kickoff").is("held_at", null);

@@ -9,8 +9,11 @@ type Seed = { feature: string; experience: string; tag: string };
 type Brake = { kind: string; words: string };
 type Fit = { condition: string; quote: string };
 
-export default async function DiagnosisAdmin({ params }: PageProps<"/admin/[companyId]/diagnosis">) {
+export default async function DiagnosisAdmin({ params, searchParams }: PageProps<"/admin/[companyId]/diagnosis">) {
   const { companyId } = await params;
+  const sp = await searchParams;
+  const err = typeof sp?.error === "string" ? sp.error : null;
+  const notice = typeof sp?.notice === "string" ? sp.notice : null;
   const { supabase } = await requireOperator();
   const [{ data: c }, { data: d }, { data: members }] = await Promise.all([
     supabase.from("companies").select("id, name, status").eq("id", companyId).single(),
@@ -30,6 +33,8 @@ export default async function DiagnosisAdmin({ params }: PageProps<"/admin/[comp
       <p className="text-xs text-ink-3"><Link href={`/admin/${c.id}`} className="hover:text-ink">{c.name}</Link> / 適合診断の結果</p>
       <h1 className="serif text-[28px] leading-tight mt-1">適合診断の結果を書く</h1>
       <p className="text-sm text-ink-2 mt-2 max-w-[64ch]">面談直後に10分で埋める量にしてあります。顧客はログイン直後にこのページを見ます。空の項目は顧客側に出ません。</p>
+      {err && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[64ch]">{err}</p>}
+      {notice && <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-4 py-3 text-sm max-w-[64ch]">{notice}</p>}
 
       <form action={saveDiagnosis} className="mt-8 space-y-10 max-w-[760px]">
         <input type="hidden" name="company_id" value={c.id} />
@@ -44,8 +49,8 @@ export default async function DiagnosisAdmin({ params }: PageProps<"/admin/[comp
           <p className="text-xs text-ink-3 mt-1">御社は〜できる／だから、お客様は〜と感じられる。仮説のまま出してよい</p>
           {[0, 1, 2].map((i) => (
             <div key={i} className="mt-3 grid grid-cols-[1fr_1fr_100px] gap-3">
-              <input name={`seed${i + 1}_feature`} defaultValue={seeds[i]?.feature ?? ""} className={inp} placeholder="御社は〜できる" />
-              <input name={`seed${i + 1}_experience`} defaultValue={seeds[i]?.experience ?? ""} className={inp} placeholder="だから、お客様は〜と感じられる" />
+              <input name={`seed${i + 1}_feature`} defaultValue={seeds[i]?.feature ?? ""} className={inp} placeholder="〜できる（「御社は」は自動で付きます）" />
+              <input name={`seed${i + 1}_experience`} defaultValue={seeds[i]?.experience ?? ""} className={inp} placeholder="〜と感じられる（「だから、お客様は」は自動）" />
               <select name={`seed${i + 1}_tag`} defaultValue={seeds[i]?.tag ?? "hypothesis"} className="border-b hairline py-2 text-sm">
                 <option value="hypothesis">仮説</option><option value="verify">要確認</option><option value="fact">事実</option>
               </select>
@@ -60,7 +65,7 @@ export default async function DiagnosisAdmin({ params }: PageProps<"/admin/[comp
               <select name={`brake${i + 1}_kind`} defaultValue={brakes[i]?.kind ?? "distrust"} className="border-b hairline py-2 text-sm">
                 {Object.entries(BRAKE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
-              <input name={`brake${i + 1}_words`} defaultValue={brakes[i]?.words ?? ""} className={inp} placeholder="お客様の言葉で。例：「本当にうちの業界でもできるの？」" />
+              <input name={`brake${i + 1}_words`} defaultValue={brakes[i]?.words ?? ""} className={inp} placeholder="お客様の言葉で（カギ括弧は自動）。例：本当にうちの業界でもできるの？" />
             </div>
           ))}
         </section>

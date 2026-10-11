@@ -1,4 +1,4 @@
-import { STAGES } from "@/lib/stages";
+import { STAGES, NOT_READY } from "@/lib/stages";
 
 export type GateCtx = {
   status: string;
@@ -14,6 +14,7 @@ export type Gate = {
   ready: boolean;
   note: string;          // 進める条件、または進めない理由を一文で
   byOperator?: boolean;  // ベレネッツ側の操作（面談）で開くステップか
+  laterNotReady?: boolean; // 後の段階はあるが、画面がすべて準備中
 };
 
 const order = ["onboarding", "week1_2", "week3_5", "week6_8", "extended", "grace", "advisor"];
@@ -25,8 +26,12 @@ const atLeast = (status: string, s: string) => order.indexOf(status) >= order.in
  */
 export function stepGate(key: string, c: GateCtx): Gate {
   const i = STAGES.findIndex((s) => s.key === key);
-  const n = STAGES[i + 1];
+  // 画面が準備中の段階は飛ばして、次に開ける段階へ案内する
+  const n = STAGES.slice(i + 1).find((s) => !NOT_READY.has(s.key));
   const next = n ? { key: n.key, step: n.step, label: n.label, href: n.href } : undefined;
+  if (!n && i < STAGES.length - 1) {
+    return { ready: false, laterNotReady: true, note: "ここまでが、いま画面で進められる段階です。この先の進め方は、次の面談でご案内します。あとから戻って磨き直せます。" };
+  }
   switch (key) {
     case "step0":
       return atLeast(c.status, "week1_2")
@@ -38,7 +43,7 @@ export function stepGate(key: string, c: GateCtx): Gate {
         : { next, ready: false, note: `あと${20 - c.rows}組で進めます（目標30組）。${c.rowsAll > c.rows ? `体験価値が空の行が${c.rowsAll - c.rows}行あります。「だから、お客様は…」を埋めると組になります。` : ""}` };
     case "merge":
       return atLeast(c.status, "week3_5")
-        ? { next, ready: true, note: "絞った言葉をベレネッツが確認済みです。お客様のブレーキに進めます。" }
+        ? { next, ready: true, note: `絞った言葉をベレネッツが確認済みです。${next?.label ?? "次の段階"}に進めます。` }
         : { next, ready: false, byOperator: true, note: "絞った言葉を確認セッション①でベレネッツが確認したあと、次のステップが開きます。" };
     case "brakes":
       return c.brakeKinds >= 4

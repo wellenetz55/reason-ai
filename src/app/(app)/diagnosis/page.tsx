@@ -38,7 +38,8 @@ export default async function DiagnosisPage() {
   const brakes = (d.brakes ?? []) as Brake[];
   const fit = (d.fit_reasons ?? []) as Fit[];
   const comp = (d.competitor ?? null) as { name: string; claims: string[] } | null;
-  const dates = (d.candidate_dates ?? []) as string[];
+  // 過ぎた候補日は出さない（全部過ぎていれば「ベレネッツからご連絡します」）
+  const dates = ((d.candidate_dates ?? []) as string[]).filter((iso) => new Date(iso) > new Date());
   // 運営が段階を飛ばして記録しても矛盾しないよう、後の段階が済んでいれば前の段階も済みとみなす
   const paid = !!company.paid_at;
   const contracted = paid || !!company.contracted_at;
@@ -153,7 +154,7 @@ export default async function DiagnosisPage() {
         </section>
       )}
 
-      {comp && (
+      {comp && comp.claims?.length > 0 && (
         <section className="mt-14">
           <h2 className="serif text-[20px]">{comp.name} が、いま言っていること</h2>
           <ul className="mt-4 space-y-2 text-ink-2">
