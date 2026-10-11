@@ -2,17 +2,35 @@
 import { revalidatePath } from "next/cache";
 import { requireCustomer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { notifyOperators } from "@/server/notify";
+import { notifyOperators, notifyCustomer } from "@/server/notify";
 import { fmtMeeting } from "@/lib/meetings";
 
 /** 顧客が「申し込む」を押す → 申込日時を記録し、ベレネッツに知らせる（契約書・請求書はアプリ外で送る） */
 export async function applyProgram() {
-  const { company, user } = await requireCustomer();
+  const { company, user, profile } = await requireCustomer();
   const admin = createAdminClient();
   const { data: c } = await admin.from("companies").select("applied_at").eq("id", company.id).single();
   if (c?.applied_at) return;
   await admin.from("companies").update({ applied_at: new Date().toISOString() }).eq("id", company.id);
   await admin.from("alerts").insert({ company_id: company.id, kind: "escalation", payload: { type: "program_applied", by: user.id } });
+  // 押した本人に受付メール
+  if (user.email) {
+    await notifyCustomer({
+      to: user.email,
+      subject: "お申し込みを受け付けました",
+      lines: [
+        `${company.name}`,
+        `${profile.display_name && profile.display_name !== user.email ? `${profile.display_name} 様` : "ご担当者様"}`,
+        "",
+        "お申し込みを受け付けました。",
+        "2営業日以内に申込書・契約書と請求書をお送りします。",
+        "この時点で費用は発生していませんのでご安心ください。",
+        "",
+        "株式会社ベレネッツ",
+      ],
+      path: "/diagnosis",
+    });
+  }
   await notifyOperators({ subject: `${company.name} から申込がありました`, lines: [`${company.name} の担当者が、診断結果ページで「このプログラムに申し込む」を押しました。`, "申込書・契約書と請求書をメールでお送りください。契約・入金を確認したら、管理画面で「契約済」「入金済」を記録してください。"], path: `/admin/${company.id}` });
   revalidatePath("/diagnosis");
 }

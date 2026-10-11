@@ -237,7 +237,7 @@ export default async function DiagnosisPage() {
         <div className="mt-6">
           {!applied ? (
             <>
-              <p className="text-sm">診断結果を読んで「進めたい」と思われたら、下のボタンを押してください。ベレネッツから申込書・契約書と請求書をメールでお送りします。</p>
+              <p className="text-sm">診断結果を読んで「進めたい」と思われたら、下のボタンを押してください。受付メールが届き、2営業日以内にベレネッツから申込書・契約書と請求書をメールでお送りします。</p>
               <form action={applyProgram} className="mt-4">
                 <button className="btn-primary" type="submit">このプログラムに申し込む</button>
               </form>
@@ -247,7 +247,7 @@ export default async function DiagnosisPage() {
             <p className="text-sm">
               {contracted
                 ? "ご契約ありがとうございます。入金を確認しだい、キックオフの日程をこの画面でお選びいただけます。"
-                : "お申し込みを受け付けました。ベレネッツから申込書・契約書と請求書をメールでお送りします。届かない場合は「ベレネッツに質問を残す」からお知らせください。"}
+                : "お申し込みを受け付けました（受付メールをお送りしています）。2営業日以内に、ベレネッツから申込書・契約書と請求書をメールでお送りします。届かない場合は「ベレネッツに質問を残す」からお知らせください。"}
             </p>
           ) : d.chosen_date ? (
             <p className="text-sm">キックオフは <span className="num font-semibold">{fmtMeeting(d.chosen_date)}</span> で承りました。ベレネッツから会議URLをお送りします。</p>
