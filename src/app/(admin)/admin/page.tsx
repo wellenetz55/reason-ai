@@ -41,8 +41,8 @@ export default async function AdminHome() {
     <div>
       <h1 className="serif text-[28px] leading-tight">全社一覧</h1>
       {(totalUnanswered > 0 || totalErrOpen > 0) && (
-        <p className="mt-4 inline-flex items-center gap-3 rounded-[var(--radius)] bg-warm-soft px-4 py-2.5 text-sm">
-          <span className="font-semibold text-warm">返事待ち</span>
+        <p role="status" className="mt-4 inline-flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-4 py-2.5 text-sm">
+          <span className="inline-flex items-center gap-2 font-bold text-warm"><span className="now-dot" aria-hidden /><span className="attention-blink">返事待ち</span></span>
           {totalUnanswered > 0 && <span>質問 <span className="num font-semibold">{totalUnanswered}</span> 件</span>}
           {totalErrOpen > 0 && <span>エラーレポート <span className="num font-semibold">{totalErrOpen}</span> 件</span>}
           <span className="text-ink-3 text-[12px]">返事が遅れると、顧客のやる気が下がります</span>
@@ -50,21 +50,25 @@ export default async function AdminHome() {
       )}
       <table className="mt-8 w-full text-sm">
         <thead className="text-xs text-ink-3 text-left">
-          <tr><th className="py-2 font-normal">会社</th><th className="font-normal">状態</th><th className="font-normal">最終操作</th><th className="font-normal">質問</th><th className="font-normal">エラー</th><th className="font-normal">未回収宿題</th><th className="font-normal w-[34%]">アラート</th></tr>
+          <tr><th className="py-2 pl-4 font-normal">会社</th><th className="font-normal">状態</th><th className="font-normal">最終操作</th><th className="font-normal">質問</th><th className="font-normal">エラー</th><th className="font-normal">未回収宿題</th><th className="font-normal w-[34%]">アラート</th></tr>
         </thead>
         <tbody className="divide-y divide-hair">
           {(companies ?? []).map((c) => {
             const lastAt = lastBy[c.id] ? new Date(lastBy[c.id]) : null;
             const stale = lastAt ? (Date.now() - lastAt.getTime()) / 86400000 : null;
+            const waiting = (msg[c.id]?.unanswered ?? 0) + (msg[c.id]?.errOpen ?? 0) > 0;
             return (
               <tr key={c.id} className={`align-top ${stale !== null && stale >= 7 ? "bg-warm-soft" : ""}`}>
-                <td className="py-3"><Link href={`/admin/${c.id}`} className="hover:underline">{c.name}</Link></td>
+                <td className={`py-3 pl-3 border-l-4 ${waiting ? "border-warm" : "border-transparent"}`}>
+                  <Link href={`/admin/${c.id}`} className={`hover:underline ${waiting ? "font-semibold" : ""}`}>{c.name}</Link>
+                  {waiting && <span className="block text-[11px] text-warm font-semibold mt-0.5">返事待ち</span>}
+                </td>
                 <td>{STATUS_LABEL[c.status] ?? c.status}</td>
                 <td className="num">{lastAt ? `${Math.floor(stale!)}日前` : "—"}</td>
                 <td>
                   {msg[c.id]?.unanswered ? (
                     <span className="inline-flex items-center gap-1.5">
-                      {msg[c.id].unread > 0 && <span className="num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5">未読 {msg[c.id].unread}</span>}
+                      {msg[c.id].unread > 0 && <span className="attention-blink num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5">未読 {msg[c.id].unread}</span>}
                       <span className="num rounded-full border border-warm text-warm text-[11px] font-semibold px-2 py-0.5">未返信 {msg[c.id].unanswered}</span>
                     </span>
                   ) : <span className="text-ink-3">—</span>}
@@ -72,7 +76,7 @@ export default async function AdminHome() {
                 <td>
                   {msg[c.id]?.errOpen ? (
                     <span className="inline-flex items-center gap-1.5">
-                      {msg[c.id].errUnread > 0 && <span className="num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5">未読 {msg[c.id].errUnread}</span>}
+                      {msg[c.id].errUnread > 0 && <span className="attention-blink num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5">未読 {msg[c.id].errUnread}</span>}
                       <span className="num rounded-full border border-warm text-warm text-[11px] font-semibold px-2 py-0.5">未対応 {msg[c.id].errOpen}</span>
                     </span>
                   ) : <span className="text-ink-3">—</span>}
