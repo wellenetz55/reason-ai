@@ -110,7 +110,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
         <h2 className="text-sm text-ink-2">宿題（未回答 {openHw}）</h2>
         <p className="text-xs text-ink-3 mt-1">出すとすぐ、お客様の左メニュー（フェーズの下）と「宿題」画面に出ます。お客様は「誰に聞いたか」を必ず書いて回答するか、理由を書いてパスします。期限はその日の23:59（日本時間）です。</p>
         {["diagnosed", "locked", "cancelled"].includes(c.status) && <p className="text-xs text-warm mt-1">いまの状態（{STATUS_LABEL[c.status]}）では、お客様の左メニューに宿題は出ません。</p>}
-        <form action={createHomework} className="mt-3 grid gap-2 max-w-[72ch] text-sm">
+        <form action={createHomework} className="mt-3 grid gap-2 max-w-[44em] text-sm">
           <input type="hidden" name="company_id" value={c.id} />
           <input name="title" required placeholder="宿題（例：最近の受注3件、決め手を営業担当に聞いてください）" className="border-b hairline py-1" />
           <input name="why" placeholder="効く場所（任意。例：STEP 2 の「なぜなら」の裏づけ）" className="border-b hairline py-1" />
@@ -141,7 +141,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
                         <span className={`num text-xs ${overdueHw ? "text-warm font-semibold" : "text-ink-3"}`}>{h.due_at ? `期限 ${toDateInput(h.due_at)}${overdueHw ? "（過ぎています）" : ""}` : "期限なし"}</span>
                         <span className="text-xs text-ink-3">未回答 · 直す ▾</span>
                       </summary>
-                      <form action={updateHomework} className="mt-2 grid gap-2 max-w-[72ch]">
+                      <form action={updateHomework} className="mt-2 grid gap-2 max-w-[44em]">
                         <input type="hidden" name="id" value={h.id} /><input type="hidden" name="company_id" value={c.id} />
                         <input name="title" required defaultValue={h.title} className="border-b hairline py-1" />
                         <input name="why" defaultValue={h.why ?? ""} placeholder="効く場所（任意）" className="border-b hairline py-1" />
@@ -191,7 +191,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
           <button className="btn-text" type="submit">変更</button>
         </form>
         {c.status === "cancelled" && (
-          <div className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-sm max-w-[72ch]">
+          <div className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-sm max-w-[44em]">
             <p className="font-semibold text-[13px]">解約後のデータへの再アクセス</p>
             <p className="text-xs text-ink-3 mt-1">お客様から連絡があったときに、期限付きで提供価値シートのダウンロードを戻します（編集はできません）。期限が来ると自動で閉じます。状態は「解約」のままです。</p>
             {c.reaccess_until && new Date(c.reaccess_until) > new Date() ? (
@@ -319,7 +319,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
               {!e.resolved_at ? (
                 <form action={resolveErrorReport} className="mt-2 flex gap-3 items-center">
                   <input type="hidden" name="id" value={e.id} /><input type="hidden" name="company_id" value={c.id} />
-                  <input name="note" placeholder="対応内容（顧客に表示）" className="border-b hairline py-1 text-sm flex-1 max-w-[48ch]" />
+                  <input name="note" placeholder="対応内容（顧客に表示）" className="border-b hairline py-1 text-sm flex-1 max-w-[44em]" />
                   <button className="btn-text" type="submit">対応済みにする</button>
                 </form>
               ) : <p className="text-xs mt-1">対応済み{e.resolved_note ? `：${e.resolved_note}` : ""}</p>}
@@ -335,7 +335,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
             <li key={q.id} className="py-4">
               <p className="whitespace-pre-line">{q.body}</p>
               <p className="text-xs text-ink-3 mt-1 num">{new Date(q.created_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}</p>
-              <form action={answerQuestion} className="mt-3 max-w-[64ch]">
+              <form action={answerQuestion} className="mt-3 max-w-[40em]">
                 <input type="hidden" name="id" value={q.id} />
                 <input type="hidden" name="company_id" value={c.id} />
                 <textarea name="answered_body" rows={3} defaultValue={q.answered_body ?? ""} placeholder="返事を書く（顧客の質問の直下に表示されます）" className="w-full border-b hairline py-2 text-sm" />

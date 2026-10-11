@@ -23,7 +23,7 @@ export function NextStepBar({ gate }: { gate: Gate }) {
         ) : (
           <p className="serif text-[17px] mt-0.5">最終ステップ</p>
         )}
-        <p className={`text-[13px] mt-1 max-w-[56ch] ${gate.byOperator || notReady ? "text-warm" : "text-ink-2"}`}>{notReady ? "次の段階の画面は準備中です。進め方は次の面談でご案内します。" : gate.note}</p>
+        <p className={`text-[13px] mt-1 max-w-[40em] ${gate.byOperator || notReady ? "text-warm" : "text-ink-2"}`}>{notReady ? "次の段階の画面は準備中です。進め方は次の面談でご案内します。" : gate.note}</p>
       </div>
       {n && (
         notReady ? (

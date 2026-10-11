@@ -35,7 +35,7 @@ export default async function Page() {
       <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-8">
         <div>
           <h1 className="serif text-[28px] leading-tight">体験価値を磨く</h1>
-          <p className="text-ink-2 text-sm mt-2 max-w-[56ch]">
+          <p className="text-ink-2 text-sm mt-2 max-w-[40em]">
             {list.length === 0 ? "まだ組がありません。先に STEP 1 で提供価値・体験価値の組を出してください。" : missing > 0 ? `「なぜなら」が空の組が${missing}組。根拠がつくと、約束が浮つかなくなります。` : "すべての組に「なぜなら」がつきました。"}
             {onlyUs > 0 && <span className="text-navy">　「当社しかありません」と言える組 {onlyUs}。</span>}
           </p>
@@ -48,11 +48,11 @@ export default async function Page() {
       <StepGuide stageKey="trust" />
       <div className="mt-3"><ExportButton stageKey="trust" /></div>
 
-      {fixed && <p className="mt-8 text-sm text-ink-2 leading-relaxed border-l-2 hairline pl-4 max-w-[64ch] whitespace-pre-line">{fixed}</p>}
+      {fixed && <p className="mt-8 text-sm text-ink-2 leading-relaxed border-l-2 hairline pl-4 max-w-[40em] whitespace-pre-line">{fixed}</p>}
 
-      <section className="mt-8 max-w-[800px]">
+      <section className="mt-8 max-w-[920px]">
         <h2 className="serif text-[18px]">「なぜなら」の書き方</h2>
-        <div className="mt-3 rounded-[var(--radius)] bg-navy-soft px-5 py-4 text-sm leading-relaxed max-w-[72ch] space-y-2">
+        <div className="mt-3 rounded-[var(--radius)] bg-navy-soft px-5 py-4 text-sm leading-relaxed max-w-[44em] space-y-2">
           <p>「だから、お客様は〜と感じられる」は<strong>お客様について</strong>語る約束です。「なぜなら」は<strong>御社について</strong>語る根拠です。御社が<em>どうやって</em>その約束を実現しているか──手順・数字・資格・体制・保証のどれかを含めて書きます。</p>
           <p>約束だけで根拠が無いと、どんなに良い言葉でも浮ついて聞こえます。「お客様を大切にするから」「最後までやり遂げるから」は約束の言い換えで、根拠ではありません。</p>
           <p>根拠はたいてい、すでに御社の中にあります。人・手順・材料・検査・実績・採用・研修・お客様の声・専門性。探す角度は次の3つです。</p>
@@ -68,7 +68,7 @@ export default async function Page() {
             </div>
           ))}
         </dl>
-        <p className="text-[12px] text-ink-3 mt-3 max-w-[72ch]">いちばん強いのは「〜するのは、当社しかありません」と言える根拠です。言えそうな組には印をつけてください。無い場合は、お客様が避けたいと感じていることを御社が引き受ける約束を新しく作る（生み出された根拠）ことも検討します。</p>
+        <p className="text-[12px] text-ink-3 mt-3 max-w-[44em]">いちばん強いのは「〜するのは、当社しかありません」と言える根拠です。言えそうな組には印をつけてください。無い場合は、お客様が避けたいと感じていることを御社が引き受ける約束を新しく作る（生み出された根拠）ことも検討します。</p>
         <AiNotice message={aiErr} />
         {missing > 0 && (
           <form action={requestBecauseDrafts} className="mt-4">
@@ -77,7 +77,7 @@ export default async function Page() {
         )}
       </section>
 
-      <section className="mt-10 max-w-[800px]">
+      <section className="mt-10 max-w-[920px]">
         <TripleList rows={list} />
       </section>
 

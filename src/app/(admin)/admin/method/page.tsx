@@ -37,7 +37,7 @@ export default async function MethodPage() {
   return (
     <div>
       <h1 className="serif text-[28px] leading-tight">メソッド資産</h1>
-      <p className="text-sm text-ink-2 mt-2 max-w-[64ch]">サーバ側だけで使う資産。顧客画面・顧客向けAPI・リポジトリには出ません。ここで直すと次のAI呼び出しから効きます（プロンプトは版が残ります）。</p>
+      <p className="text-sm text-ink-2 mt-2 max-w-[40em]">サーバ側だけで使う資産。顧客画面・顧客向けAPI・リポジトリには出ません。ここで直すと次のAI呼び出しから効きます（プロンプトは版が残ります）。</p>
 
       <section className="mt-10 space-y-10">
         <h2 className="serif text-[18px]">AIへの指示文（プロンプト）</h2>

@@ -42,7 +42,7 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
       <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-8">
         <div>
           <h1 className="serif text-[28px] leading-tight">提供価値・体験価値を出す</h1>
-          <p className="text-ink-2 text-sm mt-2 max-w-[56ch]">
+          <p className="text-ink-2 text-sm mt-2 max-w-[40em]">
             {count < 20 ? `あと${20 - count}組で、まとめて絞る段階に進めます。目標は30組。` : count < 30 ? `${count}組。目標の30組まで出し切ると、絞ったあとに残る言葉が強くなります。` : `${count}組。出し切りました。まとめて絞る段階へ。`}
             {missing > 0 && <span className="text-warm">　体験価値が空の行が{missing}行。</span>}
             {confirmed > 0 && <span className="text-navy">　確定 {confirmed}組。</span>}
@@ -70,12 +70,12 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
           ))}
         </div>
         <h2 className="serif text-[22px] mt-4">{facet.label}</h2>
-        <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">{tpl?.prompt_template ?? facet.hint}</p>
+        <p className="text-sm text-ink-2 mt-1 max-w-[40em]">{tpl?.prompt_template ?? facet.hint}</p>
         {tpl?.helper_examples && <p className="text-xs text-ink-3 mt-2 whitespace-pre-line">{tpl.helper_examples}</p>}
 
-        {fixed && <p className="mt-6 text-sm text-ink-2 leading-relaxed border-l-2 hairline pl-4 max-w-[64ch] whitespace-pre-line">{fixed}</p>}
+        {fixed && <p className="mt-6 text-sm text-ink-2 leading-relaxed border-l-2 hairline pl-4 max-w-[40em] whitespace-pre-line">{fixed}</p>}
 
-        <form action={addRow} className="mt-6 max-w-[760px]">
+        <form action={addRow} className="mt-6 max-w-[880px]">
           <input type="hidden" name="facet" value={facet.key} />
           <input type="hidden" name="round" value={round} />
           <div className="grid gap-x-6 gap-y-3 md:grid-cols-[1fr_1fr]">

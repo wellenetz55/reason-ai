@@ -47,7 +47,7 @@ export function BiasReport({ rows }: { rows: Row[] }) {
           </div>
         ))}
       </div>
-      <ul className="mt-4 space-y-1.5 text-sm max-w-[64ch]">
+      <ul className="mt-4 space-y-1.5 text-sm max-w-[40em]">
         {lines.map((l, i) => (
           <li key={i} className={l.warn ? "text-ink" : "text-ink-2"}>
             {l.warn && <span className="inline-block w-1.5 h-1.5 rounded-full bg-warm mr-2 align-middle" />}

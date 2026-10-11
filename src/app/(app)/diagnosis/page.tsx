@@ -53,7 +53,7 @@ export default async function DiagnosisPage() {
   const tagCls: Record<string, string> = { fact: "tag-fact", verify: "tag-verify", hypothesis: "tag-hypo" };
 
   return (
-    <article className="max-w-[760px]">
+    <article className="max-w-[880px]">
       <p className="inline-block rounded-full bg-navy text-on-accent text-[13px] font-semibold tracking-wide px-4 py-1.5">適合診断の結果</p>
       {/* 判定：左に「◎ 適合」のスタンプ、右に結論。社名は結論から外して上に小さく（結論が1行で読めるように） */}
       <div className="mt-6 flex items-center gap-4 sm:gap-6">
@@ -106,14 +106,14 @@ export default async function DiagnosisPage() {
               </div>
             </div>
           </div>
-          <p className="text-sm text-ink-2 mt-4 max-w-[56ch]">多くの会社で、左は業種と所在地の説明、右はお客様が選ぶ理由になります。同じ会社の、同じ人の言葉で。</p>
+          <p className="text-sm text-ink-2 mt-4 max-w-[40em]">多くの会社で、左は業種と所在地の説明、右はお客様が選ぶ理由になります。同じ会社の、同じ人の言葉で。</p>
         </section>
       )}
 
       {seeds.length > 0 && (
         <section className="mt-14">
           <h2 className="serif text-[20px]">初回ヒアリングで、もう見つかったもの</h2>
-          <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">御社の中では当たり前すぎて、誰も言っていなかったこと。お話しいただいた言葉を「御社は〜できる。だから、お客様は〜と感じられる」の型に仮に置いたものです。まだ仮説です。8週間で事実にします。</p>
+          <p className="text-sm text-ink-2 mt-1 max-w-[40em]">御社の中では当たり前すぎて、誰も言っていなかったこと。お話しいただいた言葉を「御社は〜できる。だから、お客様は〜と感じられる」の型に仮に置いたものです。まだ仮説です。8週間で事実にします。</p>
           <ol className="mt-5 space-y-4">
             {seeds.map((s, i) => (
               <li key={i} className={`tag-line ${tagCls[s.tag] ?? "tag-hypo"} pl-5 py-1`}>
@@ -130,7 +130,7 @@ export default async function DiagnosisPage() {
                 <span key={i} className={`h-[18px] rounded-[3px] ${i < seeds.length ? "bg-navy" : "border border-dashed border-ink-3"}`} />
               ))}
             </div>
-            <p className="text-sm mt-3 max-w-[56ch]"><span className="font-semibold">残りは、御社の中にあります。</span>毎日ちがう角度の問いに答えるうちに、「言われてみれば、それもそうだ」が積み上がっていきます。目標は30組。面談では、その入口が見えただけです。</p>
+            <p className="text-sm mt-3 max-w-[40em]"><span className="font-semibold">残りは、御社の中にあります。</span>毎日ちがう角度の問いに答えるうちに、「言われてみれば、それもそうだ」が積み上がっていきます。目標は30組。面談では、その入口が見えただけです。</p>
           </div>
         </section>
       )}
@@ -138,7 +138,7 @@ export default async function DiagnosisPage() {
       {brakes.length > 0 && (
         <section className="mt-14">
           <h2 className="serif text-[20px]">まだ言葉になっていないブレーキ</h2>
-          <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">お客様が御社を選ぶ直前に、おそらくこう迷っています。ここを言葉で先回りできると、見積りの前の会話が変わります。3〜5週目の仕事です。</p>
+          <p className="text-sm text-ink-2 mt-1 max-w-[40em]">お客様が御社を選ぶ直前に、おそらくこう迷っています。ここを言葉で先回りできると、見積りの前の会話が変わります。3〜5週目の仕事です。</p>
           <ul className="mt-5 space-y-3">
             {brakes.map((b, i) => (
               <li key={i} className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
@@ -147,7 +147,7 @@ export default async function DiagnosisPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-5 text-sm max-w-[56ch] pl-4 border-l-2 border-warm">
+          <p className="mt-5 text-sm max-w-[40em] pl-4 border-l-2 border-warm">
             <span className="font-semibold">ここを放っておくと、</span>御社は「比べられたら負ける会社」のままです。選ばれる時は値引きと相見積もりで選ばれ、選ばれない時は理由を教えてもらえません。
           </p>
         </section>
@@ -173,7 +173,7 @@ export default async function DiagnosisPage() {
           <ul className="mt-4 space-y-2 text-ink-2">
             {comp.claims.map((c, i) => <li key={i} className="pl-4 border-l-2 hairline">{c}</li>)}
           </ul>
-          <p className="text-sm text-ink-2 mt-4 max-w-[56ch]">向こうは言葉にしています。御社は、まだ言葉にしていないだけです。</p>
+          <p className="text-sm text-ink-2 mt-4 max-w-[40em]">向こうは言葉にしています。御社は、まだ言葉にしていないだけです。</p>
         </section>
       )}
 
@@ -187,7 +187,7 @@ export default async function DiagnosisPage() {
             </li>
           ))}
         </ol>
-        <div className="mt-6 rounded-[var(--radius)] bg-navy-soft px-6 py-5 max-w-[60ch]">
+        <div className="mt-6 rounded-[var(--radius)] bg-navy-soft px-6 py-5 max-w-[40em]">
           <p className="leading-relaxed">問題は、御社に理由がないことではありません。<span className="font-semibold">社内にある理由を、取り出す手順がないこと</span>です。</p>
           <p className="text-sm text-ink-2 mt-2">{seeds.length > 0 ? `初回ヒアリングの短い時間でも${seeds.length}組が見つかったのが、その証拠です。` : ""}8週間プログラムは、その手順です。</p>
         </div>
@@ -229,14 +229,14 @@ export default async function DiagnosisPage() {
           <p className="text-[11px] text-ink-3">8週間プログラムの場合</p>
           <p className="text-sm mt-2 leading-relaxed">問いはAIが毎日出します。揃えるのはベレネッツが面談で担います。社長がやるのは、答えることだけです。</p>
         </div>
-        <p className="sm:col-span-2 text-sm max-w-[60ch] pl-4 border-l-2 border-warm">
+        <p className="sm:col-span-2 text-sm max-w-[40em] pl-4 border-l-2 border-warm">
           <span className="font-semibold">初回ヒアリングで見つかった芽は、御社の「いま」の言葉です。</span>時間が経つほど、言い回しも熱量も薄れます。見つかったうちに、始めてください。
         </p>
       </section>
 
       <section className="mt-16 border-t hairline pt-8 print:hidden">
         <h2 className="serif text-[20px]">ここから、8週間が始まるまで</h2>
-        <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">契約と請求はメールでやりとりします。アプリでは、いまどこまで進んでいるかが見えます。</p>
+        <p className="text-sm text-ink-2 mt-1 max-w-[40em]">契約と請求はメールでやりとりします。アプリでは、いまどこまで進んでいるかが見えます。</p>
         <ol className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[12px]">
           {steps.map((st, i) => (
             <li key={st.key} className={`rounded-[var(--radius)] border px-3 py-2.5 ${st.done ? "border-navy bg-navy text-on-accent" : st.now ? "border-warm bg-warm-soft" : "hairline text-ink-3"}`}>
@@ -293,7 +293,7 @@ export default async function DiagnosisPage() {
       </section>
       </>)}
       {company.status !== "diagnosed" && (
-        <p className="mt-16 border-t hairline pt-6 text-sm text-ink-2 max-w-[60ch] print:hidden">
+        <p className="mt-16 border-t hairline pt-6 text-sm text-ink-2 max-w-[40em] print:hidden">
           これは契約前の初回ヒアリングでの診断結果です。ここで見つかった芽とブレーキは、8週間のステップの出発点になります。最後の面談で、「御社を一言で言うと？」にもう一度答えていただきます。
         </p>
       )}

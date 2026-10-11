@@ -10,7 +10,7 @@ export default async function HomeworkPage() {
   return (
     <div>
       <h1 className="serif text-[28px] leading-tight">宿題</h1>
-      <p className="text-ink-2 text-sm mt-2 max-w-[56ch]">一人で決めないでください。周りの人に聞いてから書いてください。誰に聞いたかも残します。</p>
+      <p className="text-ink-2 text-sm mt-2 max-w-[40em]">一人で決めないでください。周りの人に聞いてから書いてください。誰に聞いたかも残します。</p>
       {open.length === 0 && <p className="mt-10 text-sm text-ink-3">いま出ている宿題はありません。</p>}
       <ul className="mt-8 divide-y divide-hair">
         {open.map((h) => (
@@ -23,7 +23,7 @@ export default async function HomeworkPage() {
             {h.why && <p className="text-sm text-ink-2 mt-1">効く場所：{h.why}</p>}
             {h.ask_whom_hint && <p className="text-sm text-ink-2 mt-1">まず{h.ask_whom_hint}に聞いてください。</p>}
             {closed ? <p className="mt-3 text-[13px] text-ink-3">編集できる期間が終わったため、回答はできません。</p> : (
-            <form action={answerHomework} className="mt-4 space-y-3 max-w-[64ch]">
+            <form action={answerHomework} className="mt-4 space-y-3 max-w-[40em]">
               <input type="hidden" name="id" value={h.id} />
               {(h.answer || h.pass_reason) && <p className="text-[12px] text-ink-3">ベレネッツからもう一度お願いしている宿題です。前回の回答を残してあります。書き足してください。</p>}
               <textarea name="answer" rows={3} defaultValue={h.answer ?? h.pass_reason ?? ""} placeholder="回答（パスする場合は理由）" className="w-full border-b hairline py-2 text-sm" />

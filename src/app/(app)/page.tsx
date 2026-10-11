@@ -30,28 +30,28 @@ export default async function Home() {
       <section className="mt-12">
         <p className="text-[13px] text-ink-3">いま進めること</p>
         <h2 className="serif text-[22px] mt-1">{step.title}</h2>
-        <p className="text-ink-2 mt-2 max-w-[56ch] leading-relaxed">{step.body}</p>
+        <p className="text-ink-2 mt-2 max-w-[40em] leading-relaxed">{step.body}</p>
         {stage && !NOT_READY.has(stage.key) && (
           <Link href={stage.href} className="btn-primary inline-block mt-6">
             {step.title} →
           </Link>
         )}
         {stage && NOT_READY.has(stage.key) && (
-          <p className="mt-6 rounded-[var(--radius)] bg-paper-2 px-5 py-4 text-sm text-ink-2 max-w-[56ch]">この段階の画面は準備中です。進め方は次の面談でご案内します。それまでは宿題と、前の段階の見直しを進めてください。</p>
+          <p className="mt-6 rounded-[var(--radius)] bg-paper-2 px-5 py-4 text-sm text-ink-2 max-w-[40em]">この段階の画面は準備中です。進め方は次の面談でご案内します。それまでは宿題と、前の段階の見直しを進めてください。</p>
         )}
         {company.reaccess && company.reaccess_until && (
-          <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-5 py-3 text-sm text-ink-2 max-w-[56ch]">
+          <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-5 py-3 text-sm text-ink-2 max-w-[40em]">
             ご連絡をいただき、ベレネッツが <span className="num font-semibold text-ink">{new Date(company.reaccess_until).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "long", day: "numeric" })}</span> まで提供価値シートをダウンロードできるようにしています。
           </p>
         )}
         {company.status === "locked" && <a href="/api/export?step=deploy" className="btn-primary inline-block mt-6">提供価値シートをダウンロード</a>}
-        {!["locked", "cancelled"].includes(company.status) && <p className="text-[13px] text-ink-3 mt-6 max-w-[56ch] leading-relaxed">
+        {!["locked", "cancelled"].includes(company.status) && <p className="text-[13px] text-ink-3 mt-6 max-w-[40em] leading-relaxed">
           ステップは STEP 0 から順に進みます。各画面のいちばん下に「次のステップ」があり、条件を満たすとボタンが押せます。ベレネッツとの面談のあとに開くステップもあります。
         </p>}
       </section>
 
       {openHomework > 0 && !closed && (
-        <section className="mt-12 rounded-[var(--radius)] bg-navy-soft px-6 py-5 max-w-[64ch]">
+        <section className="mt-12 rounded-[var(--radius)] bg-navy-soft px-6 py-5 max-w-[40em]">
           <p className="text-[11px] font-semibold tracking-wide text-navy">宿題 · 次の面談までに</p>
           <p className="text-sm text-ink-2 mt-1">シートの「仮説」を事実に変えるために、御社に調べてもらうことです。一人で決めず、周りの人に聞いてから書いてください。</p>
           <ul className="mt-3 space-y-2">

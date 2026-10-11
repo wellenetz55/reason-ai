@@ -75,7 +75,7 @@ export function ProfileItems({ items, bq, oneLiner, review }: {
           <h3 className="serif text-[15px]">{def.label}</h3>
           <span className="text-[11px] text-ink-3">{answered ? "回答済み" : "未回答"}</span>
         </div>
-        <p className="text-sm text-ink-2 mt-1 max-w-[64ch] leading-relaxed">{bq[def.key] || "（問いの文面はベレネッツが設定します）"}</p>
+        <p className="text-sm text-ink-2 mt-1 max-w-[40em] leading-relaxed">{bq[def.key] || "（問いの文面はベレネッツが設定します）"}</p>
         {it?.draft && !answered && (
           <p className="tag-line tag-hypo pl-4 mt-2 text-[13px] text-ink-3 leading-relaxed whitespace-pre-line">AIの仮説：{it.draft}</p>
         )}
@@ -99,7 +99,7 @@ export function ProfileItems({ items, bq, oneLiner, review }: {
     <div>
       <ol className="divide-y divide-hair">{PROFILE_ITEMS.filter((d) => d.group === "A").map(renderA)}</ol>
       <h3 className="serif text-[17px] mt-12">御社にお聞きしたいこと</h3>
-      <p className="text-sm text-ink-2 mt-1 max-w-[64ch]">資料には書いていないことです。キックオフでも話題にしますので、いま思うところを書いておいてください。AIの仮説は参考までに。</p>
+      <p className="text-sm text-ink-2 mt-1 max-w-[40em]">資料には書いていないことです。キックオフでも話題にしますので、いま思うところを書いておいてください。AIの仮説は参考までに。</p>
       <ol className="divide-y divide-hair mt-2">{PROFILE_ITEMS.filter((d) => d.group === "B").map(renderB)}</ol>
     </div>
   );

@@ -8,7 +8,7 @@ export function StepGuide({ stageKey }: { stageKey: string }) {
   const s = STAGES.find((x) => x.key === stageKey);
   if (!s) return null;
   return (
-    <aside className="mt-6 rounded-[var(--radius)] bg-navy-soft px-6 py-5 max-w-[72ch]">
+    <aside className="mt-6 rounded-[var(--radius)] bg-navy-soft px-6 py-5 max-w-[44em]">
       <p className="num text-[10px] font-semibold tracking-[0.12em] text-navy">{s.step} · この段階でやること</p>
       <p className="serif text-[17px] leading-snug mt-2 text-ink">{s.guide.lead}</p>
       <p className="text-sm text-ink-2 leading-relaxed mt-2">{s.guide.body}</p>

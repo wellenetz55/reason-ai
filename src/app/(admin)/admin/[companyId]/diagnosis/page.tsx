@@ -34,9 +34,9 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
       <ClearQuery keys={["error", "notice"]} />
       <p className="text-xs text-ink-3"><Link href={`/admin/${c.id}`} className="hover:text-ink">{c.name}</Link> / 適合診断の結果</p>
       <h1 className="serif text-[28px] leading-tight mt-1">適合診断の結果を書く</h1>
-      <p className="text-sm text-ink-2 mt-2 max-w-[64ch]">面談直後に10分で埋める量にしてあります。顧客はログイン直後にこのページを見ます。空の項目は顧客側に出ません。</p>
-      {err && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[64ch]">{err}</p>}
-      {notice && <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-4 py-3 text-sm max-w-[64ch]">{notice}</p>}
+      <p className="text-sm text-ink-2 mt-2 max-w-[40em]">面談直後に10分で埋める量にしてあります。顧客はログイン直後にこのページを見ます。空の項目は顧客側に出ません。</p>
+      {err && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[40em]">{err}</p>}
+      {notice && <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-4 py-3 text-sm max-w-[40em]">{notice}</p>}
 
       <form action={saveDiagnosis} className="mt-8 space-y-10 max-w-[760px]">
         <input type="hidden" name="company_id" value={c.id} />

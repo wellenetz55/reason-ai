@@ -54,7 +54,7 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
     <div>
       <ClearQuery keys={["error"]} />
       <h1 className="serif text-[28px] leading-tight">会社を知る</h1>
-      {docError && <p role="alert" className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[64ch]">{docError}</p>}
+      {docError && <p role="alert" className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[40em]">{docError}</p>}
       <StepGuide stageKey="step0" />
       <div className="mt-3"><ExportButton stageKey="step0" /></div>
 
@@ -94,7 +94,7 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
         </form>
       </section>
 
-      <p className="mt-8 rounded-[var(--radius)] bg-warm-soft px-5 py-4 text-[13px] text-ink-2 max-w-[72ch] leading-relaxed">
+      <p className="mt-8 rounded-[var(--radius)] bg-warm-soft px-5 py-4 text-[13px] text-ink-2 max-w-[44em] leading-relaxed">
         <span className="font-semibold text-warm">上げないもの：</span>決算書・税務情報・顧客リスト・契約書・給与や人事の情報。これらは提供価値づくりに使いません。
       </p>
 
@@ -126,7 +126,7 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="serif text-[22px]">御社の説明</h2>
-            <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">上の資料をAIが読んで下書きします。項目ごとに「直す／承認／保留」してください。一括承認はありません。</p>
+            <p className="text-sm text-ink-2 mt-1 max-w-[40em]">上の資料をAIが読んで下書きします。項目ごとに「直す／承認／保留」してください。一括承認はありません。</p>
           </div>
           <form action={requestProfileDraft}>
             <button className="btn-primary" type="submit" disabled={!docs?.length}>{drafted ? "資料から下書きを作り直す" : "資料から下書きを作る"}</button>
@@ -135,7 +135,7 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
         {!docs?.length && <p className="text-[12px] text-warm mt-2">まず資料を1つ以上登録してください。</p>}
         <AiNotice message={aiErr} />
         {drafted && <p className="text-[12px] text-ink-3 mt-2">作り直しても、承認済み・直した・保留の項目は変わりません。画像の資料は読めないので、文字はテキストで貼ってください。</p>}
-        <div className="mt-6 max-w-[760px]">
+        <div className="mt-6 max-w-[880px]">
           <ProfileItems items={items ?? []} bq={bq} oneLiner={summary?.q1_before ?? null} review={reviewProfileItem} />
         </div>
       </section>

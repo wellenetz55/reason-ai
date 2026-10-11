@@ -37,14 +37,14 @@ export default async function Page() {
       <StepGuide stageKey="merge" />
       <div className="mt-3"><ExportButton stageKey="merge" /></div>
 
-      <div className="mt-12 space-y-14 max-w-[800px]">
+      <div className="mt-12 space-y-14 max-w-[920px]">
         <BiasReport rows={active} />
 
         <section>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <h2 className="serif text-[20px]">ふわっと診断</h2>
-              <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">どの会社でも言える語には黄色の印がつきます。AIに点検させると、数字や固有名詞の有無、体験価値が機能の言い換えになっていないかを見て、言い直し案を出します。直すかどうかは御社が決めます。</p>
+              <p className="text-sm text-ink-2 mt-1 max-w-[40em]">どの会社でも言える語には黄色の印がつきます。AIに点検させると、数字や固有名詞の有無、体験価値が機能の言い換えになっていないかを見て、言い直し案を出します。直すかどうかは御社が決めます。</p>
             </div>
             <form action={runVagueCheck}>
               <button className="btn-primary" type="submit" disabled={active.length === 0}>{lastChecked ? "AIにもう一度点検させる" : "AIに点検させる"}</button>

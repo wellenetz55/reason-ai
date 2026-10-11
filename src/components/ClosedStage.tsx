@@ -11,7 +11,7 @@ export function ClosedStage({ stageKey, status }: { stageKey: string; status: st
     return (
       <div>
         <h1 className="serif text-[28px] leading-tight">{s.label}</h1>
-        <section className="mt-10 rounded-[var(--radius)] bg-paper-2 px-6 py-5 max-w-[64ch]">
+        <section className="mt-10 rounded-[var(--radius)] bg-paper-2 px-6 py-5 max-w-[40em]">
           <p className="font-semibold">{status === "locked" ? "編集できる期間は終わりました" : "ご契約は終了しています"}</p>
           <p className="text-sm text-ink-2 mt-1 leading-relaxed">
             {status === "locked"
@@ -27,7 +27,7 @@ export function ClosedStage({ stageKey, status }: { stageKey: string; status: st
     <div>
       <h1 className="serif text-[28px] leading-tight">{s.label}</h1>
       <StepGuide stageKey={stageKey} />
-      <section className="mt-10 rounded-[var(--radius)] bg-warm-soft px-6 py-5 max-w-[64ch]">
+      <section className="mt-10 rounded-[var(--radius)] bg-warm-soft px-6 py-5 max-w-[40em]">
         <p className="font-semibold text-warm">この段階はまだ開いていません</p>
         <p className="text-sm text-ink-2 mt-1 leading-relaxed">
           {byOperator ? "前の段階をベレネッツとの面談で確認したあとに開きます。" : "前の段階を進めると開きます。"}
