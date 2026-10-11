@@ -54,9 +54,9 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
             <select name="target_kind" defaultValue={intake?.target_kind ?? "company"} className="border-b hairline py-2 text-sm">
               {Object.entries(TARGET_KIND_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <input name="target_name" defaultValue={intake?.target_name ?? ""} className={inp} placeholder="対象の名前（会社全体なら空でよい。例：○○ジム（ブランド名））" />
+            <input name="target_name" defaultValue={intake?.target_name ?? ""} className={inp} placeholder="対象の名前（会社全体なら空でよい。例：サンプル工業の「ハヤブサ加工」事業、サンプル商事の「まる得パック」）" />
           </div>
-          <input name="target_note" defaultValue={intake?.target_note ?? ""} className={inp + " mt-3"} placeholder="運営会社・グループ内の関係（例：株式会社○○（親会社）が買収した子会社ブランド）" />
+          <input name="target_note" defaultValue={intake?.target_note ?? ""} className={inp + " mt-3"} placeholder="運営会社・グループ内の関係（例：親会社サンプルホールディングスが買収した子会社。親会社の実績は対象に含めない）" />
         </section>
 
         <section>
