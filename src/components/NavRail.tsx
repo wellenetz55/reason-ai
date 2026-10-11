@@ -22,7 +22,7 @@ export function NavRail({ stages }: { stages: S[] }) {
             <span
               className={clsx(
                 "num inline-block shrink-0 w-[60px] text-center rounded-full py-[3px] text-[9px] font-semibold tracking-[0.1em] leading-none border",
-                active ? "bg-navy border-navy text-white" : s.open ? "border-navy text-navy" : "border-dashed border-ink-3 text-ink-3"
+                active ? "bg-navy border-navy text-on-accent" : s.open ? "border-navy text-navy" : "border-dashed border-ink-3 text-ink-3"
               )}
             >
               {s.step}

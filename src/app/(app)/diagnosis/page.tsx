@@ -54,7 +54,7 @@ export default async function DiagnosisPage() {
 
   return (
     <article className="max-w-[760px]">
-      <p className="inline-block rounded-full bg-navy text-white text-[13px] font-semibold tracking-wide px-4 py-1.5">適合診断の結果</p>
+      <p className="inline-block rounded-full bg-navy text-on-accent text-[13px] font-semibold tracking-wide px-4 py-1.5">適合診断の結果</p>
       <h1 className="serif text-[30px] leading-tight mt-4"><span className="text-warm mr-1">◎</span>{company.name}様は、<span className="text-warm">「選ばれる理由」をつくれる会社</span>です。</h1>
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-ink-3">
         {d.published_at && <span className="num">{fmtMeeting(d.published_at)} 公開</span>}
@@ -71,8 +71,8 @@ export default async function DiagnosisPage() {
           <p className="text-[11px] text-ink-3">まだ言葉になっていないブレーキ</p>
           <p className="serif text-[30px] leading-none mt-1"><span className="num">{brakes.length}</span><span className="text-[14px] ml-1">つ</span></p>
         </div>
-        <div className="rounded-[var(--radius)] bg-navy text-white px-5 py-4">
-          <p className="text-[11px] text-white/70">8週間での目標</p>
+        <div className="rounded-[var(--radius)] bg-navy text-on-accent px-5 py-4">
+          <p className="text-[11px] text-on-accent/70">8週間での目標</p>
           <p className="serif text-[30px] leading-none mt-1"><span className="num">30</span><span className="text-[14px] ml-1">組</span></p>
         </div>
       </div>
@@ -226,10 +226,10 @@ export default async function DiagnosisPage() {
         <p className="text-sm text-ink-2 mt-1 max-w-[56ch]">契約と請求はメールでやりとりします。アプリでは、いまどこまで進んでいるかが見えます。</p>
         <ol className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[12px]">
           {steps.map((st, i) => (
-            <li key={st.key} className={`rounded-[var(--radius)] border px-3 py-2.5 ${st.done ? "border-navy bg-navy text-white" : st.now ? "border-warm bg-warm-soft" : "hairline text-ink-3"}`}>
-              <p className={`num text-[10px] tracking-wide ${st.done ? "text-white/70" : st.now ? "text-warm" : ""}`}>{i + 1}{st.done ? " ✓" : st.now ? " ← いまここ" : ""}</p>
+            <li key={st.key} className={`rounded-[var(--radius)] border px-3 py-2.5 ${st.done ? "border-navy bg-navy text-on-accent" : st.now ? "border-warm bg-warm-soft" : "hairline text-ink-3"}`}>
+              <p className={`num text-[10px] tracking-wide ${st.done ? "text-on-accent/70" : st.now ? "text-warm" : ""}`}>{i + 1}{st.done ? " ✓" : st.now ? " ← いまここ" : ""}</p>
               <p className="font-semibold mt-0.5">{st.label}</p>
-              {st.at && <p className={`num text-[10px] mt-0.5 ${st.done ? "text-white/70" : "text-ink-3"}`}>{fmtMeeting(st.at)}</p>}
+              {st.at && <p className={`num text-[10px] mt-0.5 ${st.done ? "text-on-accent/70" : "text-ink-3"}`}>{fmtMeeting(st.at)}</p>}
             </li>
           ))}
         </ol>

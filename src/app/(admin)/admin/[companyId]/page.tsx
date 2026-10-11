@@ -2,8 +2,13 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
-import { setStatus, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink, setContractStep, inviteCustomer } from "../actions";
+import { setStatus, setReaccess, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink, setContractStep, inviteCustomer } from "../actions";
 import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
+import { createHomework, updateHomework, withdrawHomework, reopenHomework } from "./homework-actions";
+import { ClearQuery } from "@/components/ClearQuery";
+
+const HW_OK: Record<string, string> = { created: "宿題を出しました。お客様の左メニューと「宿題」画面に表示されます。", updated: "宿題を直しました。", withdrawn: "宿題を取り下げました。", reopened: "宿題をもう一度出しました（前の回答は残しています）。" };
+const toDateInput = (iso: string) => toLocalInput(iso).slice(0, 10);
 
 export default async function CompanyAdmin({ params, searchParams }: PageProps<"/admin/[companyId]">) {
   const { companyId } = await params;
@@ -14,12 +19,15 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const memberError = typeof sp?.member_error === "string" ? sp.member_error : null;
   const memberOk = sp?.member_ok === "1";
   const linkError = typeof sp?.link_error === "string" ? sp.link_error : null;
+  const hwOk = typeof sp?.hw_ok === "string" ? HW_OK[sp.hw_ok] ?? null : null;
+  const statusError = typeof sp?.status_error === "string" ? sp.status_error : null;
+  const hwError = typeof sp?.hw_error === "string" ? sp.hw_error : null;
   const { supabase } = await requireOperator();
   const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }, { data: meetings }, { data: errs }] = await Promise.all([
     supabase.from("companies").select("*").eq("id", companyId).single(),
     supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, experience_value, because_phrase, status, created_by, target_tag, confirmed_at").eq("company_id", companyId).order("seq"),
     supabase.from("sheet_row_reviews").select("action, dwell_ms, before_text, after_text, created_at, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId).order("created_at", { ascending: false }).limit(200),
-    supabase.from("homeworks").select("title, status, priority").eq("company_id", companyId),
+    supabase.from("homeworks").select("id, title, why, ask_whom_hint, due_at, status, priority, answer, pass_reason, asked_whom, answered_at, created_at").eq("company_id", companyId).order("created_at", { ascending: false }),
     supabase.from("questions_to_operator").select("*").eq("company_id", companyId).order("created_at", { ascending: false }),
     supabase.from("v_divergence_progress").select("*").eq("company_id", companyId).maybeSingle(),
     supabase.from("company_meetings").select("id, kind, scheduled_at, held_at, meeting_url").eq("company_id", companyId).order("scheduled_at"),
@@ -51,6 +59,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
   return (
     <div>
+      <ClearQuery keys={["member_ok", "member_error", "link_error", "hw_ok", "hw_error", "status_error"]} />
       <h1 className="serif text-[28px] leading-tight">{c.name}</h1>
       <p className="text-sm text-ink-2 mt-1">{STATUS_LABEL[c.status]} · <Link href={`/admin/${c.id}/diagnosis`} className="underline underline-offset-4 hover:text-ink">適合診断の結果を書く</Link></p>
 
@@ -97,6 +106,81 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
         </div>
       </section>
 
+      <section id="homework" className="mt-10 scroll-mt-6">
+        <h2 className="text-sm text-ink-2">宿題（未回答 {openHw}）</h2>
+        <p className="text-xs text-ink-3 mt-1">出すとすぐ、お客様の左メニュー（フェーズの下）と「宿題」画面に出ます。お客様は「誰に聞いたか」を必ず書いて回答するか、理由を書いてパスします。期限はその日の23:59（日本時間）です。</p>
+        {["diagnosed", "locked", "cancelled"].includes(c.status) && <p className="text-xs text-warm mt-1">いまの状態（{STATUS_LABEL[c.status]}）では、お客様の左メニューに宿題は出ません。</p>}
+        <form action={createHomework} className="mt-3 grid gap-2 max-w-[72ch] text-sm">
+          <input type="hidden" name="company_id" value={c.id} />
+          <input name="title" required placeholder="宿題（例：最近の受注3件、決め手を営業担当に聞いてください）" className="border-b hairline py-1" />
+          <input name="why" placeholder="効く場所（任意。例：STEP 2 の「なぜなら」の裏づけ）" className="border-b hairline py-1" />
+          <input name="ask_whom_hint" placeholder="誰に聞くか（任意。「まず○○に聞いてください」と出ます。例：営業担当）" className="border-b hairline py-1" />
+          <div className="flex flex-wrap gap-4 items-center">
+            <label className="flex items-center gap-2 text-xs text-ink-3">期限<input type="date" name="due_at" className="border-b hairline py-1 num text-sm text-ink" /></label>
+            <label className="flex items-center gap-2 text-xs text-ink-3">大事さ
+              <select name="priority" defaultValue="2" className="border-b hairline py-1 text-sm text-ink">
+                <option value="3">★★★</option><option value="2">★★</option><option value="1">★</option>
+              </select>
+            </label>
+            <button className="btn-primary" type="submit">宿題を出す</button>
+          </div>
+        </form>
+        {hwError && <p className="text-xs text-warm mt-2">{hwError}</p>}
+        {hwOk && <p className="text-xs text-navy mt-2">{hwOk}</p>}
+        {(hw ?? []).length > 0 && (
+          <ul className="mt-4 divide-y divide-hair text-sm">
+            {(hw ?? []).map((h) => {
+              const overdueHw = h.status === "open" && h.due_at && new Date(h.due_at) < new Date();
+              return (
+                <li key={h.id} className="py-3">
+                  {h.status === "open" ? (
+                    <details>
+                      <summary className="cursor-pointer list-none flex flex-wrap items-baseline gap-x-3">
+                        <span className="text-hypo text-xs">{"★".repeat(h.priority)}</span>
+                        <span>{h.title}</span>
+                        <span className={`num text-xs ${overdueHw ? "text-warm font-semibold" : "text-ink-3"}`}>{h.due_at ? `期限 ${toDateInput(h.due_at)}${overdueHw ? "（過ぎています）" : ""}` : "期限なし"}</span>
+                        <span className="text-xs text-ink-3">未回答 · 直す ▾</span>
+                      </summary>
+                      <form action={updateHomework} className="mt-2 grid gap-2 max-w-[72ch]">
+                        <input type="hidden" name="id" value={h.id} /><input type="hidden" name="company_id" value={c.id} />
+                        <input name="title" required defaultValue={h.title} className="border-b hairline py-1" />
+                        <input name="why" defaultValue={h.why ?? ""} placeholder="効く場所（任意）" className="border-b hairline py-1" />
+                        <input name="ask_whom_hint" defaultValue={h.ask_whom_hint ?? ""} placeholder="誰に聞くか（任意）" className="border-b hairline py-1" />
+                        <div className="flex flex-wrap gap-4 items-center">
+                          <input type="date" name="due_at" defaultValue={h.due_at ? toDateInput(h.due_at) : ""} className="border-b hairline py-1 num" />
+                          <select name="priority" defaultValue={String(h.priority)} className="border-b hairline py-1">
+                            <option value="3">★★★</option><option value="2">★★</option><option value="1">★</option>
+                          </select>
+                          <button className="btn-text" type="submit">保存</button>
+                        </div>
+                      </form>
+                      <form action={withdrawHomework} className="mt-2">
+                        <input type="hidden" name="id" value={h.id} /><input type="hidden" name="company_id" value={c.id} />
+                        <button className="btn-text text-xs text-ink-3" type="submit">この宿題を取り下げる</button>
+                      </form>
+                    </details>
+                  ) : (
+                    <div className="text-ink-2">
+                      <p className="flex flex-wrap items-baseline gap-x-3">
+                        <span className="text-xs">{h.status === "passed" ? "パス" : "回答済み"}</span>
+                        <span className="text-ink">{h.title}</span>
+                        {h.answered_at && <span className="num text-xs text-ink-3">{fmtMeeting(h.answered_at)}</span>}
+                      </p>
+                      {(h.answer || h.pass_reason) && <p className="mt-1 whitespace-pre-line">{h.status === "passed" ? `パスの理由：${h.pass_reason ?? ""}` : h.answer}</p>}
+                      {h.asked_whom && <p className="text-xs text-ink-3 mt-1">聞いた相手：{h.asked_whom}</p>}
+                      <form action={reopenHomework} className="mt-1">
+                        <input type="hidden" name="id" value={h.id} /><input type="hidden" name="company_id" value={c.id} />
+                        <button className="btn-text text-xs" type="submit">もう一度出す（回答が足りないとき）</button>
+                      </form>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">状態を変える</h2>
         <form action={setStatus} className="mt-2 flex gap-3 items-center">
@@ -106,6 +190,29 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
           </select>
           <button className="btn-text" type="submit">変更</button>
         </form>
+        {c.status === "cancelled" && (
+          <div className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-sm max-w-[72ch]">
+            <p className="font-semibold text-[13px]">解約後のデータへの再アクセス</p>
+            <p className="text-xs text-ink-3 mt-1">お客様から連絡があったときに、期限付きで提供価値シートのダウンロードを戻します（編集はできません）。期限が来ると自動で閉じます。状態は「解約」のままです。</p>
+            {c.reaccess_until && new Date(c.reaccess_until) > new Date() ? (
+              <form action={setReaccess} className="mt-2 flex flex-wrap items-center gap-3">
+                <input type="hidden" name="company_id" value={c.id} />
+                <span className="text-navy text-[13px]"><span className="num">{fmtMeeting(c.reaccess_until)}</span> までダウンロードできます</span>
+                <input type="hidden" name="days" value="0" />
+                <button className="btn-text text-xs" type="submit">いま閉じる</button>
+              </form>
+            ) : (
+              <form action={setReaccess} className="mt-2 flex flex-wrap items-center gap-3">
+                <input type="hidden" name="company_id" value={c.id} />
+                <select name="days" defaultValue="14" className="border-b hairline py-1 text-sm">
+                  <option value="7">7日間</option><option value="14">14日間</option><option value="30">30日間</option>
+                </select>
+                <button className="btn-text" type="submit">ダウンロードを許可する</button>
+              </form>
+            )}
+          </div>
+        )}
+        {statusError && <p className="text-xs text-warm mt-2">{statusError}</p>}
       </section>
 
 

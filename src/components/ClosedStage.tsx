@@ -16,7 +16,7 @@ export function ClosedStage({ stageKey, status }: { stageKey: string; status: st
           <p className="text-sm text-ink-2 mt-1 leading-relaxed">
             {status === "locked"
               ? "これまでに作った提供価値シートは、Excelでダウンロードできます。続けて使いたい場合は、ベレネッツにお問い合わせください。"
-              : "シートの内容が必要な場合は、ベレネッツにお問い合わせください。"}
+              : "シートの内容が必要な場合は、ベレネッツにご連絡ください。確認のうえ、一定の期間、提供価値シートをダウンロードできるようにします。"}
           </p>
           {status === "locked" && <a href="/api/export?step=deploy" className="btn-primary inline-block mt-4">提供価値シートをダウンロード</a>}
         </section>

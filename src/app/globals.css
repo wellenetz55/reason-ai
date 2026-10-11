@@ -15,6 +15,7 @@
   --warm: #b85c00;        /* 面談など「予定」の強調（暖色） */
   --warm-soft: #fff1e0;
   --grey-row: #f1f1ef;
+  --on-accent: #ffffff;   /* 紺・暖色の地に乗せる文字 */
   --radius: 10px;
 }
 
@@ -33,6 +34,7 @@
   --color-warm: var(--warm);
   --color-warm-soft: var(--warm-soft);
   --color-grey-row: var(--grey-row);
+  --color-on-accent: var(--on-accent);
   --font-sans: "Noto Sans JP", system-ui, sans-serif;
   --font-serif: "Noto Sans JP", system-ui, sans-serif;
   --font-num: "Inter", "Noto Sans JP", sans-serif;
@@ -40,17 +42,46 @@
 
 :root[data-theme="dark"] {
   --paper: #121214;
-  --paper-2: #19191c;
+  --paper-2: #1b1b1f;
   --ink: #ededee;
-  --ink-2: #a3a3ab;
-  --ink-3: #6f6f78;
-  --hair: #2a2a2e;
+  --ink-2: #b0b0b8;
+  --ink-3: #7c7c86;
+  --hair: #2c2c31;
   --navy: #aab4e8;
   --navy-soft: #1f2440;
+  --fact: #5cc39a;
+  --verify: #7aa7f5;
+  --hypo: #e0a82e;
   --warm: #f0a35a;
   --warm-soft: #2a2016;
   --grey-row: #1c1c20;
+  --on-accent: #121214;
+  color-scheme: dark;
 }
+/* 「端末に合わせる」を選んだとき */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] {
+    --paper: #121214;
+    --paper-2: #1b1b1f;
+    --ink: #ededee;
+    --ink-2: #b0b0b8;
+    --ink-3: #7c7c86;
+    --hair: #2c2c31;
+    --navy: #aab4e8;
+    --navy-soft: #1f2440;
+    --fact: #5cc39a;
+    --verify: #7aa7f5;
+    --hypo: #e0a82e;
+    --warm: #f0a35a;
+    --warm-soft: #2a2016;
+    --grey-row: #1c1c20;
+    --on-accent: #121214;
+    color-scheme: dark;
+  }
+}
+/* ダークではロゴ（紺の文字）を明るく反転する */
+:root[data-theme="dark"] .theme-logo { filter: invert(1) hue-rotate(180deg); }
+@media (prefers-color-scheme: dark) { :root[data-theme="system"] .theme-logo { filter: invert(1) hue-rotate(180deg); } }
 
 html, body { height: 100%; }
 body {
@@ -79,7 +110,7 @@ body {
 
 .btn-primary {
   background: var(--navy);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 14px;
   padding: 8px 16px;
   border-radius: 999px;
@@ -113,7 +144,7 @@ textarea:focus-visible, input:focus-visible { box-shadow: 0 1px 0 0 var(--navy);
   100% { transform: scale(1.6); opacity: 0; }
 }
 
-.pending-bar { background: linear-gradient(90deg, var(--navy) 0%, #8fa0e6 50%, var(--navy) 100%); background-size: 200% 100%; animation: pending-slide 1.2s linear infinite; }
+.pending-bar { background: linear-gradient(90deg, var(--navy) 0%, color-mix(in srgb, var(--navy) 45%, var(--paper)) 50%, var(--navy) 100%); background-size: 200% 100%; animation: pending-slide 1.2s linear infinite; }
 @keyframes pending-slide { from { background-position: 200% 0; } to { background-position: 0 0; } }
 
 @media (prefers-reduced-motion: reduce) {
@@ -124,6 +155,13 @@ textarea:focus-visible, input:focus-visible { box-shadow: 0 1px 0 0 var(--navy);
   /* 紺地・暖色地のバッジやマスを、背景なし設定でも印刷する */
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   @page { margin: 16mm 14mm 18mm; }
+  /* 印刷は常に白地（ダーク表示中でも） */
+  :root, :root[data-theme] {
+    --paper: #ffffff; --paper-2: #f6f6f4; --ink: #1c1c1e; --ink-2: #5f5f66; --ink-3: #9a9aa2; --hair: #e6e6e3;
+    --navy: #1e2a5a; --navy-soft: #e9ecf5; --fact: #2e7d5b; --verify: #2f6fde; --hypo: #c98a00;
+    --warm: #b85c00; --warm-soft: #fff1e0; --grey-row: #f1f1ef; --on-accent: #ffffff; color-scheme: light;
+  }
+  .theme-logo { filter: none !important; }
   body { background: #fff; color: #000; }
   main { padding: 0 !important; }
   a { text-decoration: none; color: inherit; }

@@ -15,6 +15,8 @@ export async function setStatus(formData: FormData) {
   const id = String(formData.get("company_id"));
   const status = String(formData.get("status"));
   await supabase.from("companies").update({ status, status_changed_at: new Date().toISOString() }).eq("id", id);
+  // 状態を変えたら、解約後の一時再アクセスは閉じる（列が無い環境ではエラーを無視）
+  await supabase.from("companies").update({ reaccess_until: null }).eq("id", id).not("reaccess_until", "is", null);
   // 契約前を抜けたら、契約前の要対応アラート（申込・診断閲覧・キックオフ選択）を済みにする
   if (status !== "diagnosed") {
     const now = new Date().toISOString();
@@ -169,4 +171,17 @@ export async function issueSignInLink(formData: FormData) {
   const { cookies } = await import("next/headers");
   (await cookies()).set("issued_link", url, { httpOnly: true, secure: true, sameSite: "lax", path: `/admin/${companyId}`, maxAge: 120 });
   redirect(`/admin/${companyId}?link=1`);
+}
+
+/** 解約した会社に、期限付きでダウンロードを戻す（days=0 で取り消し）。状態（cancelled）は変えない */
+export async function setReaccess(formData: FormData) {
+  const { supabase } = await requireOperator();
+  const id = String(formData.get("company_id"));
+  const days = Number(formData.get("days") || 0);
+  const until = days > 0 ? new Date(Date.now() + days * 86_400_000).toISOString() : null;
+  const { error } = await supabase.from("companies").update({ reaccess_until: until }).eq("id", id).eq("status", "cancelled");
+  const { redirect } = await import("next/navigation");
+  if (error) redirect(`/admin/${id}?status_error=${encodeURIComponent("保存できませんでした（migration 0016 が未適用の可能性があります）：" + error.message)}`);
+  revalidatePath(`/admin/${id}`);
+  revalidatePath("/", "layout");
 }

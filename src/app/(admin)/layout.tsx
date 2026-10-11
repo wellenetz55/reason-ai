@@ -5,6 +5,7 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
 import { APP_VERSION } from "@/lib/version";
 import { PendingBar } from "@/components/PendingBar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default async function AdminLayout({ children }: LayoutProps<"/">) {
   const { profile } = await requireOperator();
@@ -24,6 +25,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
             <p className="text-ink-2 mb-1">{profile.display_name}</p>
             <SignOutButton />
           </div>
+          <ThemeToggle />
           <OperatedBy />
           <p className="num text-[11px] text-ink-3">{APP_VERSION}</p>
         </div>

@@ -1,4 +1,5 @@
 import { requireOperator } from "@/lib/session";
+import { ClearQuery } from "@/components/ClearQuery";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviteOperator, resendInvite, removeOperator } from "./actions";
 
@@ -17,6 +18,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
 
   return (
     <div>
+      <ClearQuery keys={["error"]} />
       <h1 className="serif text-[28px] leading-tight">ベレネッツのメンバー</h1>
       <p className="text-sm text-ink-2 mt-2 max-w-[64ch]">ここに登録した人は、全社の管理画面を使えます（顧客画面には入れません）。招待するとマジックリンクのメールが届きます。</p>
       {err && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[64ch]">{err}</p>}

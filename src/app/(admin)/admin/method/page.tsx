@@ -2,6 +2,7 @@ import { requireOperator } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { savePrompt, saveFixedText } from "./actions";
 import { PROFILE_ITEMS } from "@/lib/profileItems";
+import { NOT_READY } from "@/lib/stages";
 
 /** 使っているプロンプトのキーと用途（本文は DB） */
 const PROMPT_KEYS: { key: string; label: string }[] = [
@@ -10,12 +11,12 @@ const PROMPT_KEYS: { key: string; label: string }[] = [
   { key: "vague_check", label: "STEP 2 ふわっと診断（点検と言い直し案）" },
   { key: "because_draft", label: "STEP 5 なぜなら（根拠）の下書き" },
 ];
-const FIXED_KEYS: { key: string; label: string }[] = [
-  { key: "round1_intro", label: "STEP 1 冒頭の固定文（提供価値／体験価値の書き方）" },
-  { key: "round2_brakes_intro", label: "STEP 3 冒頭の固定文（4つの不）" },
-  { key: "round2_counter_intro", label: "STEP 4 冒頭の固定文" },
-  { key: "round2_trust_intro", label: "STEP 5 冒頭の固定文" },
-  { key: "round3_evidence_intro", label: "STEP 7 冒頭の固定文" },
+const FIXED_KEYS: { key: string; label: string; stage?: string }[] = [
+  { key: "round1_intro", label: "STEP 1 冒頭の固定文（提供価値／体験価値の書き方）", stage: "diverge" },
+  { key: "round2_brakes_intro", label: "STEP 3 冒頭の固定文（4つの不）", stage: "brakes" },
+  { key: "round2_counter_intro", label: "STEP 4 冒頭の固定文", stage: "counter" },
+  { key: "round2_trust_intro", label: "STEP 5 冒頭の固定文", stage: "trust" },
+  { key: "round3_evidence_intro", label: "STEP 7 冒頭の固定文", stage: "evidence" },
   ...PROFILE_ITEMS.filter((i) => i.group === "B").map((i) => ({ key: `step0_${i.key}`, label: `STEP 0 問い：${i.label}` })),
 ];
 
@@ -52,7 +53,7 @@ export default async function MethodPage() {
 
       <section className="mt-16 space-y-8">
         <h2 className="serif text-[18px]">固定文・問い</h2>
-        {FIXED_KEYS.map(({ key, label }) => (
+        {FIXED_KEYS.filter((f) => !(f.stage && NOT_READY.has(f.stage))).map(({ key, label }) => (
           <form key={key} action={saveFixedText} className="max-w-[820px]">
             <input type="hidden" name="key" value={key} />
             <p className="text-sm">{label} <span className="num text-[11px] text-ink-3 ml-2">{key}{fixed.get(key) ? "" : "（未設定）"}</span></p>
@@ -60,6 +61,19 @@ export default async function MethodPage() {
             <button className="btn-text mt-2 -ml-1.5" type="submit">保存</button>
           </form>
         ))}
+        <details className="max-w-[820px] text-ink-3">
+          <summary className="text-sm cursor-pointer">画面が準備中の段階の固定文（いまは顧客画面に出ません）</summary>
+          <div className="mt-4 space-y-8">
+            {FIXED_KEYS.filter((f) => f.stage && NOT_READY.has(f.stage)).map(({ key, label }) => (
+              <form key={key} action={saveFixedText}>
+                <input type="hidden" name="key" value={key} />
+                <p className="text-sm">{label} <span className="text-[11px] ml-1">準備中</span> <span className="num text-[11px] ml-2">{key}{fixed.get(key) ? "" : "（未設定）"}</span></p>
+                <textarea name="body" defaultValue={fixed.get(key)?.body ?? ""} rows={5} className={ta + " mt-2"} />
+                <button className="btn-text mt-2 -ml-1.5" type="submit">保存（画面ができたら使われます）</button>
+              </form>
+            ))}
+          </div>
+        </details>
       </section>
 
       <dl className="mt-16 text-sm space-y-2 text-ink-2">

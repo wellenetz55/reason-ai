@@ -38,6 +38,10 @@ export function stepGate(key: string, c: GateCtx): Gate {
         ? { next, ready: true, note: "会社の説明を直し終えたら、提供価値の書き出しに進めます。" }
         : { next, ready: false, byOperator: true, note: "キックオフ面談のあと、ベレネッツが次のステップを開きます。" };
     case "diverge":
+      if (c.rows < 20 && atLeast(c.status, "week3_5")) {
+        // ベレネッツがすでに次の段階を開いている（面談で先へ進めた）なら、20組に届かなくても進める
+        return { next, ready: true, note: `いま${c.rows}組。ベレネッツが次の段階を開いています。組を足しながら進めて構いません（目標30組）。` };
+      }
       return c.rows >= 20
         ? { next, ready: true, note: c.rows >= 30 ? `${c.rows}組。出し切りました。` : `${c.rows}組。目標の30組まで出すと、絞ったあとに残る言葉が強くなります。進んでから戻って足すこともできます。` }
         : { next, ready: false, note: `あと${20 - c.rows}組で進めます（目標30組）。${c.rowsAll > c.rows ? `体験価値が空の行が${c.rowsAll - c.rows}行あります。「だから、お客様は…」を埋めると組になります。` : ""}` };

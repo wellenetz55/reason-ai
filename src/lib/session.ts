@@ -25,6 +25,10 @@ export type Company = {
   extension_until: string | null;
   generation_quota_month: number;
   generation_quota_grace: number;
+  /** 解約後、ベレネッツが一時的にデータを見られるようにした期限（migration 0016） */
+  reaccess_until?: string | null;
+  /** 解約後の一時再アクセス中（requireCustomer が付ける。DBの列ではない） */
+  reaccess?: boolean;
 };
 
 export async function requireUser() {
@@ -40,8 +44,13 @@ export async function requireCustomer() {
   const ctx = await requireUser();
   if (ctx.profile.role === "operator") redirect("/admin");
   if (!ctx.profile.company_id) redirect("/login?error=" + encodeURIComponent("会社が紐づいていません。"));
-  const { data: company } = await ctx.supabase.from("companies").select("*").eq("id", ctx.profile.company_id).single();
-  return { ...ctx, company: company as Company };
+  const { data } = await ctx.supabase.from("companies").select("*").eq("id", ctx.profile.company_id).single();
+  let company = data as Company;
+  // 解約後でも、ベレネッツが再アクセスを許可した期間は「編集終了（ダウンロードのみ）」と同じ扱いにする
+  if (company?.status === "cancelled" && company.reaccess_until && new Date(company.reaccess_until) > new Date()) {
+    company = { ...company, status: "locked", reaccess: true };
+  }
+  return { ...ctx, company };
 }
 
 export async function requireOperator() {

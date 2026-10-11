@@ -57,14 +57,14 @@ export default async function AdminHome() {
             const lastAt = lastBy[c.id] ? new Date(lastBy[c.id]) : null;
             const stale = lastAt ? (Date.now() - lastAt.getTime()) / 86400000 : null;
             return (
-              <tr key={c.id} className={`align-top ${stale !== null && stale >= 7 ? "bg-[#fff8e5]" : ""}`}>
+              <tr key={c.id} className={`align-top ${stale !== null && stale >= 7 ? "bg-warm-soft" : ""}`}>
                 <td className="py-3"><Link href={`/admin/${c.id}`} className="hover:underline">{c.name}</Link></td>
                 <td>{STATUS_LABEL[c.status] ?? c.status}</td>
                 <td className="num">{lastAt ? `${Math.floor(stale!)}日前` : "—"}</td>
                 <td>
                   {msg[c.id]?.unanswered ? (
                     <span className="inline-flex items-center gap-1.5">
-                      {msg[c.id].unread > 0 && <span className="num rounded-full bg-warm text-white text-[11px] font-semibold px-2 py-0.5">未読 {msg[c.id].unread}</span>}
+                      {msg[c.id].unread > 0 && <span className="num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5">未読 {msg[c.id].unread}</span>}
                       <span className="num rounded-full border border-warm text-warm text-[11px] font-semibold px-2 py-0.5">未返信 {msg[c.id].unanswered}</span>
                     </span>
                   ) : <span className="text-ink-3">—</span>}
@@ -72,7 +72,7 @@ export default async function AdminHome() {
                 <td>
                   {msg[c.id]?.errOpen ? (
                     <span className="inline-flex items-center gap-1.5">
-                      {msg[c.id].errUnread > 0 && <span className="num rounded-full bg-warm text-white text-[11px] font-semibold px-2 py-0.5">未読 {msg[c.id].errUnread}</span>}
+                      {msg[c.id].errUnread > 0 && <span className="num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5">未読 {msg[c.id].errUnread}</span>}
                       <span className="num rounded-full border border-warm text-warm text-[11px] font-semibold px-2 py-0.5">未対応 {msg[c.id].errOpen}</span>
                     </span>
                   ) : <span className="text-ink-3">—</span>}

@@ -1,4 +1,5 @@
 import { ClosedStage } from "@/components/ClosedStage";
+import { ClearQuery } from "@/components/ClearQuery";
 import { STAGES, isStageOpen } from "@/lib/stages";
 import { ExportButton } from "@/components/ExportButton";
 import { NextStepBar } from "@/components/NextStepBar";
@@ -51,6 +52,7 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
 
   return (
     <div>
+      <ClearQuery keys={["error"]} />
       <h1 className="serif text-[28px] leading-tight">会社を知る</h1>
       {docError && <p role="alert" className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[64ch]">{docError}</p>}
       <StepGuide stageKey="step0" />

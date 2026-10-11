@@ -11,6 +11,7 @@ import { Bug } from "lucide-react";
 import { MEETING_LABEL, fmtMeeting } from "@/lib/meetings";
 import { SideNav } from "@/components/SideNav";
 import { RouteTracker } from "@/components/RouteTracker";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const { company, profile, supabase } = await requireCustomer();
@@ -46,14 +47,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </div>
         {/* 宿題：フェーズのすぐ下。未回答があれば暖色で目立たせる（契約前は出さない） */}
         {!["diagnosed", "locked", "cancelled"].includes(company.status) && (openHomework > 0 ? (
-          <Link href="/homework" className={`mt-3 block rounded-[var(--radius)] border-2 px-3.5 py-3 hover:brightness-[0.98] ${overdue > 0 ? "border-warm bg-warm text-white" : "border-warm bg-warm-soft"}`}>
-            <p className={`flex items-center gap-2 text-[12px] font-bold tracking-wide ${overdue > 0 ? "text-white" : "text-warm"}`}>
+          <Link href="/homework" className={`mt-3 block rounded-[var(--radius)] border-2 px-3.5 py-3 hover:brightness-[0.98] ${overdue > 0 ? "border-warm bg-warm text-on-accent" : "border-warm bg-warm-soft"}`}>
+            <p className={`flex items-center gap-2 text-[12px] font-bold tracking-wide ${overdue > 0 ? "text-on-accent" : "text-warm"}`}>
               {overdue === 0 && <span className="now-dot" aria-hidden />}
               {overdue > 0 ? `宿題の期限が過ぎています（${overdue}件）` : "宿題があります"}
             </p>
-            <p className={`mt-1 ${overdue > 0 ? "text-white" : "text-ink"}`}><span className="num text-[24px] font-bold leading-none">{openHomework}</span><span className="text-[12px] ml-1">件 未回答 · 次の面談までに</span></p>
-            {nearest?.due_at && <p className={`text-[12px] mt-1 truncate ${overdue > 0 ? "text-white/85" : "text-ink-2"}`}>期限 <span className="num">{new Date(nearest.due_at).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" })}</span>：{nearest.title}</p>}
-            <p className={`mt-2 text-[13px] font-semibold ${overdue > 0 ? "text-white" : "text-warm"}`}>回答する →</p>
+            <p className={`mt-1 ${overdue > 0 ? "text-on-accent" : "text-ink"}`}><span className="num text-[24px] font-bold leading-none">{openHomework}</span><span className="text-[12px] ml-1">件 未回答 · 次の面談までに</span></p>
+            {nearest?.due_at && <p className={`text-[12px] mt-1 truncate ${overdue > 0 ? "text-on-accent/85" : "text-ink-2"}`}>期限 <span className="num">{new Date(nearest.due_at).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" })}</span>：{nearest.title}</p>}
+            <p className={`mt-2 text-[13px] font-semibold ${overdue > 0 ? "text-on-accent" : "text-warm"}`}>回答する →</p>
           </Link>
         ) : (
           <Link href="/homework" className="mt-3 block rounded-[var(--radius)] border hairline px-3.5 py-2 text-[12px] text-ink-3 hover:text-ink">{(hwTotal ?? 0) > 0 ? "宿題 · すべて回答済み ✓" : "宿題 · まだ出ていません"}</Link>
@@ -102,6 +103,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             </div>
           )}
           <div className="pt-2"><SignOutButton /></div>
+          <div className="pt-1 flex items-center gap-2 text-[11px] text-ink-3">表示<ThemeToggle /></div>
           <OperatedBy className="pt-4" />
           <div className="pt-3 flex items-center justify-between gap-3">
             <Link href="/report" className="inline-flex items-center gap-1.5 rounded-full border hairline px-3 py-1 text-[11px] text-ink-2 hover:text-ink hover:bg-paper-2">

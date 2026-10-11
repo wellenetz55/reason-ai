@@ -60,8 +60,8 @@ export function PendingBar({ stamp }: { stamp: number }) {
   return (
     <div aria-live="polite" className="fixed inset-x-0 top-0 z-50 pointer-events-none">
       <div className="h-[3px] bg-navy pending-bar" />
-      <p className="mt-3 mx-auto w-fit rounded-full bg-navy text-white text-[13px] px-4 py-1.5 shadow-md flex items-center gap-2">
-        <span className="inline-block w-3 h-3 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+      <p className="mt-3 mx-auto w-fit rounded-full bg-navy text-on-accent text-[13px] px-4 py-1.5 shadow-md flex items-center gap-2">
+        <span className="inline-block w-3 h-3 rounded-full border-2 border-on-accent/40 border-t-on-accent animate-spin" />
         {WAIT}
       </p>
     </div>

@@ -64,7 +64,7 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
         <p className="text-xs text-ink-3">面を選ぶ · {round}周目{facet.key === rec.facet.key ? "（いちばん薄い面をおすすめしています）" : ""}</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {FACETS.map((f) => (
-            <a key={f.key} href={`/sheet/diverge?facet=${f.key}`} className={`rounded-full border px-3 py-1 text-[13px] ${f.key === facet.key ? "bg-navy border-navy text-white" : "border-hair text-ink-2 hover:text-ink"}`}>
+            <a key={f.key} href={`/sheet/diverge?facet=${f.key}`} className={`rounded-full border px-3 py-1 text-[13px] ${f.key === facet.key ? "bg-navy border-navy text-on-accent" : "border-hair text-ink-2 hover:text-ink"}`}>
               {f.label} <span className="num opacity-70">{byFacet[f.key] ?? 0}</span>{f.key === rec.facet.key && f.key !== facet.key ? <span className="ml-1 text-warm">●</span> : null}
             </a>
           ))}

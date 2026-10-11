@@ -39,6 +39,11 @@ export default async function Home() {
         {stage && NOT_READY.has(stage.key) && (
           <p className="mt-6 rounded-[var(--radius)] bg-paper-2 px-5 py-4 text-sm text-ink-2 max-w-[56ch]">この段階の画面は準備中です。進め方は次の面談でご案内します。それまでは宿題と、前の段階の見直しを進めてください。</p>
         )}
+        {company.reaccess && company.reaccess_until && (
+          <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-5 py-3 text-sm text-ink-2 max-w-[56ch]">
+            ご連絡をいただき、ベレネッツが <span className="num font-semibold text-ink">{new Date(company.reaccess_until).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "long", day: "numeric" })}</span> まで提供価値シートをダウンロードできるようにしています。
+          </p>
+        )}
         {company.status === "locked" && <a href="/api/export?step=deploy" className="btn-primary inline-block mt-6">提供価値シートをダウンロード</a>}
         {!["locked", "cancelled"].includes(company.status) && <p className="text-[13px] text-ink-3 mt-6 max-w-[56ch] leading-relaxed">
           ステップは STEP 0 から順に進みます。各画面のいちばん下に「次のステップ」があり、条件を満たすとボタンが押せます。ベレネッツとの面談のあとに開くステップもあります。
