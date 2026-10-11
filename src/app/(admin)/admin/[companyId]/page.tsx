@@ -34,15 +34,20 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
     supabase.from("company_meetings").select("id, kind, scheduled_at, held_at, meeting_url").eq("company_id", companyId).order("scheduled_at"),
     supabase.from("error_reports").select("id, body, page, user_agent, screenshot_path, created_at, resolved_at, resolved_note").eq("company_id", companyId).order("created_at", { ascending: false }),
   ]);
-  const { data: members } = await supabase.from("profiles").select("id, display_name, role, created_at").eq("company_id", companyId).order("created_at");
-  const { data: userList } = await (await import("@/lib/supabase/admin")).createAdminClient().auth.admin.listUsers({ perPage: 1000 });
-  const emailOf = (id: string) => userList?.users.find((u) => u.id === id)?.email ?? "";
-  const intake = await loadIntake(companyId).catch(() => null);
-  const { data: openAlerts } = await supabase.from("alerts").select("id, kind, payload, created_at").eq("company_id", companyId).is("resolved_at", null).order("created_at", { ascending: false });
+  // 1回の往復でまとめて読む（順番に待つと会社が増えたときに遅くなる）
+  const [{ data: members }, intake, { data: openAlerts }, gate, { data: diag }] = await Promise.all([
+    supabase.from("profiles").select("id, display_name, role, created_at").eq("company_id", companyId).order("created_at"),
+    loadIntake(companyId).catch(() => null),
+    supabase.from("alerts").select("id, kind, payload, created_at").eq("company_id", companyId).is("resolved_at", null).order("created_at", { ascending: false }),
+    c ? inviteGate(companyId, c.status) : Promise.resolve({ ok: false, reason: "" }),
+    supabase.from("diagnosis_results").select("published_at, first_viewed_at, last_viewed_at, view_count").eq("company_id", companyId).maybeSingle(),
+  ]);
+  // メールアドレスは、この会社の担当者の分だけ取る（全ユーザー一覧は読まない）
+  const adminAuth = (await import("@/lib/supabase/admin")).createAdminClient().auth.admin;
+  const emails = Object.fromEntries(await Promise.all((members ?? []).map(async (m) => [m.id, (await adminAuth.getUserById(m.id)).data.user?.email ?? ""] as const)));
+  const emailOf = (id: string) => emails[id] ?? "";
   const ALERT_LABEL: Record<string, string> = { stale7: "7日操作なし", escalation: "要対応", homework_overdue: "宿題の期限超過", attitude_flag: "姿勢シグナル", disclosure_request: "開示要求", quota_reached: "生成上限", grace_ending: "猶予終了間近", extension_ending: "延長終了間近", no_internal_meeting: "社内打合せ未登録" };
   const alertText = (a: { kind: string; payload: unknown }) => { const t = (a.payload as { type?: string } | null)?.type; return t === "program_applied" ? "申込がありました" : t === "kickoff_chosen" ? "キックオフ日が選ばれました" : t === "diagnosis_viewed" ? "診断結果を開きました" : ALERT_LABEL[a.kind] ?? a.kind; };
-  const gate = c ? await inviteGate(companyId, c.status) : { ok: false, reason: "" };
-  const { data: diag } = await supabase.from("diagnosis_results").select("published_at, first_viewed_at, last_viewed_at, view_count").eq("company_id", companyId).maybeSingle();
   if (!c) notFound();
   // 開いたら既読にする（未返信は返事するまで残る）
   await Promise.all([

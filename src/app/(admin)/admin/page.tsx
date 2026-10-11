@@ -8,10 +8,14 @@ export default async function AdminHome() {
   const { data: companies } = await supabase.from("companies").select("*").order("created_at", { ascending: false });
   const ids = (companies ?? []).map((c) => c.id);
   // 最終操作は、会社ごとにお客様の操作だけで数える（AIのエラー記録・ベレネッツ側の操作は含めない）
-  const lastRows = await Promise.all(ids.map((id) =>
-    supabase.from("activity_log").select("company_id, created_at").eq("company_id", id).not("event", "like", "%.error").not("event", "like", "intake.%").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+  // まず新しい操作をまとめて1回で読み、そこに出てこなかった会社だけ個別に探す（会社が増えても往復が増えにくい）
+  const custOnly = <Q extends { not: (c: string, o: string, v: string) => Q }>(q: Q) => q.not("event", "like", "%.error").not("event", "like", "intake.%");
+  const { data: recent } = await custOnly(supabase.from("activity_log").select("company_id, created_at").in("company_id", ids)).order("created_at", { ascending: false }).limit(1000);
+  const seen = new Set((recent ?? []).map((r) => r.company_id));
+  const rest = await Promise.all(ids.filter((id) => !seen.has(id)).map((id) =>
+    custOnly(supabase.from("activity_log").select("company_id, created_at").eq("company_id", id)).order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ));
-  const last = lastRows.map((r) => r.data).filter((r): r is { company_id: string; created_at: string } => !!r);
+  const last = [...(recent ?? []), ...rest.map((r) => r.data).filter((r): r is { company_id: string; created_at: string } => !!r)];
   const [{ data: hw }, { data: alerts }, { data: qs }, { data: errs }] = await Promise.all([
     supabase.from("homeworks").select("company_id").in("company_id", ids).eq("status", "open"),
     supabase.from("alerts").select("company_id, kind, payload, created_at").in("company_id", ids).is("resolved_at", null).order("created_at", { ascending: false }),
