@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { ClearQuery } from "@/components/ClearQuery";
+import { FilePicker } from "@/components/FilePicker";
 import { loadFixedText } from "@/server/ai/client";
 import { loadIntake, loadDiagQuestions, Q_KEYS, TARGET_KIND_LABEL, VERDICT_LABEL } from "@/server/intake";
 import { saveIntake, saveTranscript, removeTranscript } from "./actions";
@@ -104,7 +105,7 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
 
       <section className="mt-16 border-t hairline pt-8 max-w-[880px]">
         <h2 className="serif text-[17px]">5. 録音の書き起こし（お客様の発言そのまま）</h2>
-        <p className="text-xs text-ink-3 mt-1">テキストを貼り付けるか、ファイル（.txt / .md / .vtt / .pdf）を選んでください。新しく登録すると前のものは置き換わります。AIには先頭から約4万字を渡します。</p>
+        <p className="text-xs text-ink-3 mt-1">録音の文字起こしファイルを、ここから登録します。新しく登録すると前のものは置き換わります。AIには先頭から約4万字を渡します。</p>
         {intake?.transcript ? (
           <div className="mt-3 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-sm">
             <p>登録済み：<span className="font-medium">{intake.transcript_name || "書き起こし"}</span><span className="num text-ink-3 ml-2">{intake.transcript.length.toLocaleString()} 字</span></p>
@@ -114,11 +115,12 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
         ) : <p className="mt-3 text-sm text-ink-3">まだ登録されていません。</p>}
         <form action={saveTranscript} className="mt-4 space-y-3">
           <input type="hidden" name="company_id" value={c.id} />
-          <textarea name="transcript_text" rows={6} className={ta} placeholder="ここに貼り付け（ファイルを選ぶ場合は空のまま）" />
-          <div className="flex flex-wrap items-center gap-3">
-            <input type="file" name="transcript_file" accept=".txt,.md,.vtt,.pdf,text/plain,text/markdown,text/vtt,application/pdf" className="text-sm" />
-            <button className="btn-primary" type="submit">書き起こしを登録</button>
-          </div>
+          <FilePicker name="transcript_file" accept=".txt,.md,.vtt,.pdf,text/plain,text/markdown,text/vtt,application/pdf" hint="対応：.txt / .md / .vtt / .pdf（20MBまで）。Zoomや文字起こしアプリの書き出しをそのまま" />
+          <details className="text-[13px]">
+            <summary className="cursor-pointer text-ink-3">ファイルでなく、テキストを貼り付ける場合</summary>
+            <textarea name="transcript_text" rows={6} className={ta + " mt-2"} placeholder="ここに貼り付け" />
+          </details>
+          <button className="btn-primary" type="submit">書き起こしを登録</button>
         </form>
       </section>
     </div>
