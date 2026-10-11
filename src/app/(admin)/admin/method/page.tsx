@@ -29,6 +29,7 @@ export default async function MethodPage() {
     admin.from("method_facets").select("facet, round"),
     admin.from("method_techniques").select("id", { count: "exact", head: true }),
   ]);
+  const { data: principles } = await admin.from("method_principles").select("area, active");
   const active = new Map((prompts ?? []).filter((p) => p.is_active).map((p) => [p.key, p]));
   const versions = (key: string) => (prompts ?? []).filter((p) => p.key === key).length;
   const fixed = new Map((texts ?? []).map((t) => [t.key, t]));
@@ -78,6 +79,7 @@ export default async function MethodPage() {
 
       <dl className="mt-16 text-sm space-y-2 text-ink-2">
         <div><dt className="inline text-xs text-ink-3">面の問い　</dt><dd className="inline num">{(facets ?? []).length}件（SQLで管理）</dd></div>
+        <div><dt className="inline text-xs text-ink-3">判断基準（出典の原則）　</dt><dd className="inline num">{(principles ?? []).filter((p) => p.active).length}件（SQLで管理。問い・判定・裏づけの原則をAIに渡す。ブレーキ・展開・面談は画面ができたら使う）</dd></div>
         <div><dt className="inline text-xs text-ink-3">行動喚起の手法　</dt><dd className="inline num">{techniques ?? 0}件（SQLで管理。kind=because は STEP 5 の根拠の作り方）</dd></div>
       </dl>
     </div>

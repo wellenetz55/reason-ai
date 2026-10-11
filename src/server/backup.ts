@@ -10,7 +10,7 @@ const TABLES = [
   "brakes", "evidences", "litmus_market", "litmus_niche", "competitors", "competitor_comparisons",
   "deployments", "activation_packages", "disclosure_requests", "homeworks", "questions_to_operator", "member_notes",
   "error_reports", "alerts", "activity_log", "generation_counters",
-  "method_facets", "method_fixed_texts", "method_prompts", "method_techniques",
+  "method_facets", "method_fixed_texts", "method_prompts", "method_techniques", "method_principles",
 ];
 
 // Excel の1セルは 32,767 字まで。XML で使えない制御文字も除く（全文は data/*.json にある）

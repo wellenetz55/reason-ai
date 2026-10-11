@@ -13,9 +13,17 @@ export async function loadBannedTerms(): Promise<string[]> {
   if (cache && Date.now() - cache.at < 10 * 60 * 1000) return cache.terms;
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const admin = createAdminClient();
-  const { data } = await admin.from("method_techniques").select("name");
+  const [{ data }, { data: principles }] = await Promise.all([
+    admin.from("method_techniques").select("name"),
+    admin.from("method_principles").select("source"),
+  ]);
   const names = (data ?? []).map((d) => d.name).filter((n): n is string => !!n && n.length >= 3);
-  cache = { terms: [...STATIC_BANNED, ...names], at: Date.now() };
+  // 原則の出典の書名（「書名 p.12–34／書名 p.5」の書名部分）も出力に出さない
+  const titles = (principles ?? [])
+    .flatMap((p) => String(p.source ?? "").split("／"))
+    .map((s) => s.replace(/\s*p\.[\s\S]*$/, "").replace(/（[^）]*）$/, "").trim())
+    .filter((t) => t.length >= 4);
+  cache = { terms: [...new Set([...STATIC_BANNED, ...names, ...titles])], at: Date.now() };
   return cache.terms;
 }
 
