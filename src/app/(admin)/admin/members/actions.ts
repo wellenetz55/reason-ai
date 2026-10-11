@@ -18,9 +18,11 @@ export async function inviteOperator(formData: FormData) {
   const { data: list0 } = await admin.auth.admin.listUsers({ perPage: 1000 });
   const ex = list0?.users.find((u) => u.email?.toLowerCase() === email);
   if (ex) {
-    const { data: p } = await admin.from("profiles").select("role").eq("id", ex.id).maybeSingle();
+    const { data: p } = await admin.from("profiles").select("*").eq("id", ex.id).maybeSingle();
     // 既に顧客の担当者として登録されている人は、運営者にしない
     if (p && p.role !== "operator") back(`error=${encodeURIComponent("そのメールアドレスは顧客の担当者として登録済みです。ベレネッツのメンバーには追加できません")}`);
+    // 有効なメンバーをもう一度「追加」しても権限は変えない（スーパー管理者が0人になるのを防ぐ）。権限は一覧の「〜にする」で変える
+    if (p && p.role === "operator" && !p.disabled_at) back(`error=${encodeURIComponent("そのメールアドレスはすでにメンバーです。権限は一覧から変えてください")}`);
   }
   let uid = ex?.id;
   if (!ex) {

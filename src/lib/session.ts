@@ -61,6 +61,14 @@ export async function requireCustomer() {
   return { ...ctx, company };
 }
 
+/** 契約前・編集終了・解約の会社は書き込めない（画面でフォームを隠すだけでなく、サーバ側でも止める） */
+const READ_ONLY = new Set(["diagnosed", "locked", "cancelled"]);
+export async function requireWritableCustomer() {
+  const ctx = await requireCustomer();
+  if (READ_ONLY.has(ctx.company.status)) redirect("/");
+  return ctx;
+}
+
 export async function requireOperator() {
   const ctx = await requireUser();
   if (ctx.profile.role !== "operator") redirect("/");

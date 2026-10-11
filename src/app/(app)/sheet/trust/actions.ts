@@ -1,13 +1,13 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireCustomer } from "@/lib/session";
+import { requireWritableCustomer } from "@/lib/session";
 import { draftBecause } from "@/server/because";
 import { PROFILE_ITEMS } from "@/lib/profileItems";
 import { aiGuard } from "@/server/aiGuard";
 
 /** なぜならが空の行（最大10）に AI の下書きを付ける */
 export async function requestBecauseDrafts() {
-  const { supabase, company, user } = await requireCustomer();
+  const { supabase, company, user } = await requireWritableCustomer();
   const [{ data: items }, { data: rows }] = await Promise.all([
     supabase.from("profile_items").select("key, value, status").eq("company_id", company.id).in("status", ["approved", "fixed"]),
     supabase.from("sheet_rows").select("id, value_raw, experience_value, experience_value_v1").eq("company_id", company.id).eq("status", "active").or("because_phrase.is.null,because_phrase.eq.").order("seq").limit(10),
@@ -29,7 +29,7 @@ export async function requestBecauseDrafts() {
 
 /** 三連を直す／承認する */
 export async function saveTriple(formData: FormData) {
-  const { supabase, company, user } = await requireCustomer();
+  const { supabase, company, user } = await requireWritableCustomer();
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")); // fix | approve
   const { data: row } = await supabase.from("sheet_rows").select("id, experience_value, experience_value_v1, because_phrase").eq("id", rowId).eq("company_id", company.id).maybeSingle();

@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireCustomer } from "@/lib/session";
+import { requireWritableCustomer } from "@/lib/session";
 import { diagnoseRows } from "@/server/diagnose";
 import { aiGuard } from "@/server/aiGuard";
 import { loadProfileContext } from "@/server/profile";
@@ -8,7 +8,7 @@ import { loadProfileContext } from "@/server/profile";
 
 /** ふわっと診断を AI に頼む（active な行、最大30組） */
 export async function runVagueCheck() {
-  const { supabase, company, user } = await requireCustomer();
+  const { supabase, company, user } = await requireWritableCustomer();
   const [summary, { data: rows }] = await Promise.all([
     loadProfileContext(supabase, company.id),
     supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, target").eq("company_id", company.id).eq("status", "active").order("seq").limit(30),
@@ -29,7 +29,7 @@ export async function runVagueCheck() {
 
 /** 言い直し案を採用する／そのままでよいとする */
 export async function resolveDiagnosis(formData: FormData) {
-  const { supabase, company, user } = await requireCustomer();
+  const { supabase, company, user } = await requireWritableCustomer();
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")); // accept | keep
   const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1").eq("id", rowId).eq("company_id", company.id).maybeSingle();

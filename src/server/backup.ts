@@ -13,7 +13,14 @@ const TABLES = [
   "method_facets", "method_fixed_texts", "method_prompts", "method_techniques",
 ];
 
-const cell = (v: unknown) => (v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : (v as string | number | boolean));
+// Excel の1セルは 32,767 字まで。XML で使えない制御文字も除く（全文は data/*.json にある）
+const cell = (v: unknown) => {
+  if (v === null || v === undefined) return "";
+  const raw = typeof v === "object" ? JSON.stringify(v) : v;
+  if (typeof raw !== "string") return raw as number | boolean;
+  const clean = raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+  return clean.length > 32000 ? clean.slice(0, 32000) + "…（長いため省略。全文は data/ の JSON）" : clean;
+};
 
 /** 全データを1つのZIPにする。中身：data/<表>.json（復元用）、全データ.xlsx（閲覧用）、users.json、files/（アップロード資料）、README.txt */
 export async function buildBackup(admin: SupabaseClient) {
@@ -49,9 +56,14 @@ export async function buildBackup(admin: SupabaseClient) {
   // アップロードされた資料（company-docs バケット。フォルダをたどる）
   const fileErrors: string[] = [];
   async function walk(prefix: string) {
-    const { data, error } = await admin.storage.from("company-docs").list(prefix, { limit: 1000 });
-    if (error) { fileErrors.push(`${prefix}: ${error.message}`); return; }
-    for (const o of data ?? []) {
+    const entries: { name: string; id: string | null }[] = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await admin.storage.from("company-docs").list(prefix, { limit: 1000, offset });
+      if (error) { fileErrors.push(`${prefix}: ${error.message}`); return; }
+      entries.push(...(data ?? []));
+      if (!data || data.length < 1000) break;
+    }
+    for (const o of entries) {
       const path = prefix ? `${prefix}/${o.name}` : o.name;
       if (o.id === null) { await walk(path); continue; } // フォルダ
       const { data: blob, error: de } = await admin.storage.from("company-docs").download(path);

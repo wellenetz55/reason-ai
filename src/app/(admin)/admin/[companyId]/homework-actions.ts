@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOperator } from "@/lib/session";
 
-function back(companyId: string, q: string) {
+function back(companyId: string, q: string): never {
   redirect(`/admin/${companyId}?${q}#homework`);
 }
 
@@ -44,7 +44,8 @@ export async function updateHomework(formData: FormData) {
   const companyId = String(formData.get("company_id"));
   const f = readFields(formData);
   if (!f.title) back(companyId, `hw_error=${encodeURIComponent("宿題の内容は空にできません")}`);
-  await supabase.from("homeworks").update(f).eq("id", id).eq("company_id", companyId).eq("status", "open");
+  const { data: upd, error } = await supabase.from("homeworks").update(f).eq("id", id).eq("company_id", companyId).eq("status", "open").select("id");
+  if (error || !upd?.length) back(companyId, `hw_error=${encodeURIComponent(error ? "保存できませんでした：" + error.message : "直せませんでした。お客様がすでに回答した可能性があります。画面を確かめてください")}`);
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/homework");
   revalidatePath("/", "layout");
@@ -56,7 +57,8 @@ export async function withdrawHomework(formData: FormData) {
   const { supabase } = await requireOperator();
   const id = String(formData.get("id"));
   const companyId = String(formData.get("company_id"));
-  await supabase.from("homeworks").delete().eq("id", id).eq("company_id", companyId).eq("status", "open");
+  const { data: del, error } = await supabase.from("homeworks").delete().eq("id", id).eq("company_id", companyId).eq("status", "open").select("id");
+  if (error || !del?.length) back(companyId, `hw_error=${encodeURIComponent(error ? "取り下げられませんでした：" + error.message : "取り下げられませんでした。お客様がすでに回答した可能性があります")}`);
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/homework");
   revalidatePath("/", "layout");
@@ -68,7 +70,8 @@ export async function reopenHomework(formData: FormData) {
   const { supabase } = await requireOperator();
   const id = String(formData.get("id"));
   const companyId = String(formData.get("company_id"));
-  await supabase.from("homeworks").update({ status: "open", answered_at: null }).eq("id", id).eq("company_id", companyId).neq("status", "open");
+  const { data: re, error } = await supabase.from("homeworks").update({ status: "open", answered_at: null }).eq("id", id).eq("company_id", companyId).neq("status", "open").select("id");
+  if (error || !re?.length) back(companyId, `hw_error=${encodeURIComponent(error ? "もう一度出せませんでした：" + error.message : "すでに未回答に戻っています")}`);
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/homework");
   revalidatePath("/", "layout");

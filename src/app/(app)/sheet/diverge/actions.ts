@@ -1,17 +1,17 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireCustomer } from "@/lib/session";
+import { requireWritableCustomer } from "@/lib/session";
 import { draftRows, draftExperiences, FACETS, type FacetKey } from "@/server/sheet";
 import { aiGuard } from "@/server/aiGuard";
 import { loadProfileContext } from "@/server/profile";
 
-async function nextSeq(supabase: Awaited<ReturnType<typeof requireCustomer>>["supabase"], companyId: string) {
+async function nextSeq(supabase: Awaited<ReturnType<typeof requireWritableCustomer>>["supabase"], companyId: string) {
   const { data } = await supabase.from("sheet_rows").select("seq").eq("company_id", companyId).order("seq", { ascending: false }).limit(1).maybeSingle();
   return (data?.seq ?? 0) + 1;
 }
 
 export async function addRow(formData: FormData) {
-  const { supabase, company, user } = await requireCustomer();
+  const { supabase, company, user } = await requireWritableCustomer();
   const value = String(formData.get("value") || "").trim();
   const facet = String(formData.get("facet") || "functional") as FacetKey;
   const round = Number(formData.get("round") || 1);
@@ -25,7 +25,7 @@ export async function addRow(formData: FormData) {
 }
 
 export async function reviewRow(formData: FormData) {
-  const { supabase, company, user } = await requireCustomer();
+  const { supabase, company, user } = await requireWritableCustomer();
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")) as "approve" | "fix" | "hold" | "confirm" | "unconfirm";
   const after = String(formData.get("after") || "").trim();
@@ -61,7 +61,7 @@ export async function reviewRow(formData: FormData) {
 }
 
 export async function requestDraft(formData: FormData) {
-  const { supabase, company, user } = await requireCustomer();
+  const { supabase, company, user } = await requireWritableCustomer();
   const facet = String(formData.get("facet") || "functional") as FacetKey;
   const round = Number(formData.get("round") || 1);
   if (!FACETS.some((f) => f.key === facet)) return;
@@ -90,7 +90,7 @@ export async function requestDraft(formData: FormData) {
 
 /** 体験価値が空の行に AI の下書きを付ける（顧客が直す／承認するまで「AIの下書き」表示） */
 export async function requestExperienceDrafts() {
-  const { supabase, company, user } = await requireCustomer();
+  const { supabase, company, user } = await requireWritableCustomer();
   const [summary, { data: rows }] = await Promise.all([
     loadProfileContext(supabase, company.id),
     supabase.from("sheet_rows").select("id, value_raw, target").eq("company_id", company.id).eq("status", "active").or("experience_value_v1.is.null,experience_value_v1.eq.").limit(10),

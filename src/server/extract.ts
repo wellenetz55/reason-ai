@@ -42,9 +42,20 @@ async function fetchUrlText(url: string) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 15_000);
   try {
-    const res = await fetch(url, { signal: ctrl.signal, redirect: "follow", headers: { "user-agent": "Mozilla/5.0 (compatible; reason-ai/1.0)" } });
-    if (!res.ok) return "";
-    if (!(await isPublicHttpUrl(res.url || url))) return "";
+    // 転送は自分でたどり、1回ごとに社内向けアドレスでないか確かめる（最大3回）
+    let cur = url;
+    let res: Response | null = null;
+    for (let hop = 0; hop <= 3; hop++) {
+      if (!(await isPublicHttpUrl(cur))) return "";
+      res = await fetch(cur, { signal: ctrl.signal, redirect: "manual", headers: { "user-agent": "Mozilla/5.0 (compatible; reason-ai/1.0)" } });
+      if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
+        cur = new URL(res.headers.get("location")!, cur).toString();
+        res = null;
+        continue;
+      }
+      break;
+    }
+    if (!res || !res.ok) return "";
     const len = Number(res.headers.get("content-length") ?? 0);
     if (len > MAX_FETCH_BYTES) return "";
     const buf = Buffer.from(await res.arrayBuffer());
@@ -83,6 +94,8 @@ export async function extractCompanyDocs(companyId: string): Promise<{ docs: { t
   const skipped: string[] = [];
   const errors: string[] = [];
   for (const d of (data ?? []) as Doc[]) {
+    // 自社のフォルダ以外のファイルは読まない（行の storage_path が書き換えられていても他社の資料に届かないように）
+    if (d.storage_path && !d.storage_path.startsWith(`${companyId}/`)) { skipped.push(d.title); continue; }
     let text = d.text_content ?? "";
     if (!text) {
       if (d.url) text = await fetchUrlText(d.url);

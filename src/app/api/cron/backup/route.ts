@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { backupToDropbox, getSetting } from "@/server/dropbox";
 import { notifyOperators } from "@/server/notify";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /** 毎週の自動バックアップ（Vercel Cron）。Dropbox と未接続なら何もしない */
 export async function GET(request: Request) {

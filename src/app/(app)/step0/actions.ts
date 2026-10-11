@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 const fail = (msg: string): never => redirect(`/step0?error=${encodeURIComponent(msg)}`);
 import { randomUUID } from "node:crypto";
-import { requireCustomer } from "@/lib/session";
+import { requireCustomer, requireWritableCustomer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LIMITS } from "@/lib/limits";
 import { draftProfile } from "@/server/profile";
@@ -37,7 +37,7 @@ function kindOf(v: FormDataEntryValue | null) {
 
 /** ファイル（PDF・画像・テキスト）を非公開バケットに保存し、company_documents に記録 */
 export async function uploadDocument(formData: FormData) {
-  const { company, user, supabase } = await requireCustomer();
+  const { company, user, supabase } = await requireWritableCustomer();
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) fail("ファイルを選んでください。");
   const f = file as File;
@@ -64,7 +64,7 @@ export async function uploadDocument(formData: FormData) {
 
 /** URL を登録（Webサイト・採用ページ・レビューなど） */
 export async function addUrl(formData: FormData) {
-  const { company, user, supabase } = await requireCustomer();
+  const { company, user, supabase } = await requireWritableCustomer();
   let url = String(formData.get("url") || "").trim();
   if (!url) return;
   if (!/^https?:\/\//i.test(url)) url = "https://" + url;
@@ -85,7 +85,7 @@ export async function addUrl(formData: FormData) {
 
 /** テキストを貼り付けて登録（議事録・営業トーク・メモなど） */
 export async function addText(formData: FormData) {
-  const { company, user, supabase } = await requireCustomer();
+  const { company, user, supabase } = await requireWritableCustomer();
   const text = String(formData.get("text") || "").trim();
   if (!text) return;
   if ((await usage(supabase, company.id)).texts >= LIMITS.texts) fail("登録できるテキストの数の上限に達しています。");
@@ -102,11 +102,11 @@ export async function addText(formData: FormData) {
 
 /** 資料を取り下げる（ファイルも削除） */
 export async function removeDocument(formData: FormData) {
-  const { company, supabase } = await requireCustomer();
+  const { company, supabase } = await requireWritableCustomer();
   const id = String(formData.get("id"));
   const { data: doc } = await supabase.from("company_documents").select("id, storage_path").eq("id", id).eq("company_id", company.id).maybeSingle();
   if (!doc) return;
-  if (doc.storage_path) await createAdminClient().storage.from("company-docs").remove([doc.storage_path]);
+  if (doc.storage_path?.startsWith(`${company.id}/`)) await createAdminClient().storage.from("company-docs").remove([doc.storage_path]);
   await supabase.from("company_documents").delete().eq("id", doc.id);
   revalidatePath("/step0");
 }
@@ -115,7 +115,7 @@ export async function removeDocument(formData: FormData) {
 
 /** 資料から AI が下書きを作る。承認済み・直した・保留の項目は上書きしない */
 export async function requestProfileDraft() {
-  const { supabase, company, user } = await requireCustomer();
+  const { supabase, company, user } = await requireWritableCustomer();
   const res = await aiGuard(supabase, company.id, user.id, "profile.draft", () => draftProfile(company.id, company.name));
   if (!res) { revalidatePath("/step0"); return; }
   const { items, skipped, errors } = res;
@@ -132,7 +132,7 @@ export async function requestProfileDraft() {
 
 /** 項目ごとの 直す／承認／保留、B の回答 */
 export async function reviewProfileItem(formData: FormData) {
-  const { supabase, company } = await requireCustomer();
+  const { supabase, company } = await requireWritableCustomer();
   const key = String(formData.get("key"));
   const action = String(formData.get("action")); // approve | fix | hold | answer | reopen
   const after = String(formData.get("after") || "").trim();

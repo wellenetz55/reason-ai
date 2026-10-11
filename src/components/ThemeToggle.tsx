@@ -19,13 +19,17 @@ const read = (): Theme => {
   return v === "dark" || v === "system" ? v : "light";
 };
 
+/** <html> に反映し、クッキーに残す（描画中ではなくクリック時にだけ呼ぶ） */
+function applyTheme(v: Theme) {
+  const root = window.document.documentElement;
+  root.dataset.theme = v;
+  window.document.cookie = `theme=${v}; path=/; max-age=31536000; samesite=lax`;
+}
+
 /** 表示の明るさを切り替える。選んだものはクッキーに残す */
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const theme = useSyncExternalStore(subscribe, read, () => "light" as Theme);
-  const choose = (v: Theme) => {
-    window.document.documentElement.dataset.theme = v;
-    window.document.cookie = `theme=${v}; path=/; max-age=31536000; samesite=lax`;
-  };
+  const choose = applyTheme;
   return (
     <div role="radiogroup" aria-label="表示の明るさ" className={`inline-flex rounded-full border hairline p-0.5 text-[11px] ${className}`}>
       {OPTIONS.map((o) => (

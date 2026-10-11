@@ -9,9 +9,12 @@ import { fmtMeeting } from "@/lib/meetings";
 export async function applyProgram() {
   const { company, user, profile } = await requireCustomer();
   const admin = createAdminClient();
-  const { data: c } = await admin.from("companies").select("applied_at").eq("id", company.id).single();
-  if (c?.applied_at) return;
-  await admin.from("companies").update({ applied_at: new Date().toISOString() }).eq("id", company.id);
+  // 二度押しでも1回だけ：まだ申込が入っていない行だけを更新し、更新できたときだけ知らせる
+  const { data: won } = await admin.from("companies").update({ applied_at: new Date().toISOString() }).eq("id", company.id).is("applied_at", null).select("id");
+  if (!won?.length) {
+    revalidatePath("/diagnosis");
+    return;
+  }
   await admin.from("alerts").insert({ company_id: company.id, kind: "escalation", payload: { type: "program_applied", by: user.id } });
   // 押した本人に受付メール
   if (user.email) {

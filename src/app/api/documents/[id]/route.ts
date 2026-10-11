@@ -7,7 +7,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const { supabase, company } = await requireCustomer();
   const { data: doc } = await supabase.from("company_documents").select("storage_path").eq("id", id).eq("company_id", company.id).maybeSingle();
-  if (!doc?.storage_path) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!doc?.storage_path || !doc.storage_path.startsWith(`${company.id}/`)) return NextResponse.json({ error: "not found" }, { status: 404 });
   const { data } = await createAdminClient().storage.from("company-docs").createSignedUrl(doc.storage_path, 300);
   if (!data?.signedUrl) return NextResponse.json({ error: "not found" }, { status: 404 });
   return NextResponse.redirect(data.signedUrl);

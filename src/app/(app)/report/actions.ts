@@ -24,6 +24,9 @@ export async function sendErrorReport(formData: FormData) {
     body: body.slice(0, 5000),
     screenshot_path,
   });
-  await notifyOperators({ subject: `${company.name} からエラーレポート`, lines: [`${company.name} の担当者からエラーレポートが届きました。`, body.length > 300 ? body.slice(0, 300) + "…" : body, screenshot_path ? "スクリーンショットあり" : ""].filter(Boolean), path: `/admin/${company.id}` });
+  // 短時間に何通も送られたときは、メールは最初の3通まで（レポートそのものは管理画面に全部残る）
+  const since = new Date(Date.now() - 10 * 60_000).toISOString();
+  const { count } = await supabase.from("error_reports").select("id", { count: "exact", head: true }).eq("company_id", company.id).gte("created_at", since);
+  if ((count ?? 0) <= 3) await notifyOperators({ subject: `${company.name} からエラーレポート`, lines: [`${company.name} の担当者からエラーレポートが届きました。`, body.length > 300 ? body.slice(0, 300) + "…" : body, screenshot_path ? "スクリーンショットあり" : ""].filter(Boolean), path: `/admin/${company.id}` });
   revalidatePath("/report");
 }

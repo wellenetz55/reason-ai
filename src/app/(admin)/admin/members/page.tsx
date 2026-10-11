@@ -4,6 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { inviteOperator, resendInvite, removeOperator, setOperatorRole, backupNow, disconnectDropbox } from "./actions";
 import { getSetting, dropboxConfigured, KEEP, type BackupLast } from "@/server/dropbox";
 
+// 「今すぐDropboxに保存」はこのページのサーバ処理として動くため、時間を長めにとる
+export const maxDuration = 300;
+
 const OK: Record<string, string> = { invited: "追加して、招待メールを送りました。", resent: "招待メールを再送しました。", removed: "メンバーを削除しました（サインインできなくなりました）。", role: "権限を変えました。", dropbox: "Dropbox と接続しました。毎週月曜 3:00 に自動で保存します。", dropbox_off: "Dropbox との接続を切りました（Dropbox 内のファイルは残っています）。", backup: "Dropbox に保存しました。" };
 
 const fmt = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—");

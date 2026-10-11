@@ -14,8 +14,13 @@ export async function setStatus(formData: FormData) {
   const { supabase } = await requireOperator();
   const id = String(formData.get("company_id"));
   const status = String(formData.get("status"));
+  const { data: before } = await supabase.from("companies").select("status").eq("id", id).single();
+  if (before?.status === status) {
+    revalidatePath(`/admin/${id}`);
+    return;
+  }
   await supabase.from("companies").update({ status, status_changed_at: new Date().toISOString() }).eq("id", id);
-  // 状態を変えたら、解約後の一時再アクセスは閉じる（列が無い環境ではエラーを無視）
+  // 状態が変わったら、解約後の一時再アクセスは閉じる（列が無い環境ではエラーを無視）
   await supabase.from("companies").update({ reaccess_until: null }).eq("id", id).not("reaccess_until", "is", null);
   // 契約前を抜けたら、契約前の要対応アラート（申込・診断閲覧・キックオフ選択）を済みにする
   if (status !== "diagnosed") {

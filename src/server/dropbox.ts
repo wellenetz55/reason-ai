@@ -13,10 +13,12 @@ export async function getSetting<T>(key: string): Promise<T | null> {
   return (data?.value as T) ?? null;
 }
 export async function setSetting(key: string, value: unknown) {
-  await createAdminClient().from("app_settings").upsert({ key, value, updated_at: new Date().toISOString() });
+  const { error } = await createAdminClient().from("app_settings").upsert({ key, value, updated_at: new Date().toISOString() });
+  if (error) throw new Error(`設定を保存できませんでした（SQL 0018 が未実行の可能性があります）：${error.message}`);
 }
 export async function deleteSetting(key: string) {
-  await createAdminClient().from("app_settings").delete().eq("key", key);
+  const { error } = await createAdminClient().from("app_settings").delete().eq("key", key);
+  if (error) throw new Error(`設定を消せませんでした：${error.message}`);
 }
 
 export const dropboxConfigured = () => !!(process.env.DROPBOX_APP_KEY && process.env.DROPBOX_APP_SECRET);

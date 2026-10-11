@@ -33,6 +33,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const { origin } = new URL(request.url);
+  // 他のサイトから自動送信されたサインイン（攻撃者のアカウントに入らされる）を防ぐ
+  const from = request.headers.get("origin");
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  if (from && host && new URL(from).host !== host) return FAIL(origin);
   const form = await request.formData();
   const tokenHash = String(form.get("token_hash") || "");
   const type = String(form.get("type") || "magiclink");
