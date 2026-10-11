@@ -42,7 +42,7 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
         <section className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
             <label className="flex items-center gap-2"><span className="font-semibold">診断日</span><input type="date" name="held_on" required defaultValue={intake?.held_on ?? ""} className="border-b hairline py-1 num text-sm bg-transparent" /></label>
-            <label className="flex items-center gap-2 flex-1 min-w-[240px]"><span className="font-semibold whitespace-nowrap">面談した相手</span><input name="attendees" defaultValue={a.attendees ?? ""} className="border-b hairline py-1 text-sm flex-1 bg-transparent" placeholder="例：矢野副社長、営業部長の○○さん" /></label>
+            <label className="flex items-center gap-2 flex-1 min-w-[240px]"><span className="font-semibold whitespace-nowrap">面談した相手</span><input name="attendees" defaultValue={a.attendees ?? ""} className="border-b hairline py-1 text-sm flex-1 bg-transparent" placeholder="例：山田社長、営業部長の○○さん" /></label>
           </div>
           {intake?.updated_at && <p className="text-[11px] text-ink-3 mt-2 num">最終更新 {new Date(intake.updated_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}</p>}
         </section>
@@ -54,9 +54,9 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
             <select name="target_kind" defaultValue={intake?.target_kind ?? "company"} className="border-b hairline py-2 text-sm">
               {Object.entries(TARGET_KIND_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <input name="target_name" defaultValue={intake?.target_name ?? ""} className={inp} placeholder="対象の名前（会社全体なら空でよい。例：VALX GYM）" />
+            <input name="target_name" defaultValue={intake?.target_name ?? ""} className={inp} placeholder="対象の名前（会社全体なら空でよい。例：○○ジム（ブランド名））" />
           </div>
-          <input name="target_note" defaultValue={intake?.target_note ?? ""} className={inp + " mt-3"} placeholder="運営会社・グループ内の関係（例：株式会社Fitcrew が買収した子会社ブランド。親会社は上場・大阪）" />
+          <input name="target_note" defaultValue={intake?.target_note ?? ""} className={inp + " mt-3"} placeholder="運営会社・グループ内の関係（例：株式会社○○（親会社）が買収した子会社ブランド）" />
         </section>
 
         <section>
