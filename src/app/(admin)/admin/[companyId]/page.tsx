@@ -103,7 +103,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">申込・契約・入金（契約書と請求書はメールで）</h2>
-        <p className="text-xs text-ink-3 mt-1">お客様が診断結果ページで「申し込む」を押すと申込が入ります。契約書を取り交わしたら「契約済」、入金を確認したら「入金済」を押してください。入金済にすると、お客様がキックオフ日を選べるようになります。候補日は「適合診断の結果を書く」で設定します。</p>
+        <p className="text-xs text-ink-3 mt-1">お客様が診断結果ページで「申し込む」を押すと申込が入ります。契約書を取り交わしたら「契約済」、入金を確認したら「入金済」を押してください。入金済にすると、お客様にメールが届き、キックオフ日を候補（最大3つ）から選べるようになります。候補日は先に「適合診断の結果を書く」の 6. で入れておいてください（入れていないと「候補日はベレネッツからご連絡します」と届きます）。</p>
         {diag?.published_at && (
           <p className="text-xs mt-2">
             診断結果：{fmtMeeting(diag.published_at)} 公開 ·{" "}
