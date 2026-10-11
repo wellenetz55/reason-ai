@@ -66,7 +66,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
       <h1 className="serif text-[28px] leading-tight">{c.name}</h1>
       <p className="text-sm text-ink-2 mt-1">{STATUS_LABEL[c.status]} · <Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 hover:text-ink">適合診断の記録</Link> · <Link href={`/admin/${c.id}/diagnosis`} className="underline underline-offset-4 hover:text-ink">適合診断の結果を書く</Link></p>
       <p className="text-xs text-ink-3 mt-1">
-        {intake ? <>{intake.held_on && <>診断日 <span className="num">{new Date(intake.held_on + "T00:00:00+09:00").toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "numeric", day: "numeric" })}</span> · </>}対象：{describeTarget(intake, c.name) || "会社全体"}{intake.transcript ? " · 書き起こしあり" : " · 書き起こしなし"}{intake.verdict ? ` · 判定 ${VERDICT_LABEL[intake.verdict] ?? intake.verdict}` : ""}</> : <span className="text-warm">適合診断の記録がまだありません（対象・URL・聞き取りを入れると、AIの下書きがそれを使います）</span>}
+        {intake ? <>{intake.held_on && <>診断日 <span className="num">{new Date(intake.held_on + "T00:00:00+09:00").toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "numeric", day: "numeric" })}</span> · </>}対象：{describeTarget(intake, c.name) || "会社全体"}{intake.transcript_name ? " · 書き起こしあり" : " · 書き起こしなし"}{intake.verdict ? ` · 判定 ${VERDICT_LABEL[intake.verdict] ?? intake.verdict}` : ""}</> : <span className="text-warm">適合診断の記録がまだありません（対象・URL・聞き取りを入れると、AIの下書きがそれを使います）</span>}
       </p>
 
       <section className="mt-8 grid grid-cols-4 gap-6 text-sm">
@@ -141,7 +141,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
                 <li key={h.id} className="py-3">
                   {h.status === "open" ? (
                     <details>
-                      <summary className="cursor-pointer list-none flex flex-wrap items-baseline gap-x-3">
+                      <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden flex flex-wrap items-baseline gap-x-3">
                         <span className="text-hypo text-xs">{"★".repeat(h.priority)}</span>
                         <span>{h.title}</span>
                         <span className={`num text-xs ${overdueHw ? "text-warm font-semibold" : "text-ink-3"}`}>{h.due_at ? `期限 ${toDateInput(h.due_at)}${overdueHw ? "（過ぎています）" : ""}` : "期限なし"}</span>
@@ -225,14 +225,14 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">担当者</h2>
-        <p className="text-xs text-ink-3 mt-1">この会社でサインインできる人です。追加すると招待メール（日本語）が届きます。最初の1人が管理担当者になります。</p>
+        <p className="text-xs text-ink-3 mt-1">この会社でサインインできる人です。追加すると招待メール（日本語）が届きます。最初の1人が主担当になります。</p>
         {(members ?? []).length > 0 && (
           <ul className="mt-3 text-sm space-y-1">
             {(members ?? []).map((m) => (
               <li key={m.id} className="flex items-center gap-3">
                 <span>{m.display_name || "（名前未設定）"}</span>
                 <span className="num text-xs text-ink-3">{emailOf(m.id)}</span>
-                <span className="text-[11px] text-ink-3">{m.role === "customer_admin" ? "管理担当者" : "担当者"}</span>
+                <span className="text-[11px] text-ink-3">{m.role === "customer_admin" ? "主担当" : "担当者"}</span>
               </li>
             ))}
           </ul>
@@ -246,7 +246,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
           </form>
         ) : (
           <p className="mt-3 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-[13px] text-ink-2 max-w-[44em]">
-            {gate.reason}。お客様のメールアドレスは、適合が固まってから入れます。<Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 ml-1">適合診断の記録へ</Link>
+            {gate.reason}。<Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 ml-1">適合診断の記録へ</Link>
           </p>
         )}
         {memberError && <p className="text-xs text-warm mt-2">{memberError}</p>}
@@ -272,6 +272,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">面談</h2>
+        {(meetings ?? []).length === 0 && <p className="text-sm text-ink-3 mt-2">まだ面談は登録されていません。下の欄から追加します。</p>}
         <ul className="mt-2 divide-y divide-hair text-sm">
           {(meetings ?? []).map((m) => (
             <li key={m.id} className={`py-3 ${m.held_at ? "text-ink-3" : ""}`}>
@@ -321,6 +322,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">エラーレポート（未対応 {(errs ?? []).filter((e) => !e.resolved_at).length}）</h2>
+        {(errs ?? []).length === 0 && <p className="text-sm text-ink-3 mt-2">エラーレポートは届いていません。</p>}
         <ul className="mt-2 divide-y divide-hair text-sm">
           {(errs ?? []).map((e) => (
             <li key={e.id} className={`py-3 ${e.resolved_at ? "text-ink-3" : ""}`}>
@@ -341,7 +343,8 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
       </section>
 
       <section className="mt-10">
-        <h2 className="text-sm text-ink-2">質問（未返答 {(qs ?? []).filter((q) => !q.answered_at).length}）</h2>
+        <h2 className="text-sm text-ink-2">質問（未返信 {(qs ?? []).filter((q) => !q.answered_at).length}）</h2>
+        {(qs ?? []).length === 0 && <p className="text-sm text-ink-3 mt-2">質問は届いていません。</p>}
         <ul className="mt-2 divide-y divide-hair text-sm">
           {(qs ?? []).map((q) => (
             <li key={q.id} className="py-4">

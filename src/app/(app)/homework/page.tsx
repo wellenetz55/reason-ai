@@ -26,11 +26,11 @@ export default async function HomeworkPage() {
             <form action={answerHomework} className="mt-4 space-y-3 max-w-[40em]">
               <input type="hidden" name="id" value={h.id} />
               {(h.answer || h.pass_reason) && <p className="text-[12px] text-ink-3">ベレネッツからもう一度お願いしている宿題です。前回の回答を残してあります。書き足してください。</p>}
-              <textarea name="answer" rows={3} defaultValue={h.answer ?? h.pass_reason ?? ""} placeholder="回答（パスする場合は理由）" className="w-full border-b hairline py-2 text-sm" />
+              <textarea name="answer" rows={3} required defaultValue={h.answer ?? h.pass_reason ?? ""} placeholder="回答（パスする場合は理由）" className="w-full border-b hairline py-2 text-sm" />
               <input name="asked_whom" defaultValue={h.asked_whom ?? ""} required pattern=".*\S.*" title="誰に聞いたかを入力してください" placeholder="誰に聞いたか（必須）" className="w-full border-b hairline py-2 text-sm" />
               <div className="flex gap-2">
                 <button className="btn-primary" name="mode" value="answer" type="submit">回答する</button>
-                <button className="btn-text" name="mode" value="pass" type="submit">今回はパス（理由を回答欄に）</button>
+                <button className="btn-text" name="mode" value="pass" type="submit" formNoValidate>今回はパス（理由を回答欄に）</button>
               </div>
             </form>
             )}

@@ -13,16 +13,18 @@ const AREAS_BY_PROMPT: Record<string, string[]> = {
  * 採用した原則を、AIに渡す「判断基準」の文にする。出典（書名・ページ）は渡さない。
  * テーブルが無い・空のときは空文字（AIの動きは今まで通り）。
  */
+let cache: { rows: { area: string; principle: string; usage: string }[]; at: number } | null = null;
+
 export async function loadPrinciples(promptKey?: string): Promise<string> {
   const areas = promptKey ? AREAS_BY_PROMPT[promptKey] : undefined;
   if (!areas) return "";
-  const { data, error } = await createAdminClient()
-    .from("method_principles")
-    .select("code, area, principle, usage")
-    .eq("active", true)
-    .in("area", areas)
-    .order("sort");
-  if (error || !data?.length) return "";
+  // 10分キャッシュ（AI呼び出しのたびに読まない）
+  if (!cache || Date.now() - cache.at > 10 * 60 * 1000) {
+    const { data, error } = await createAdminClient().from("method_principles").select("area, principle, usage").eq("active", true).order("sort");
+    cache = { rows: error ? [] : (data ?? []), at: Date.now() };
+  }
+  const data = cache.rows.filter((p) => areas.includes(p.area));
+  if (!data.length) return "";
   const lines = data.map((p) => `- ${p.principle} → ${p.usage}`);
   return [
     "判断基準（下の基準は、問いの立て方と、出てきた答えの検査にだけ使う）:",

@@ -62,6 +62,49 @@ export async function uploadDocument(formData: FormData) {
   revalidatePath("/step0");
 }
 
+/**
+ * 大きなファイルは、サーバを通さずブラウザから保管場所へ直接送る（サーバの受け取り上限 約4.5MB を避けるため）。
+ * ① prepareUpload で検査と送り先の発行 → ② ブラウザが送る → ③ finishUpload で記録。
+ */
+export async function prepareUpload(meta: { name: string; size: number; type: string }): Promise<{ ok: true; path: string; token: string } | { ok: false; error: string }> {
+  const { company, supabase } = await requireWritableCustomer();
+  if (!meta?.name || !meta.size) return { ok: false, error: "ファイルを選んでください。" };
+  if (meta.size > MAX_BYTES) return { ok: false, error: "ファイルが大きすぎます（25MBまで）。" };
+  if (!ALLOWED.includes(meta.type)) return { ok: false, error: "このファイルの形式は登録できません（PDF・画像・テキスト）。" };
+  const u = await usage(supabase, company.id);
+  if (u.files >= LIMITS.files || u.bytes + meta.size > LIMITS.totalBytes) return { ok: false, error: "登録できるファイルの数か容量の上限に達しています。不要な資料を取り下げてください。" };
+  const path = `${company.id}/${randomUUID()}-${meta.name.replace(/[^\w.\-ぁ-んァ-ン一-龠]/g, "_")}`;
+  const { data, error } = await createAdminClient().storage.from("company-docs").createSignedUploadUrl(path);
+  if (error || !data) return { ok: false, error: "送り先を用意できませんでした。しばらくしてからもう一度お試しください。" };
+  return { ok: true, path: data.path ?? path, token: data.token };
+}
+
+export async function finishUpload(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const { company, user, supabase } = await requireWritableCustomer();
+  const path = String(formData.get("path") || "");
+  if (!path.startsWith(`${company.id}/`)) return { ok: false, error: "登録できませんでした。" };
+  // 本当に保管場所に届いたかを確かめ、実際の大きさ・形式を使う
+  const dir = path.slice(0, path.lastIndexOf("/"));
+  const name = path.slice(path.lastIndexOf("/") + 1);
+  const { data: objs } = await createAdminClient().storage.from("company-docs").list(dir, { search: name, limit: 5 });
+  const obj = (objs ?? []).find((o) => o.name === name);
+  if (!obj) return { ok: false, error: "ファイルが届いていません。もう一度お試しください。" };
+  const meta = (obj.metadata ?? {}) as { size?: number; mimetype?: string };
+  const fileName = String(formData.get("file_name") || name);
+  await supabase.from("company_documents").insert({
+    company_id: company.id,
+    kind: kindOf(formData.get("kind")),
+    title: String(formData.get("title") || fileName).trim() || fileName,
+    storage_path: path,
+    mime_type: meta.mimetype ?? String(formData.get("file_type") || ""),
+    size_bytes: meta.size ?? Number(formData.get("file_size") || 0),
+    uploaded_by: user.id,
+  });
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "doc.upload" });
+  revalidatePath("/step0");
+  return { ok: true };
+}
+
 /** URL を登録（Webサイト・採用ページ・レビューなど） */
 export async function addUrl(formData: FormData) {
   const { company, user, supabase } = await requireWritableCustomer();

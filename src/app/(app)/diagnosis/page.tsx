@@ -169,7 +169,7 @@ export default async function DiagnosisPage() {
 
       {comp && comp.claims?.length > 0 && (
         <section className="mt-14">
-          <h2 className="serif text-[20px]">{comp.name} が、いま言っていること</h2>
+          <h2 className="serif text-[20px]">{comp.name?.trim() || "競合他社"} が、いま言っていること</h2>
           <ul className="mt-4 space-y-2 text-ink-2">
             {comp.claims.map((c, i) => <li key={i} className="pl-4 border-l-2 hairline">{c}</li>)}
           </ul>

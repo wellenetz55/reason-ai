@@ -7,7 +7,8 @@ import { StepGuide } from "@/components/StepGuide";
 import { stepGate } from "@/lib/gates";
 import { loadGateCtx } from "@/server/gates";
 import { requireCustomer } from "@/lib/session";
-import { uploadDocument, addUrl, addText, removeDocument, getUsage } from "./actions";
+import { addUrl, addText, removeDocument, getUsage } from "./actions";
+import { DirectUploadForm } from "@/components/DirectUploadForm";
 import { LIMITS } from "@/lib/limits";
 import { requestProfileDraft, reviewProfileItem } from "./actions";
 import { ProfileItems } from "@/components/ProfileItems";
@@ -59,15 +60,11 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
       <div className="mt-3"><ExportButton stageKey="step0" /></div>
 
       <section className="mt-10 grid gap-10 md:grid-cols-3">
-        <form action={uploadDocument} className="space-y-3">
+        <div className="space-y-3">
           <p className="serif text-[16px]">ファイルを上げる</p>
-          <p className="text-[12px] text-ink-3">PDF・画像（PNG/JPG）・テキスト。1ファイル25MBまで。</p>
           <p className={`text-[12px] num ${full(left.files) || mbLeft < 1 ? "text-warm" : "text-ink-3"}`}>{full(left.files) ? "上限の20件に達しています。取り下げてから上げてください。" : `あと ${left.files} 件・${mbLeft.toFixed(0)} MB 上げられます`}</p>
-          <input type="file" name="file" required accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,application/pdf,image/png,image/jpeg,image/webp,text/plain" className="block w-full text-sm file:mr-3 file:rounded-full file:border file:border-ink-3 file:bg-transparent file:px-3 file:py-1 file:text-[12px]" />
-          <input name="title" placeholder="名前（空ならファイル名）" className="block w-full border-b hairline py-2 text-sm" />
-          {kindSelect}
-          <button className="btn-primary block" type="submit" disabled={full(left.files) || mbLeft < 0.01}>上げる</button>
-        </form>
+          <DirectUploadForm disabled={full(left.files) || mbLeft < 0.01} kindSelect={kindSelect} accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,application/pdf,image/png,image/jpeg,image/webp,text/plain" />
+        </div>
 
         <form action={addUrl} className="space-y-3">
           <p className="serif text-[16px]">URLを登録する</p>

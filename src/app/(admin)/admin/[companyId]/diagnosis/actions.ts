@@ -61,8 +61,11 @@ export async function publishDiagnosis(formData: FormData) {
   const admin = createAdminClient();
   const back = (msg: string) => redirect(`/admin/${companyId}/diagnosis?error=${encodeURIComponent(msg)}`);
   const { data: co } = await supabase.from("companies").select("status").eq("id", companyId).single();
-  const gate = await (await import("@/server/intake")).inviteGate(companyId, co?.status ?? "diagnosed");
-  if (!gate.ok) back(gate.reason);
+  // 新しいメールアドレスを入れるときだけ、適合の判定を確かめる（登録済みの担当者への公開更新は止めない）
+  if (email) {
+    const gate = await (await import("@/server/intake")).inviteGate(companyId, co?.status ?? "diagnosed");
+    if (!gate.ok) back(gate.reason);
+  }
   if (email) {
     const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
     const existing = list?.users.find((u) => u.email?.toLowerCase() === email);

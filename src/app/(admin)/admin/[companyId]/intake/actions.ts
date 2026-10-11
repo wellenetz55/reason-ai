@@ -14,18 +14,17 @@ export async function saveIntake(formData: FormData) {
   const companyId = String(formData.get("company_id"));
   const kind = String(formData.get("target_kind") || "company");
   const answers: Record<string, string> = {};
-  for (const k of [...Q_KEYS, "extra", "attendees"]) answers[k] = String(formData.get(k) || "").trim();
+  for (const k of [...Q_KEYS, "extra", "memo", "attendees"]) answers[k] = String(formData.get(k) || "").trim();
+  const targetName = String(formData.get("target_name") || "").trim();
+  if (kind !== "company" && !targetName) back(companyId, `error=${encodeURIComponent("事業部・ブランド、商品・サービスを選んだときは、対象の名前を入れてください")}`);
   const heldOn = String(formData.get("held_on") || "").trim();
   const verdict = String(formData.get("verdict") || "").trim();
-  const { data: cur } = await supabase.from("diagnosis_intakes").select("transcript, transcript_name").eq("company_id", companyId).maybeSingle();
   const { error } = await supabase.from("diagnosis_intakes").upsert({
     company_id: companyId,
     target_kind: ["company", "brand", "product"].includes(kind) ? kind : "company",
-    target_name: String(formData.get("target_name") || "").trim() || null,
+    target_name: targetName || null,
     target_note: String(formData.get("target_note") || "").trim() || null,
     answers,
-    transcript: cur?.transcript ?? null,
-    transcript_name: cur?.transcript_name ?? null,
     verdict: ["fit", "unfit", "hold"].includes(verdict) ? verdict : null,
     verdict_note: String(formData.get("verdict_note") || "").trim() || null,
     held_on: heldOn || null,
@@ -34,14 +33,21 @@ export async function saveIntake(formData: FormData) {
   });
   if (error) back(companyId, `error=${encodeURIComponent("保存できませんでした（SQL 0021 が未実行の可能性があります）：" + error.message)}`);
 
-  // URL → 会社の資料（website）。同じURLは二重に入れない
-  const urls = String(formData.get("urls") || "").split(/\s+/).map((u) => u.trim()).filter((u) => /^https?:\/\//i.test(u));
-  if (urls.length) {
+  // URL → 会社の資料（website）。末尾の / を揃えて比べ、同じURLは二重に入れない。形の壊れたURLは飛ばして知らせる
+  const norm = (u: string) => { try { const x = new URL(u); return x.protocol.startsWith("http") ? x.href.replace(/\/$/, "") : null; } catch { return null; } };
+  const tokens = String(formData.get("urls") || "").split(/\s+/).map((u) => u.trim()).filter(Boolean);
+  const bad = tokens.filter((u) => !norm(u));
+  const wanted = [...new Set(tokens.map(norm).filter((u): u is string => !!u))];
+  if (wanted.length) {
     const { data: ex } = await supabase.from("company_documents").select("url").eq("company_id", companyId).not("url", "is", null);
-    const have = new Set((ex ?? []).map((d) => d.url));
-    const rows = urls.filter((u) => !have.has(u)).map((u) => ({ company_id: companyId, kind: "website", title: new URL(u).hostname + new URL(u).pathname.replace(/\/$/, ""), url: u, uploaded_by: user.id }));
-    if (rows.length) await supabase.from("company_documents").insert(rows);
+    const have = new Set((ex ?? []).map((d) => norm(d.url ?? "")));
+    const rows = wanted.filter((u) => !have.has(u)).map((u) => { const x = new URL(u); return { company_id: companyId, kind: "website", title: x.hostname + x.pathname.replace(/\/$/, ""), url: u, uploaded_by: user.id }; });
+    if (rows.length) {
+      const { error: ue } = await supabase.from("company_documents").insert(rows);
+      if (ue) back(companyId, `error=${encodeURIComponent("記録は保存しましたが、URLを登録できませんでした：" + ue.message)}`);
+    }
   }
+  if (bad.length) back(companyId, `error=${encodeURIComponent("記録は保存しました。次のURLは形が正しくないため登録していません：" + bad.join(" "))}`);
   revalidatePath(`/admin/${companyId}/intake`);
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/step0");
@@ -56,7 +62,7 @@ export async function saveTranscript(formData: FormData) {
   let name = text ? "貼り付け" : "";
   const f = formData.get("transcript_file");
   if (f instanceof File && f.size > 0) {
-    if (f.size > 20 * 1024 * 1024) back(companyId, `error=${encodeURIComponent("ファイルが大きすぎます（20MBまで）")}`);
+    if (f.size > 4 * 1024 * 1024) back(companyId, `error=${encodeURIComponent("ファイルが大きすぎます（4MBまで）。テキスト（.txt）で書き出すと小さくなります")}`);
     const buf = Buffer.from(await f.arrayBuffer());
     if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)) {
       const { pdfText } = await import("@/server/extract");
@@ -64,7 +70,12 @@ export async function saveTranscript(formData: FormData) {
       if (!r.text) back(companyId, `error=${encodeURIComponent("PDFから文字を取り出せませんでした" + (r.error ? "：" + r.error : ""))}`);
       text = r.text;
     } else {
-      text = buf.toString("utf8").replace(/^﻿/, "").trim();
+      text = buf.toString("utf8").replace(/^﻿/, "");
+      // 文字化けしている（Shift_JIS で書き出されたファイル）なら Shift_JIS で読み直す
+      if (text.includes("�")) {
+        try { text = new TextDecoder("shift_jis").decode(buf); } catch { /* そのまま */ }
+      }
+      text = text.trim();
     }
     name = f.name;
   }

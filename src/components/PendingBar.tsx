@@ -31,6 +31,8 @@ export function PendingBar({ stamp }: { stamp: number }) {
       if (!form || form.tagName !== "FORM") return;
       // クライアントで描かれたフォーム（関数の action）には method 属性が付かず form.method が "get" を返すため、属性で判定する
       if (form.getAttribute("method")?.toLowerCase() === "get") return;
+      // 自前で送信中の表示をするフォーム（data-no-busy）は対象外
+      if (form.dataset.noBusy) return;
       if (form.dataset.busy) {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -46,12 +48,13 @@ export function PendingBar({ stamp }: { stamp: number }) {
         // 幅の狭いボタン（承認・確定など）は文言を入れず「…」だけ重ねる
         target.dataset.busy = target.offsetWidth < 140 ? "short" : "1";
       }
-      // 万一応答が無いときのため、60秒で解除
+      // 万一応答が無いときのため、一定時間で解除（長い処理は form の data-busy-timeout で延ばす）
       if (timer.current) clearTimeout(timer.current);
+      const limit = Number(form.dataset.busyTimeout) || 60_000;
       timer.current = setTimeout(() => {
         setPending(false);
         clearBusy();
-      }, 60_000);
+      }, limit);
     };
     document.addEventListener("submit", onSubmit, true);
     return () => document.removeEventListener("submit", onSubmit, true);

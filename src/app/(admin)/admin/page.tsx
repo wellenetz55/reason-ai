@@ -48,8 +48,12 @@ export default async function AdminHome() {
           <span className="text-ink-3 text-[12px]">返事が遅れると、顧客のやる気が下がります</span>
         </p>
       )}
-      <table className="mt-8 w-full text-sm">
-        <thead className="text-xs text-ink-3 text-left">
+      {(companies ?? []).length === 0 ? (
+        <p className="mt-8 rounded-[var(--radius)] bg-paper-2 px-5 py-4 text-sm text-ink-2 max-w-[40em]">まだ会社がありません。いちばん下の「新しい会社」に会社名を入れて追加してください。</p>
+      ) : (
+      <div className="mt-8 overflow-x-auto">
+      <table className="w-full min-w-[880px] text-sm">
+        <thead className="text-xs text-ink-3 text-left whitespace-nowrap">
           <tr><th className="py-2 pl-4 font-normal">会社</th><th className="font-normal">状態</th><th className="font-normal">最終操作</th><th className="font-normal">質問</th><th className="font-normal">エラー</th><th className="font-normal">未回収宿題</th><th className="font-normal w-[34%]">アラート</th></tr>
         </thead>
         <tbody className="divide-y divide-hair">
@@ -68,16 +72,16 @@ export default async function AdminHome() {
                 <td>
                   {msg[c.id]?.unanswered ? (
                     <span className="inline-flex items-center gap-1.5">
-                      {msg[c.id].unread > 0 && <span className="attention-blink num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5">未読 {msg[c.id].unread}</span>}
-                      <span className="num rounded-full border border-warm text-warm text-[11px] font-semibold px-2 py-0.5">未返信 {msg[c.id].unanswered}</span>
+                      {msg[c.id].unread > 0 && <span className="attention-blink num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">未読 {msg[c.id].unread}</span>}
+                      <span className="num rounded-full border border-warm text-warm text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">未返信 {msg[c.id].unanswered}</span>
                     </span>
                   ) : <span className="text-ink-3">—</span>}
                 </td>
                 <td>
                   {msg[c.id]?.errOpen ? (
                     <span className="inline-flex items-center gap-1.5">
-                      {msg[c.id].errUnread > 0 && <span className="attention-blink num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5">未読 {msg[c.id].errUnread}</span>}
-                      <span className="num rounded-full border border-warm text-warm text-[11px] font-semibold px-2 py-0.5">未対応 {msg[c.id].errOpen}</span>
+                      {msg[c.id].errUnread > 0 && <span className="attention-blink num rounded-full bg-warm text-on-accent text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">未読 {msg[c.id].errUnread}</span>}
+                      <span className="num rounded-full border border-warm text-warm text-[11px] font-semibold px-2 py-0.5 whitespace-nowrap">未対応 {msg[c.id].errOpen}</span>
                     </span>
                   ) : <span className="text-ink-3">—</span>}
                 </td>
@@ -100,6 +104,8 @@ export default async function AdminHome() {
           })}
         </tbody>
       </table>
+      </div>
+      )}
       <form action={createCompany} className="mt-12 flex gap-3 items-end max-w-md">
         <label className="flex-1">
           <span className="text-xs text-ink-2">新しい会社</span>

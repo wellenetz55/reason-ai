@@ -3,8 +3,7 @@ import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { ClearQuery } from "@/components/ClearQuery";
 import { FilePicker } from "@/components/FilePicker";
-import { loadFixedText } from "@/server/ai/client";
-import { loadIntake, loadDiagQuestions, Q_KEYS, TARGET_KIND_LABEL, VERDICT_LABEL } from "@/server/intake";
+import { loadIntake, loadDiagTexts, Q_KEYS, TARGET_KIND_LABEL, VERDICT_LABEL } from "@/server/intake";
 import { saveIntake, saveTranscript, removeTranscript } from "./actions";
 
 const OK: Record<string, string> = { saved: "保存しました。対象と聞き取りは、次のAI下書きから使われます。", transcript: "書き起こしを登録しました。", removed: "書き起こしを外しました。" };
@@ -15,15 +14,16 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
   const err = typeof sp?.error === "string" ? sp.error : null;
   const ok = typeof sp?.ok === "string" ? OK[sp.ok] ?? null : null;
   const { supabase } = await requireOperator();
-  const [{ data: c }, intake, q, intro, guide, { data: urls }] = await Promise.all([
+  const [{ data: c }, intake, texts, { data: urls }] = await Promise.all([
     supabase.from("companies").select("id, name, status").eq("id", companyId).single(),
-    loadIntake(companyId),
-    loadDiagQuestions(),
-    loadFixedText("diag_intro"),
-    loadFixedText("diag_guide"),
+    loadIntake(companyId, true),
+    loadDiagTexts(),
     supabase.from("company_documents").select("url, title").eq("company_id", companyId).not("url", "is", null).order("created_at"),
   ]);
   if (!c) notFound();
+  const q = Object.fromEntries(Q_KEYS.map((k) => [k, texts[`diag_${k}`] ?? ""]));
+  const intro = texts.diag_intro ?? "";
+  const guide = texts.diag_guide ?? "";
   const a = intake?.answers ?? {};
   const inp = "block w-full border-b hairline py-2 text-sm";
   const ta = "block w-full border-b hairline py-2 text-sm leading-relaxed";
@@ -55,9 +55,13 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
             <select name="target_kind" defaultValue={intake?.target_kind ?? "company"} className="border-b hairline py-2 text-sm">
               {Object.entries(TARGET_KIND_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <input name="target_name" defaultValue={intake?.target_name ?? ""} className={inp} placeholder="対象の名前（会社全体なら空でよい。例：サンプル工業の「ハヤブサ加工」事業、サンプル商事の「まる得パック」）" />
+            <div>
+              <input name="target_name" defaultValue={intake?.target_name ?? ""} className={inp} placeholder="対象の名前" />
+              <p className="text-[11px] text-ink-3 mt-1">会社全体なら空でよい。事業部・商品のときは必須。例：サンプル工業の「ハヤブサ加工」事業／サンプル商事の「まる得パック」</p>
+            </div>
           </div>
-          <input name="target_note" defaultValue={intake?.target_note ?? ""} className={inp + " mt-3"} placeholder="運営会社・グループ内の関係（例：親会社サンプルホールディングスが買収した子会社。親会社の実績は対象に含めない）" />
+          <input name="target_note" defaultValue={intake?.target_note ?? ""} className={inp + " mt-3"} placeholder="運営会社・グループ内の関係" />
+          <p className="text-[11px] text-ink-3 mt-1">例：親会社サンプルホールディングスが買収した子会社。親会社の実績は対象に含めない</p>
         </section>
 
         <section>
@@ -65,7 +69,7 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
           <p className="text-xs text-ink-3 mt-1">保存すると、お客様のSTEP 0の資料に「Webサイト」として最初から入ります。1行に1つ。</p>
           <textarea name="urls" rows={3} className={ta + " mt-2 num"} placeholder={"https://…\nhttps://…"} />
           {(urls ?? []).length > 0 && (
-            <p className="text-xs text-ink-3 mt-2">登録済み：{(urls ?? []).map((u) => u.url).join("　")}</p>
+            <ul className="text-xs text-ink-3 mt-2 space-y-0.5"><li>登録済み：</li>{(urls ?? []).map((u) => <li key={u.url} className="num break-all">{u.url}</li>)}</ul>
           )}
         </section>
 
@@ -81,8 +85,13 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
               </label>
             ))}
             <label className="block">
-              <span className="text-[13px] font-semibold">追加で聞いたこと・深掘り</span>
-              <textarea name="extra" rows={4} defaultValue={a.extra ?? ""} className={ta + " mt-1"} placeholder="7問以外に聞いたこと、詰まった場面、社内とお客様の言葉のズレ" />
+              <span className="text-[13px] font-semibold">追加で聞いたこと（お客様の発言）</span>
+              <textarea name="extra" rows={4} defaultValue={a.extra ?? ""} className={ta + " mt-1"} placeholder="7問以外に聞いたこと、深掘りで出た言葉" />
+              <span className="text-[11px] text-ink-3">AIの下書きの材料になります。お客様が話したことだけを書いてください。</span>
+            </label>
+            <label className="block">
+              <span className="text-[13px] font-semibold">ベレネッツの気づき（AIには渡しません）</span>
+              <textarea name="memo" rows={3} defaultValue={a.memo ?? ""} className={ta + " mt-1"} placeholder="詰まった場面、社内とお客様の言葉のズレ、次に深掘りしたいこと" />
             </label>
           </div>
           {guide && <details className="mt-4 text-[13px] text-ink-2"><summary className="cursor-pointer text-ink-3">各問で見ているもの・判定の手引き</summary><p className="mt-2 whitespace-pre-line border-l-2 hairline pl-4 max-w-[44em]">{guide}</p></details>}
@@ -104,8 +113,8 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
       </form>
 
       <section className="mt-16 border-t hairline pt-8 max-w-[880px]">
-        <h2 className="serif text-[17px]">5. 録音の書き起こし（お客様の発言そのまま）</h2>
-        <p className="text-xs text-ink-3 mt-1">録音の文字起こしファイルを、ここから登録します。新しく登録すると前のものは置き換わります。AIには先頭から約4万字を渡します。</p>
+        <h2 className="serif text-[17px]">録音の書き起こし<span className="text-[13px] text-ink-3 font-normal ml-2">上の「保存」とは別に登録します</span></h2>
+        <p className="text-xs text-ink-3 mt-1">録音の文字起こしファイルを、ここから登録します。新しく登録すると前のものは置き換わります。AIには、ベレネッツ側が読み上げた冒頭の説明と7問を除いて、約4万字を渡します。</p>
         {intake?.transcript ? (
           <div className="mt-3 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-sm">
             <p>登録済み：<span className="font-medium">{intake.transcript_name || "書き起こし"}</span><span className="num text-ink-3 ml-2">{intake.transcript.length.toLocaleString()} 字</span></p>
@@ -115,7 +124,7 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
         ) : <p className="mt-3 text-sm text-ink-3">まだ登録されていません。</p>}
         <form action={saveTranscript} className="mt-4 space-y-3">
           <input type="hidden" name="company_id" value={c.id} />
-          <FilePicker name="transcript_file" accept=".txt,.md,.vtt,.pdf,text/plain,text/markdown,text/vtt,application/pdf" hint="対応：.txt / .md / .vtt / .pdf（20MBまで）。Zoomや文字起こしアプリの書き出しをそのまま" />
+          <FilePicker key={intake?.updated_at ?? "new"} name="transcript_file" accept=".txt,.md,.vtt,.pdf,text/plain,text/markdown,text/vtt,application/pdf" hint="対応：.txt / .md / .vtt / .pdf（4MBまで）。Zoomや文字起こしアプリの書き出しをそのまま" />
           <details className="text-[13px]">
             <summary className="cursor-pointer text-ink-3">ファイルでなく、テキストを貼り付ける場合</summary>
             <textarea name="transcript_text" rows={6} className={ta + " mt-2"} placeholder="ここに貼り付け" />

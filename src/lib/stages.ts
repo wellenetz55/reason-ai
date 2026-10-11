@@ -29,7 +29,7 @@ export const STAGES: Stage[] = [
 ];
 
 export const STATUS_LABEL: Record<string, string> = {
-  diagnosed: "適合診断済み",
+  diagnosed: "診断済み（契約前）",
   onboarding: "キックオフ前",
   week1_2: "骨格をつくる（1〜2週目）",
   week3_5: "肉付けする（3〜5週目）",

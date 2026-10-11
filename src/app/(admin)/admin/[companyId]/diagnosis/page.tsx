@@ -34,9 +34,9 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
   return (
     <div>
       <ClearQuery keys={["error", "notice"]} />
-      <p className="text-xs text-ink-3"><Link href={`/admin/${c.id}`} className="hover:text-ink">{c.name}</Link> / 適合診断の結果<span className="ml-3">（聞き取りの記録は <Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 hover:text-ink">適合診断の記録</Link>）</span></p>
+      <p className="text-xs text-ink-3"><Link href={`/admin/${c.id}`} className="hover:text-ink">{c.name}</Link> / 適合診断の結果を書く<span className="ml-3">（聞き取りの記録は <Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 hover:text-ink">適合診断の記録</Link>）</span></p>
       <h1 className="serif text-[28px] leading-tight mt-1">適合診断の結果を書く</h1>
-      <p className="text-sm text-ink-2 mt-2 max-w-[40em]">面談直後に10分で埋める量にしてあります。顧客はログイン直後にこのページを見ます。空の項目は顧客側に出ません。</p>
+      <p className="text-sm text-ink-2 mt-2 max-w-[40em]">面談直後に10分で埋める量にしてあります。お客様はサインイン直後にこのページを見ます。空の項目はお客様の画面に出ません。</p>
       {err && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[40em]">{err}</p>}
       {notice && <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-4 py-3 text-sm max-w-[40em]">{notice}</p>}
 
@@ -118,7 +118,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
 
       <section className="mt-16 border-t hairline pt-8 max-w-[760px]">
         <h2 className="serif text-[17px]">公開して招待する</h2>
-        <p className="text-sm text-ink-2 mt-1">担当者のメールにマジックリンクが届き、ログインするとこの診断結果が最初に開きます。登録済みの担当者がいる場合はメールを空のままで公開だけできます。</p>
+        <p className="text-sm text-ink-2 mt-1">担当者のメールにサインイン用のリンクが届き、サインインするとこの診断結果が最初に開きます。登録済みの担当者がいる場合はメールを空のままで公開だけできます。</p>
         {members?.length ? <p className="text-xs text-ink-3 mt-2">登録済み担当者：{members.map((m) => m.display_name).join("、")}</p> : null}
         <p className="mt-3 text-xs text-warm">公開されるのは「保存」した内容です。上で編集した場合は、先に「保存」を押してください。</p>
         {gate.ok ? (
@@ -127,11 +127,20 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
             <label className="flex-1 min-w-[240px]"><span className="text-xs text-ink-2">担当者メール</span><input type="email" name="email" className={inp} /></label>
             <label className="w-48"><span className="text-xs text-ink-2">お名前</span><input name="display_name" className={inp} /></label>
             <button className="btn-primary" type="submit" disabled={!d}>{d?.published_at ? "再送して公開を更新" : "公開して招待する"}</button>
+            {!d && <p className="w-full text-xs text-warm">先に上の内容を「保存する」で保存してください。</p>}
           </form>
         ) : (
-          <p className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-[13px] text-ink-2 max-w-[44em]">
-            {gate.reason}。結果の下書きは、判定が固まる前でも保存しておけます。<Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 ml-1">適合診断の記録へ</Link>
-          </p>
+          <>
+            <p className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-[13px] text-ink-2 max-w-[44em]">
+              {gate.reason}。結果の下書きは、判定が固まる前でも保存しておけます。<Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 ml-1">適合診断の記録へ</Link>
+            </p>
+            {(members?.length ?? 0) > 0 && d && (
+              <form action={publishDiagnosis} className="mt-3">
+                <input type="hidden" name="company_id" value={c.id} />
+                <button className="btn-text" type="submit">登録済みの担当者に向けて公開だけ更新する</button>
+              </form>
+            )}
+          </>
         )}
         {d?.published_at && <p className="text-xs text-ink-3 mt-2 num">公開済み {fmtMeeting(d.published_at)}{d.chosen_date ? `　／　顧客が選んだキックオフ日 ${fmtMeeting(d.chosen_date)}` : ""}</p>}
       </section>
