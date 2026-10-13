@@ -23,7 +23,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const hwOk = typeof sp?.hw_ok === "string" ? HW_OK[sp.hw_ok] ?? null : null;
   const statusError = typeof sp?.status_error === "string" ? sp.status_error : null;
   const hwError = typeof sp?.hw_error === "string" ? sp.hw_error : null;
-  const { supabase } = await requireOperator();
+  const { supabase, isSuper } = await requireOperator();
   const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }, { data: meetings }, { data: errs }] = await Promise.all([
     supabase.from("companies").select("*").eq("id", companyId).single(),
     supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, experience_value, because_phrase, status, created_by, target_tag, confirmed_at").eq("company_id", companyId).order("seq"),
@@ -416,6 +416,14 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
           ))}
         </ul>
       </section>
+
+      {isSuper && (
+        <section className="mt-16 border-t hairline pt-6">
+          <h2 className="text-sm text-ink-2">データのリセット（スーパー管理者だけ）</h2>
+          <p className="text-xs text-ink-3 mt-1 max-w-[44em]">テストで入れた情報を消して、この会社を最初の状態に戻します。次の画面で消す範囲と件数を確かめ、会社名を入力してから実行します。消す前に控えを自動で保存します。</p>
+          <Link href={`/admin/${c.id}/reset`} className="inline-block mt-3 rounded-[var(--radius)] border border-warm text-warm px-4 py-2 text-sm hover:bg-warm-soft">リセットの確認画面へ</Link>
+        </section>
+      )}
     </div>
   );
 }
