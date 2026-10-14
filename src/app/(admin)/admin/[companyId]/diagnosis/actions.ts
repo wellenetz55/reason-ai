@@ -36,8 +36,9 @@ export async function saveDiagnosis(formData: FormData) {
   const competitor = compName && claims.length ? { name: compName, claims } : null;
   const dates = [1, 2, 3].map((i) => jst(s(formData, `date${i}`))).filter(Boolean);
   const expiresLocal = s(formData, "expires_at");
-  await supabase.from("diagnosis_results").upsert({
+  const { error: se } = await supabase.from("diagnosis_results").upsert({
     company_id: companyId,
+    summary: s(formData, "summary").slice(0, 2000) || null,
     one_liner_before: strip(s(formData, "one_liner_before"), []) || null,
     seeds, brakes, fit_reasons: fit, competitor, candidate_dates: dates,
     operator_note: s(formData, "operator_note") || null,
@@ -45,6 +46,7 @@ export async function saveDiagnosis(formData: FormData) {
     created_by: user.id,
     updated_at: new Date().toISOString(),
   });
+  if (se) redirect(`/admin/${companyId}/diagnosis?error=${encodeURIComponent("保存できませんでした" + (/summary/.test(se.message) ? "（SQL 0025 が未実行の可能性があります）" : "") + "：" + se.message)}`);
   // 面談で聞いた「一言」は Q1 before としても固定（空にしたら消す）
   await supabase.from("company_profile_summary").upsert({ company_id: companyId, q1_before: strip(s(formData, "one_liner_before"), []) || null, updated_at: new Date().toISOString() });
   revalidatePath(`/admin/${companyId}/diagnosis`);

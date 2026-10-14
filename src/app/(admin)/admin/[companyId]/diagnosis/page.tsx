@@ -48,6 +48,12 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
         <input type="hidden" name="company_id" value={c.id} />
 
         <section>
+          <h2 className="serif text-[17px]">0. エグゼクティブサマリー（結果ページの一番上に出ます）</h2>
+          <p className="text-xs text-ink-3 mt-1">お客様がこれだけ読めば診断の中身が分かり、「やってみよう」と思える要約。面談で分かったこと → 御社が選ばれている理由の核 → 足りないのは言葉だけ → 8週間で何が変わるか、の順で300〜450字。お客様自身の言葉を使う。空なら出ません</p>
+          <textarea name="summary" defaultValue={d?.summary ?? ""} rows={7} className={inp + " leading-relaxed"} placeholder="例：45分のお話で、御社が選ばれている理由は……" />
+        </section>
+
+        <section>
           <h2 className="serif text-[17px]">1. 御社を一言で（面談で聞いたまま）</h2>
           <GrowText name="one_liner_before" defaultValue={d?.one_liner_before ?? ""} className={inp} placeholder="例：名古屋で40年、法人向けのブランディング会社" />
         </section>

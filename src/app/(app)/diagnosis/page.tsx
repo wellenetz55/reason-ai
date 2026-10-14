@@ -75,6 +75,15 @@ export default async function DiagnosisPage() {
         <PrintButton />
       </div>
 
+      {d.summary && (
+        <section className="mt-8 rounded-[var(--radius)] border-l-4 border-warm bg-paper-2 px-6 py-5 max-w-[44em]">
+          <p className="text-[11px] tracking-wide text-ink-3">エグゼクティブサマリー</p>
+          <div className="mt-2 space-y-3 text-[15px] leading-relaxed">
+            {String(d.summary).split(/\n{2,}|\n/).map((t: string) => t.trim()).filter(Boolean).map((t: string, i: number) => <p key={i}>{t}</p>)}
+          </div>
+        </section>
+      )}
+
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
           <p className="text-[11px] text-ink-3">初回ヒアリングで見えた芽</p>
