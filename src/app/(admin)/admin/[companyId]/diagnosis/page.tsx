@@ -124,9 +124,17 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
           <p className="text-xs text-ink-3 mt-1">空なら期限なし。入れると顧客側に「このページは◯月◯日まで」と穏やかに出ます</p>
         </section>
 
-        <button className="btn-primary" type="submit">保存する</button>
-        {d?.updated_at && <span className="text-xs text-ink-3 ml-3 num">保存 {fmtMeeting(d.updated_at)}</span>}
+        <div className="flex flex-wrap items-center gap-3">
+          <button className="btn-primary" type="submit">保存する</button>
+          {d?.updated_at && <span className="text-xs text-ink-3 num">保存 {fmtMeeting(d.updated_at)}</span>}
+        </div>
       </form>
+
+      <section className="mt-12 rounded-[var(--radius)] bg-paper-2 px-6 py-5 max-w-[760px]">
+        <h2 className="serif text-[17px]">お客様に見える形で確かめる</h2>
+        <p className="text-sm text-ink-2 mt-1">公開する前に、お客様の画面とまったく同じ形で見られます。見られるのは「保存する」を押した内容です。</p>
+        <Link href={`/admin/${c.id}/diagnosis/preview`} className="inline-block mt-3 rounded-[var(--radius)] border-2 border-navy text-navy px-5 py-2.5 text-sm font-semibold hover:bg-navy-soft">顧客向けプレビューを見る →</Link>
+      </section>
 
       <section className="mt-16 border-t hairline pt-8 max-w-[760px]">
         <h2 className="serif text-[17px]">公開して招待する</h2>
