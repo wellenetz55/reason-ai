@@ -64,20 +64,22 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
           {seeds.length > 0 && <p className="text-[14px] text-ink-2 mt-1.5">初回ヒアリングで、すでに<span className="num font-semibold text-ink mx-0.5">{seeds.length}</span>組の芽が見つかりました。</p>}
         </div>
       </div>
+      {d.summary && (
+        <section className="mt-6 rounded-[var(--radius)] bg-navy text-on-accent px-6 sm:px-8 py-6">
+          <p className="text-[11px] tracking-[0.2em] text-on-accent/70">エグゼクティブサマリー　── まず、ここだけお読みください</p>
+          <div className="mt-3 space-y-3">
+            {String(d.summary).split(/\n{2,}|\n/).map((t: string) => t.trim()).filter(Boolean).map((t: string, i: number) => (
+              <p key={i} className={i === 0 ? "serif text-[19px] sm:text-[21px] leading-relaxed" : "text-[15px] leading-relaxed text-on-accent/90"}>{t}</p>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-ink-3">
         {d.published_at && <span className="num">{fmtMeeting(d.published_at)} 公開</span>}
         {d.expires_at && company.status === "diagnosed" && new Date(d.expires_at) > new Date() && <span>このページは <span className="num">{fmtMeeting(d.expires_at)}</span> まで</span>}
         <PrintButton />
       </div>
-
-      {d.summary && (
-        <section className="mt-8 rounded-[var(--radius)] border-l-4 border-warm bg-paper-2 px-6 py-5 max-w-[44em]">
-          <p className="text-[11px] tracking-wide text-ink-3">エグゼクティブサマリー</p>
-          <div className="mt-2 space-y-3 text-[15px] leading-relaxed">
-            {String(d.summary).split(/\n{2,}|\n/).map((t: string) => t.trim()).filter(Boolean).map((t: string, i: number) => <p key={i}>{t}</p>)}
-          </div>
-        </section>
-      )}
 
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
