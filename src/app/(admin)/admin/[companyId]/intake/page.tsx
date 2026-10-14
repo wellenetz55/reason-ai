@@ -3,6 +3,8 @@ import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { ClearQuery } from "@/components/ClearQuery";
 import { FilePicker } from "@/components/FilePicker";
+import { IntakeFiles } from "@/components/IntakeFiles";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { loadIntake, loadDiagTexts, Q_KEYS, TARGET_KIND_LABEL, VERDICT_LABEL } from "@/server/intake";
 import { saveIntake } from "./actions";
 
@@ -14,12 +16,14 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
   const err = typeof sp?.error === "string" ? sp.error : null;
   const ok = typeof sp?.ok === "string" ? OK[sp.ok] ?? null : null;
   const { supabase } = await requireOperator();
-  const [{ data: c }, intake, texts, { data: urls }] = await Promise.all([
+  const [{ data: c }, intake, texts, { data: urls }, memoRes] = await Promise.all([
     supabase.from("companies").select("id, name, status").eq("id", companyId).single(),
     loadIntake(companyId, true),
     loadDiagTexts(),
     supabase.from("company_documents").select("url, title").eq("company_id", companyId).not("url", "is", null).order("created_at"),
+    createAdminClient().from("diagnosis_intake_files").select("id, name, storage_path, size_bytes, created_at, text_content").eq("company_id", companyId).order("created_at"),
   ]);
+  const memoFiles = (memoRes.data ?? []).map(({ text_content, ...f }) => ({ ...f, chars: text_content?.length ?? 0 }));
   if (!c) notFound();
   const q = Object.fromEntries(Q_KEYS.map((k) => [k, texts[`diag_${k}`] ?? ""]));
   const intro = texts.diag_intro ?? "";
@@ -130,6 +134,12 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
           </details>
           <button form="intake-form" className="btn-primary" type="submit">書き起こしを登録（上の記録もいっしょに保存）</button>
         </div>
+      </section>
+
+      <section className="mt-12 border-t hairline pt-8 max-w-[880px]">
+        <h2 className="serif text-[17px]">面談メモ・資料<span className="text-[13px] text-ink-3 font-normal ml-2">複数登録できます</span></h2>
+        <p className="text-xs text-ink-3 mt-1">ヒアリング中に取ったメモ、お客様から受け取った資料などを登録します。文字を取り出せたものは、書き起こしと同じようにAIの下書きの材料になります（お客様には出ません）。AIに渡したくない気づきは、上の「ベレネッツの気づき」欄に書いてください。</p>
+        {memoRes.error ? <p className="mt-3 text-sm text-warm">面談メモの保存先がまだありません（SQL 0023 が未実行の可能性があります）。</p> : <div className="mt-4"><IntakeFiles companyId={c.id} initial={memoFiles} /></div>}
       </section>
     </div>
   );

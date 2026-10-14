@@ -81,6 +81,35 @@ export async function pdfText(buf: Buffer): Promise<{ text: string; error?: stri
   }
 }
 
+/**
+ * 1つのファイルから文字を取り出す（面談メモなど）。テキスト（UTF-8 / Shift_JIS）・PDF・Word（.docx）。
+ * 画像などは null（保管のみ）。
+ */
+export async function fileToText(buf: Buffer, name: string, type: string): Promise<{ text: string | null; error?: string }> {
+  const lower = name.toLowerCase();
+  if (type === "application/pdf" || lower.endsWith(".pdf")) {
+    const r = await pdfText(buf);
+    return { text: r.text || null, error: r.text ? undefined : r.error ?? "PDFから文字を取り出せませんでした" };
+  }
+  if (lower.endsWith(".docx") || type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+    try {
+      const mammoth = await import("mammoth");
+      const { value } = await mammoth.extractRawText({ buffer: buf });
+      return { text: value.trim() || null };
+    } catch (e) {
+      return { text: null, error: "Wordファイルを読めませんでした：" + (e instanceof Error ? e.message : String(e)) };
+    }
+  }
+  if (type.startsWith("text/") || /\.(txt|md|vtt|srt|csv|tsv)$/.test(lower)) {
+    let text = buf.toString("utf8").replace(/^\uFEFF/, "");
+    if (text.includes("\uFFFD")) {
+      try { text = new TextDecoder("shift_jis").decode(buf); } catch { /* そのまま */ }
+    }
+    return { text: text.trim() || null };
+  }
+  return { text: null };
+}
+
 type Doc = { id: string; title: string; kind: string; storage_path: string | null; url: string | null; text_content: string | null; mime_type: string | null };
 
 /**

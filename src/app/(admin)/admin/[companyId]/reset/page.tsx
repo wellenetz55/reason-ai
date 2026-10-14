@@ -12,7 +12,7 @@ const TABLE_LABEL: Record<string, string> = {
   sheet_rows: "シートの行", deployments: "展開", activation_packages: "展開パッケージ", sheet_locks: "ロック", competitors: "競合", generation_counters: "AI生成回数の記録",
   company_documents: "資料・URL", profile_items: "プロフィール項目", company_profile_summary: "プロフィール要約",
   homeworks: "宿題", questions_to_operator: "質問", error_reports: "エラーレポート", company_meetings: "面談", alerts: "アラート", activity_log: "操作記録", disclosure_requests: "開示要求",
-  diagnosis_intakes: "適合診断の記録", diagnosis_results: "適合診断の結果",
+  diagnosis_intakes: "適合診断の記録", diagnosis_intake_files: "面談メモ・資料", diagnosis_results: "適合診断の結果",
 };
 
 export default async function ResetPage({ params, searchParams }: PageProps<"/admin/[companyId]/reset">) {

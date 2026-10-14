@@ -32,6 +32,11 @@ export async function resetCompany(formData: FormData) {
     files.push(...(data ?? []).map((d) => d.screenshot_path as string));
   }
 
+  if (parts.includes("diagnosis")) {
+    const { data } = await admin.from("diagnosis_intake_files").select("storage_path").eq("company_id", companyId);
+    files.push(...(data ?? []).map((d) => d.storage_path as string));
+  }
+
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   let snapshot = "";
   try {

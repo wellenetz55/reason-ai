@@ -20,6 +20,7 @@ export async function draftProfile(companyId: string, companyName: string): Prom
   const head: { title: string; kind: string; text: string }[] = [];
   if (intake.notes) head.push({ title: "適合診断の面談記録（ベレネッツが聞き取った要点）", kind: "diagnosis_memo", text: intake.notes });
   if (intake.transcript) head.push({ title: "適合診断の書き起こし（ベレネッツとお客様の両方が話している。お客様の発言だけを材料にする）", kind: "diagnosis_memo", text: intake.transcript });
+  if (intake.memos) head.push({ title: "適合診断の面談メモ・資料（ベレネッツがヒアリング中に取ったメモと受け取った資料。お客様の発言・事実だけを材料にする）", kind: "diagnosis_memo", text: intake.memos });
   const all = [...head, ...docs];
   if (all.length === 0) return { items: [], skipped, errors, docCount: 0 };
   const bq = await loadBQuestions();
@@ -60,7 +61,7 @@ export async function loadProfileContext(supabase: { from: SupabaseClient["from"
   ]);
   const ctx: Record<string, string> = {};
   const { data: cname } = await supabase.from("companies").select("name").eq("id", companyId).maybeSingle();
-  const intake = await loadIntakeContext(companyId, cname?.name ?? "", 6000).catch(() => ({ target: "", notes: "", transcript: "" }));
+  const intake = await loadIntakeContext(companyId, cname?.name ?? "", 6000).catch(() => ({ target: "", notes: "", transcript: "", memos: "" }));
   if (intake.target) ctx["対象（これ以外の事業・親会社の話は含めない）"] = intake.target;
   if (sum?.q1_before) ctx["一言で言うと"] = sum.q1_before;
   for (const it of items ?? []) {
@@ -73,5 +74,6 @@ export async function loadProfileContext(supabase: { from: SupabaseClient["from"
   if (docText) ctx["資料の抜粋"] = docText.slice(0, 6000);
   if (intake.notes) ctx["適合診断の面談記録（ベレネッツが聞き取った要点）"] = intake.notes.slice(0, 4000);
   if (intake.transcript) ctx["適合診断の書き起こし（抜粋。お客様の発言だけを材料にする）"] = intake.transcript;
+  if (intake.memos) ctx["適合診断の面談メモ・資料（抜粋。お客様の発言・事実だけを材料にする）"] = intake.memos;
   return ctx;
 }

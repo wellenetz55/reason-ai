@@ -6,7 +6,7 @@ export const RESET_PARTS = [
   { key: "sheet", label: "提供価値シート", note: "行と、行にひもづく診断・裏づけ・リトマス・メモ・レビュー履歴。展開、競合、AI生成回数も", tables: ["sheet_rows", "deployments", "activation_packages", "sheet_locks", "competitors", "generation_counters"] },
   { key: "materials", label: "STEP 0 の資料と会社プロフィール", note: "アップロードした資料・URL、AIがまとめた会社プロフィール。資料ファイルは控えの場所へ移します", tables: ["company_documents", "profile_items", "company_profile_summary"] },
   { key: "communication", label: "宿題・質問・面談などのやりとり", note: "宿題、質問、エラーレポート、面談、アラート、操作記録、開示要求", tables: ["homeworks", "questions_to_operator", "error_reports", "company_meetings", "alerts", "activity_log", "disclosure_requests"] },
-  { key: "diagnosis", label: "適合診断の記録と結果", note: "聞き取りの記録・書き起こし、お客様に見せた診断結果", tables: ["diagnosis_intakes", "diagnosis_results"] },
+  { key: "diagnosis", label: "適合診断の記録と結果", note: "聞き取りの記録・書き起こし・面談メモ、お客様に見せた診断結果", tables: ["diagnosis_intakes", "diagnosis_intake_files", "diagnosis_results"] },
   { key: "status", label: "状態を「診断済み（契約前）」に戻す", note: "申込・契約・入金・キックオフ・各期限の日付も空にします", tables: [] as string[] },
 ] as const;
 export type ResetPart = (typeof RESET_PARTS)[number]["key"];

@@ -65,11 +65,17 @@ function stripOperatorScript(transcript: string, texts: Record<string, string>):
 /**
  * AI下書きに渡す「適合診断の聞き取り」。
  * 対象の範囲を先に言い、面談の記録（7問の答え・追加で聞いたお客様の発言）と、書き起こしを付ける。
- * 判定メモと「ベレネッツの気づき」は渡さない。書き起こしからはベレネッツが読み上げた固定文を除く。
+ * 面談メモ・資料（複数ファイル）の文字も渡す。判定メモと「ベレネッツの気づき」は渡さない。書き起こしからはベレネッツが読み上げた固定文を除く。
  */
-export async function loadIntakeContext(companyId: string, companyName: string, maxTranscript = 40_000): Promise<{ target: string; notes: string; transcript: string }> {
-  const [i, texts] = await Promise.all([loadIntake(companyId, true), loadDiagTexts()]);
-  if (!i) return { target: "", notes: "", transcript: "" };
+export async function loadIntakeContext(companyId: string, companyName: string, maxTranscript = 40_000): Promise<{ target: string; notes: string; transcript: string; memos: string }> {
+  const [i, texts, { data: files }] = await Promise.all([
+    loadIntake(companyId, true),
+    loadDiagTexts(),
+    createAdminClient().from("diagnosis_intake_files").select("name, text_content").eq("company_id", companyId).not("text_content", "is", null).order("created_at"),
+  ]);
+  // 面談メモ・資料（複数ファイル）。書き起こしの半分までの分量で渡す
+  const memos = (files ?? []).map((f) => `【${f.name}】\n${(f.text_content ?? "").trim()}`).join("\n\n").slice(0, Math.floor(maxTranscript / 2));
+  if (!i) return { target: "", notes: "", transcript: "", memos };
   const target = describeTarget(i, companyName);
   const lines: string[] = [];
   if (i.held_on) lines.push(`診断日：${i.held_on}${i.answers?.attendees ? "／面談した相手：" + i.answers.attendees : ""}`);
@@ -79,7 +85,7 @@ export async function loadIntakeContext(companyId: string, companyName: string, 
   }
   if ((i.answers?.extra ?? "").trim()) lines.push(`追加で聞いたこと（お客様の発言）：${i.answers.extra.trim()}`);
   const t = stripOperatorScript((i.transcript ?? "").trim(), texts);
-  return { target, notes: lines.join("\n\n"), transcript: t.slice(0, maxTranscript) };
+  return { target, notes: lines.join("\n\n"), transcript: t.slice(0, maxTranscript), memos };
 }
 
 /** 対象の範囲をAIに守らせる一文 */
