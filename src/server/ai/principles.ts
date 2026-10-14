@@ -7,6 +7,7 @@ const AREAS_BY_PROMPT: Record<string, string[]> = {
   diverge: ["問い", "判定"],
   vague_check: ["判定"],
   because_draft: ["裏づけ", "判定"],
+  diag_draft: ["判定", "面談"],
 };
 
 /**

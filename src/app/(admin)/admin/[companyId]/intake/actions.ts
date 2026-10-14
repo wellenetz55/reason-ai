@@ -94,5 +94,22 @@ export async function saveIntake(formData: FormData) {
 
   if (bad.length) back(companyId, `error=${encodeURIComponent((trSaved ? "記録と書き起こしは保存しました。" : "記録は保存しました。") + "次のURLは形が正しくないため登録していません：" + bad.join(" "))}`);
   if (kind !== "company" && !targetName) back(companyId, `error=${encodeURIComponent("記録は保存しました。事業部・ブランド、商品・サービスを選んだときは、対象の名前も入れてください（AIが会社全体と取り違えないため）")}`);
+
+  // 「適合診断を始める」：保存したうえで、AIが判定案と結果の下書きを作り、「結果を書く」へ進む
+  if (formData.get("start_diagnosis") === "1") {
+    const { startDiagnosis } = await import("@/server/diagnosisDraft");
+    let r: Awaited<ReturnType<typeof startDiagnosis>>;
+    try {
+      r = await startDiagnosis(companyId);
+    } catch (e) {
+      await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "diag_draft.error", payload: { message: (e as Error).message } });
+      back(companyId, `error=${encodeURIComponent("記録は保存しました。適合診断の下書きは作れませんでした：" + (e as Error).message)}`);
+    }
+    await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "intake.diag_draft", payload: { verdict: r!.verdict, filled: r!.filled } });
+    revalidatePath(`/admin/${companyId}/intake`);
+    revalidatePath(`/admin/${companyId}/diagnosis`);
+    const msg = `AIの判定案は「${r!.verdict}」です（理由は「適合診断の記録」の判定メモに書きました。判定はベレネッツが決めます）。${r!.filled.length ? "下の空いていた欄に下書きを入れました：" + r!.filled.join("・") + "。直してから保存してください。" : r!.note || "空いている欄が無かったため、下書きは入れていません。"}`;
+    redirect(`/admin/${companyId}/diagnosis?notice=${encodeURIComponent(msg)}`);
+  }
   back(companyId, removing ? "ok=removed" : trSaved ? "ok=saved_tr" : "ok=saved");
 }

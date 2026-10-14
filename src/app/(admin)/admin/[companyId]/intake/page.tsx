@@ -10,6 +10,9 @@ import { saveIntake } from "./actions";
 
 const OK: Record<string, string> = { saved: "保存しました。対象と聞き取りは、次のAI下書きから使われます。", saved_tr: "記録と書き起こしを保存しました。次のAI下書きから使われます。", removed: "記録を保存し、書き起こしを外しました。" };
 
+/** 「適合診断を始める」はAIを呼ぶので長めに */
+export const maxDuration = 180;
+
 export default async function IntakePage({ params, searchParams }: PageProps<"/admin/[companyId]/intake">) {
   const { companyId } = await params;
   const sp = await searchParams;
@@ -41,7 +44,7 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
       {err && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[44em]">{err}</p>}
       {ok && <p className="mt-4 text-sm text-navy">{ok}</p>}
 
-      <form id="intake-form" action={saveIntake} className="mt-8 space-y-10 max-w-[880px]">
+      <form id="intake-form" action={saveIntake} data-busy-timeout="180000" className="mt-8 space-y-10 max-w-[880px]">
         <input type="hidden" name="company_id" value={c.id} />
 
         <section className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
@@ -140,6 +143,13 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
         <h2 className="serif text-[17px]">面談メモ・資料<span className="text-[13px] text-ink-3 font-normal ml-2">複数登録できます</span></h2>
         <p className="text-xs text-ink-3 mt-1">ヒアリング中に取ったメモ、お客様から受け取った資料などを登録します。文字を取り出せたものは、書き起こしと同じようにAIの下書きの材料になります（お客様には出ません）。AIに渡したくない気づきは、上の「ベレネッツの気づき」欄に書いてください。</p>
         {memoRes.error ? <p className="mt-3 text-sm text-warm">面談メモの保存先がまだありません（SQL 0023 が未実行の可能性があります）。</p> : <div className="mt-4"><IntakeFiles companyId={c.id} initial={memoFiles} /></div>}
+      </section>
+
+      <section className="mt-14 max-w-[880px] rounded-[var(--radius)] bg-navy-soft px-6 py-7">
+        <h2 className="serif text-[20px]">適合診断を始める</h2>
+        <p className="text-sm text-ink-2 mt-2 max-w-[44em]">ここまでの記録（7問の答え・書き起こし・面談メモ・会社資料）を保存したうえで、AIが判定の手引きに沿って「適合／保留／不適合」の案と理由を出し、「適合診断の結果を書く」の空いている欄に下書きを入れます。判定を決めるのも、お客様に見せる文章を仕上げるのもベレネッツです。1〜2分かかります。</p>
+        <button form="intake-form" name="start_diagnosis" value="1" type="submit" className="btn-primary mt-5 text-[16px] px-8 py-3.5">保存して、適合診断を始める</button>
+        <p className="text-[11px] text-ink-3 mt-2">書いてある欄は上書きしません。もう一度押すと、判定案を新しく出し直します。</p>
       </section>
     </div>
   );
