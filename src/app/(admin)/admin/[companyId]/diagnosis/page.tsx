@@ -4,10 +4,10 @@ import { GrowText } from "@/components/GrowText";
 import { DiagTabs } from "@/components/DiagTabs";
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
-import { saveDiagnosis, publishDiagnosis } from "./actions";
+import { saveDiagnosis, publishDiagnosis, setVerdict } from "./actions";
 import { toLocalInput, fmtMeeting } from "@/lib/meetings";
 import { BRAKE_LABEL, FIT_CONDITIONS } from "@/lib/diagnosis";
-import { inviteGate } from "@/server/intake";
+import { inviteGate, loadIntake, VERDICT_LABEL } from "@/server/intake";
 
 type Seed = { feature: string; experience: string; tag: string };
 type Brake = { kind: string; words: string };
@@ -25,7 +25,8 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
     supabase.from("profiles").select("display_name").eq("company_id", companyId),
   ]);
   if (!c) notFound();
-  const gate = await inviteGate(companyId, c.status);
+  const [gate, intake] = await Promise.all([inviteGate(companyId, c.status), loadIntake(companyId).catch(() => null)]);
+  const aiVerdict = intake?.verdict_note?.match(/^【AI判定案：([^】]+)】/)?.[1] ?? null;
   const seeds = ((d?.seeds ?? []) as Seed[]);
   const brakes = ((d?.brakes ?? []) as Brake[]);
   const fit = ((d?.fit_reasons ?? []) as Fit[]);
@@ -135,11 +136,21 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
             {!d && <p className="w-full text-xs text-warm">先に上の内容を「保存する」で保存してください。</p>}
           </form>
         ) : (
-          <>
-            <p className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-[13px] text-ink-2 max-w-[44em]">
-              {gate.reason}。結果の下書きは、判定が固まる前でも保存しておけます。<Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 ml-1">適合診断の記録へ</Link>
-            </p>
-          </>
+          <div className="mt-4 rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-5 py-4 max-w-[44em]">
+            <p className="text-sm font-semibold text-warm">判定がまだ「適合」になっていないため、お客様のメールアドレスを入れる欄は出ていません。</p>
+            <p className="text-[13px] text-ink-2 mt-1">いまの判定：<span className="font-semibold">{VERDICT_LABEL[intake?.verdict ?? ""] ?? "未判定"}</span>{aiVerdict ? <span className="ml-3">AIの判定案：<span className="font-semibold">{aiVerdict}</span>（理由は <Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4">適合診断の記録</Link> の判定メモ）</span> : null}</p>
+            <form action={setVerdict} className="mt-3 flex flex-wrap items-center gap-3">
+              <input type="hidden" name="company_id" value={c.id} />
+              <label className="text-sm flex items-center gap-2">判定を決める
+                <select name="verdict" defaultValue={intake?.verdict ?? (aiVerdict === "適合" ? "fit" : aiVerdict === "保留" ? "hold" : aiVerdict === "不適合" ? "unfit" : "")} className="border-b hairline py-1 text-sm bg-transparent" required>
+                  <option value="">（選ぶ）</option>
+                  {Object.entries(VERDICT_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </label>
+              <button className="btn-primary" type="submit">判定を保存</button>
+            </form>
+            <p className="text-[12px] text-ink-3 mt-2">「適合」にすると、ここにメールアドレスとお名前の欄が出て、公開・招待できます。結果の下書きは、判定が固まる前でも保存しておけます。</p>
+          </div>
         )}
         {d?.published_at && <p className="text-xs text-ink-3 mt-2 num">公開済み {fmtMeeting(d.published_at)}{d.chosen_date ? `　／　顧客が選んだキックオフ日 ${fmtMeeting(d.chosen_date)}` : ""}</p>}
       </section>

@@ -87,3 +87,18 @@ export async function publishDiagnosis(formData: FormData) {
   revalidatePath(`/admin/${companyId}`);
   redirect(`/admin/${companyId}/diagnosis?notice=${encodeURIComponent(email ? "公開しました。招待メールを送りました" : "公開しました")}`);
 }
+
+/** 「結果を書く」から判定を決める（記録ページと同じ値。適合にすると公開・招待の欄が開く） */
+export async function setVerdict(formData: FormData) {
+  const { supabase, user } = await requireOperator();
+  const companyId = s(formData, "company_id");
+  const verdict = s(formData, "verdict");
+  if (!["fit", "unfit", "hold"].includes(verdict)) redirect(`/admin/${companyId}/diagnosis?error=${encodeURIComponent("判定を選んでください")}`);
+  const { error } = await supabase.from("diagnosis_intakes").upsert({ company_id: companyId, verdict, updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "company_id" });
+  if (error) redirect(`/admin/${companyId}/diagnosis?error=${encodeURIComponent("判定を保存できませんでした：" + error.message)}`);
+  revalidatePath(`/admin/${companyId}/diagnosis`);
+  revalidatePath(`/admin/${companyId}/intake`);
+  revalidatePath(`/admin/${companyId}`);
+  const label = { fit: "適合", unfit: "不適合", hold: "保留" }[verdict as "fit" | "unfit" | "hold"];
+  redirect(`/admin/${companyId}/diagnosis?notice=${encodeURIComponent(`判定を「${label}」にしました${verdict === "fit" ? "。下の「公開して招待する」からお客様を登録できます" : ""}`)}`);
+}
