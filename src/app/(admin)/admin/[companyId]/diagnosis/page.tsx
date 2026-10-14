@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ClearQuery } from "@/components/ClearQuery";
+import { GrowText } from "@/components/GrowText";
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { saveDiagnosis, publishDiagnosis } from "./actions";
@@ -45,16 +46,16 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
 
         <section>
           <h2 className="serif text-[17px]">1. 御社を一言で（面談で聞いたまま）</h2>
-          <input name="one_liner_before" defaultValue={d?.one_liner_before ?? ""} className={inp} placeholder="例：名古屋で40年、法人向けのブランディング会社" />
+          <GrowText name="one_liner_before" defaultValue={d?.one_liner_before ?? ""} className={inp} placeholder="例：名古屋で40年、法人向けのブランディング会社" />
         </section>
 
         <section>
           <h2 className="serif text-[17px]">2. 選ばれる理由の芽（最大3）</h2>
           <p className="text-xs text-ink-3 mt-1">御社は〜できる／だから、お客様は〜と感じられる。仮説のまま出してよい</p>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="mt-3 grid grid-cols-[1fr_1fr_100px] gap-3">
-              <input name={`seed${i + 1}_feature`} defaultValue={seeds[i]?.feature ?? ""} className={inp} placeholder="〜できる（「御社は」は自動で付きます）" />
-              <input name={`seed${i + 1}_experience`} defaultValue={seeds[i]?.experience ?? ""} className={inp} placeholder="〜と感じられる（「だから、お客様は」は自動）" />
+            <div key={i} className="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_1fr_100px] gap-3 items-start">
+              <GrowText name={`seed${i + 1}_feature`} defaultValue={seeds[i]?.feature ?? ""} className={inp} placeholder="〜できる（「御社は」は自動で付きます）" />
+              <GrowText name={`seed${i + 1}_experience`} defaultValue={seeds[i]?.experience ?? ""} className={inp} placeholder="〜と感じられる（「だから、お客様は」は自動）" />
               <select name={`seed${i + 1}_tag`} defaultValue={seeds[i]?.tag ?? "hypothesis"} className="border-b hairline py-2 text-sm">
                 <option value="hypothesis">仮説</option><option value="verify">要確認</option><option value="fact">事実</option>
               </select>
@@ -65,11 +66,11 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
         <section>
           <h2 className="serif text-[17px]">3. まだ言葉になっていないブレーキ（最大2）</h2>
           {[0, 1].map((i) => (
-            <div key={i} className="mt-3 grid grid-cols-[180px_1fr] gap-3">
+            <div key={i} className="mt-3 grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3 items-start">
               <select name={`brake${i + 1}_kind`} defaultValue={brakes[i]?.kind ?? "distrust"} className="border-b hairline py-2 text-sm">
                 {Object.entries(BRAKE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
-              <input name={`brake${i + 1}_words`} defaultValue={brakes[i]?.words ?? ""} className={inp} placeholder="お客様の言葉で（カギ括弧は自動）。例：本当にうちの業界でもできるの？" />
+              <GrowText name={`brake${i + 1}_words`} defaultValue={brakes[i]?.words ?? ""} className={inp} placeholder="お客様の言葉で（カギ括弧は自動）。例：本当にうちの業界でもできるの？" />
             </div>
           ))}
         </section>
@@ -78,20 +79,20 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
           <h2 className="serif text-[17px]">4. なぜ適合と判断したか（最大3）</h2>
           <p className="text-xs text-ink-3 mt-1">条件を選び、面談でのご発言を引用する。全社共通の文面に見えないように</p>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="mt-3 grid grid-cols-[260px_1fr] gap-3">
+            <div key={i} className="mt-3 grid grid-cols-1 sm:grid-cols-[260px_1fr] gap-3 items-start">
               <select name={`fit${i + 1}_condition`} defaultValue={fit[i]?.condition ?? ""} className="border-b hairline py-2 text-sm">
                 <option value="">（使わない）</option>
                 {FIT_CONDITIONS.map((f) => <option key={f} value={f}>{f}</option>)}
               </select>
-              <input name={`fit${i + 1}_quote`} defaultValue={fit[i]?.quote ?? ""} className={inp} placeholder="「……」とおっしゃった" />
+              <GrowText name={`fit${i + 1}_quote`} defaultValue={fit[i]?.quote ?? ""} className={inp} placeholder="「……」とおっしゃった" />
             </div>
           ))}
         </section>
 
         <section>
           <h2 className="serif text-[17px]">5. 競合1社の「言っていること」</h2>
-          <input name="comp_name" defaultValue={comp?.name ?? ""} className={inp} placeholder="競合名" />
-          {[0, 1, 2].map((i) => <input key={i} name={`comp_claim${i + 1}`} defaultValue={comp?.claims?.[i] ?? ""} className={inp + " mt-2"} placeholder={`訴求 ${i + 1}（公開情報から）`} />)}
+          <GrowText name="comp_name" defaultValue={comp?.name ?? ""} className={inp} placeholder="競合名" />
+          {[0, 1, 2].map((i) => <GrowText key={i} name={`comp_claim${i + 1}`} defaultValue={comp?.claims?.[i] ?? ""} className={inp + " mt-2"} placeholder={`訴求 ${i + 1}（公開情報から）`} />)}
         </section>
 
         <section>
