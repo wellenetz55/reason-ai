@@ -82,8 +82,9 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
           <h2 className="serif text-[17px]">4. なぜ適合と判断したか（最大3）</h2>
           <p className="text-xs text-ink-3 mt-1">条件を選び、面談でのご発言を引用する。全社共通の文面に見えないように</p>
           {[0, 1, 2].map((i) => (
-            <div key={i} className="mt-3 grid grid-cols-1 sm:grid-cols-[260px_1fr] gap-3 items-start">
-              <select name={`fit${i + 1}_condition`} defaultValue={fit[i]?.condition ?? ""} className="border-b hairline py-2 text-sm">
+            <div key={i} className="mt-4 space-y-1">
+              <span className="block text-[11px] text-ink-3 num">理由 {i + 1}</span>
+              <select name={`fit${i + 1}_condition`} defaultValue={fit[i]?.condition ?? ""} className="block w-full border-b hairline py-2 text-sm">
                 <option value="">（使わない）</option>
                 {FIT_CONDITIONS.map((f) => <option key={f} value={f}>{f}</option>)}
               </select>
