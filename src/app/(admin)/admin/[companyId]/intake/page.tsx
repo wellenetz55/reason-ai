@@ -4,6 +4,7 @@ import { requireOperator } from "@/lib/session";
 import { ClearQuery } from "@/components/ClearQuery";
 import { FilePicker } from "@/components/FilePicker";
 import { IntakeFiles } from "@/components/IntakeFiles";
+import { DiagTabs } from "@/components/DiagTabs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadIntake, loadDiagTexts, Q_KEYS, TARGET_KIND_LABEL, VERDICT_LABEL } from "@/server/intake";
 import { saveIntake } from "./actions";
@@ -40,6 +41,7 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
       <ClearQuery keys={["error", "ok"]} />
       <p className="text-xs text-ink-3"><Link href={`/admin/${c.id}`} className="hover:text-ink">{c.name}</Link> / 適合診断の記録</p>
       <h1 className="serif text-[28px] leading-tight mt-1">適合診断の記録<span className="text-[14px] text-ink-3 font-normal ml-3">ベレネッツだけが見ます。お客様には出ません</span></h1>
+      <div className="mt-4"><DiagTabs companyId={c.id} current="intake" /></div>
       <p className="text-sm text-ink-2 mt-2 max-w-[44em]">45分の診断で聞いたことを、ここに残します。AIはこの記録（対象・7問の答え・書き起こし）と会社資料から、STEP 0 と STEP 1 の下書きを作ります。お客様に見せる結果は「<Link href={`/admin/${c.id}/diagnosis`} className="underline underline-offset-4">適合診断の結果を書く</Link>」で別に書きます。</p>
       {err && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[44em]">{err}</p>}
       {ok && <p className="mt-4 text-sm text-navy">{ok}</p>}

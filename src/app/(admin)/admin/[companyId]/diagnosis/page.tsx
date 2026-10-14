@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ClearQuery } from "@/components/ClearQuery";
 import { GrowText } from "@/components/GrowText";
+import { DiagTabs } from "@/components/DiagTabs";
 import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { saveDiagnosis, publishDiagnosis } from "./actions";
@@ -35,8 +36,9 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
   return (
     <div>
       <ClearQuery keys={["error", "notice"]} />
-      <p className="text-xs text-ink-3"><Link href={`/admin/${c.id}`} className="hover:text-ink">{c.name}</Link> / 適合診断の結果を書く<span className="ml-3">（聞き取りの記録は <Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 hover:text-ink">適合診断の記録</Link>）</span></p>
+      <p className="text-xs text-ink-3"><Link href={`/admin/${c.id}`} className="hover:text-ink">{c.name}</Link> / 適合診断の結果を書く</p>
       <h1 className="serif text-[28px] leading-tight mt-1">適合診断の結果を書く</h1>
+      <div className="mt-4"><DiagTabs companyId={c.id} current="diagnosis" /></div>
       <p className="text-sm text-ink-2 mt-2 max-w-[40em]">面談直後に10分で埋める量にしてあります。お客様はサインイン直後にこのページを見ます。空の項目はお客様の画面に出ません。</p>
       {err && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[40em]">{err}</p>}
       {notice && <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-4 py-3 text-sm max-w-[40em]">{notice}</p>}
