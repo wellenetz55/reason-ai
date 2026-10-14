@@ -4,6 +4,19 @@ import { Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { prepareIntakeFile, finishIntakeFile, removeIntakeFile, type IntakeFile } from "@/app/(admin)/admin/[companyId]/intake/fileActions";
 
+/** 保管場所が受け付ける形式に合わせて送る（テキスト類は text/plain にそろえる。拡張子で決めるので、OSが形式を付けないファイルも通る） */
+function contentTypeOf(f: File): string {
+  const ext = (f.name.match(/\.([a-z0-9]+)$/i)?.[1] ?? "").toLowerCase();
+  if (["txt", "md", "vtt", "srt", "csv", "tsv"].includes(ext)) return "text/plain";
+  if (ext === "pdf") return "application/pdf";
+  if (ext === "docx") return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  if (ext === "png") return "image/png";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  if (ext === "webp") return "image/webp";
+  if (ext === "heic") return "image/heic";
+  return f.type || "application/octet-stream";
+}
+
 const kb = (n: number | null) => (n == null ? "" : n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))}KB` : `${(n / 1024 / 1024).toFixed(1)}MB`);
 
 /**
@@ -25,9 +38,13 @@ export function IntakeFiles({ companyId, initial }: { companyId: string; initial
       try {
         const prep = await prepareIntakeFile({ companyId, name: f.name, size: f.size });
         if (!prep.ok) { notes.push(prep.error); continue; }
-        const { error } = await createClient().storage.from("company-docs").uploadToSignedUrl(prep.path, prep.token, f, { contentType: f.type || "application/octet-stream" });
-        if (error) { notes.push(`${f.name}：送れませんでした。通信を確かめて、もう一度お試しください`); continue; }
-        const fin = await finishIntakeFile({ companyId, path: prep.path, name: f.name, type: f.type });
+        const { error } = await createClient().storage.from("company-docs").uploadToSignedUrl(prep.path, prep.token, f, { contentType: contentTypeOf(f) });
+        if (error) {
+          const m = error.message ?? "";
+          notes.push(/mime|type/i.test(m) ? `${f.name}：この形式は保管場所の設定でまだ受け付けていません（${contentTypeOf(f)}）` : /size|large/i.test(m) ? `${f.name}：大きすぎます（25MBまで）` : `${f.name}：送れませんでした（${m || "通信エラー"}）。もう一度お試しください`);
+          continue;
+        }
+        const fin = await finishIntakeFile({ companyId, path: prep.path, name: f.name, type: contentTypeOf(f) });
         if (!fin.ok) { notes.push(fin.error); continue; }
         setFiles((x) => [...x, fin.file]);
         if (fin.note) notes.push(fin.note);
