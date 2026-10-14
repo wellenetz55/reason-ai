@@ -230,12 +230,12 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
         <h2 className="serif text-[24px] sm:text-[26px] leading-snug">ここから、{company.name}様には<span className="text-warm">2つの道</span>があります。</h2>
         <p className="text-sm text-ink-2 mt-2 max-w-[40em]">見つかった芽を30組まで育て、「選ばれる理由」として言い切れる形にする。やることは同じです。違うのは、誰が問いを立て、誰が揃えるかです。</p>
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
-          <p className="text-[11px] text-ink-3"><span className="num font-semibold text-ink mr-1">道 1</span>自力でやる場合</p>
+        <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-5">
+          <p className="serif text-[20px] leading-tight"><span className="num text-[13px] font-semibold tracking-wide text-ink-3 block mb-1">道 1</span>自力でやる場合</p>
           <p className="text-sm mt-2 leading-relaxed">30組を集めるには、毎日ちがう角度で問いを立てる人と、答えを「御社は〜できる。だから〜」の型に揃える人が要ります。社長ひとりで両方をやると、最初の数組で止まります。</p>
         </div>
-        <div className="rounded-[var(--radius)] border-2 border-navy bg-navy-soft px-5 py-4">
-          <p className="text-[11px] text-navy"><span className="num font-semibold mr-1">道 2</span>8週間プログラムの場合</p>
+        <div className="rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-5 py-5">
+          <p className="serif text-[20px] leading-tight text-warm"><span className="num text-[13px] font-semibold tracking-wide block mb-1">道 2</span>8週間プログラムの場合</p>
           <p className="text-sm mt-2 leading-relaxed">問いはAIが毎日出します。揃えるのはベレネッツが面談で担います。社長がやるのは、答えることだけです。</p>
         </div>
         <p className="sm:col-span-2 text-sm max-w-[40em] pl-4 border-l-2 border-warm">
