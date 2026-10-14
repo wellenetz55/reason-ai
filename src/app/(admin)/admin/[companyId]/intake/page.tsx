@@ -4,9 +4,9 @@ import { requireOperator } from "@/lib/session";
 import { ClearQuery } from "@/components/ClearQuery";
 import { FilePicker } from "@/components/FilePicker";
 import { loadIntake, loadDiagTexts, Q_KEYS, TARGET_KIND_LABEL, VERDICT_LABEL } from "@/server/intake";
-import { saveIntake, saveTranscript, removeTranscript } from "./actions";
+import { saveIntake } from "./actions";
 
-const OK: Record<string, string> = { saved: "保存しました。対象と聞き取りは、次のAI下書きから使われます。", transcript: "書き起こしを登録しました。", removed: "書き起こしを外しました。" };
+const OK: Record<string, string> = { saved: "保存しました。対象と聞き取りは、次のAI下書きから使われます。", saved_tr: "記録と書き起こしを保存しました。次のAI下書きから使われます。", removed: "記録を保存し、書き起こしを外しました。" };
 
 export default async function IntakePage({ params, searchParams }: PageProps<"/admin/[companyId]/intake">) {
   const { companyId } = await params;
@@ -37,7 +37,7 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
       {err && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[44em]">{err}</p>}
       {ok && <p className="mt-4 text-sm text-navy">{ok}</p>}
 
-      <form action={saveIntake} className="mt-8 space-y-10 max-w-[880px]">
+      <form id="intake-form" action={saveIntake} className="mt-8 space-y-10 max-w-[880px]">
         <input type="hidden" name="company_id" value={c.id} />
 
         <section className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
@@ -109,28 +109,27 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
           <p className="text-xs text-ink-3 mt-1">この欄はAIに渡しません。判定を「適合」にして保存すると、会社ページと「適合診断の結果を書く」で、お客様のメールアドレスを登録して招待できるようになります。それまではメールアドレスを入れる欄が出ません。</p>
         </section>
 
-        <button className="btn-primary" type="submit">保存</button>
+        <div className="flex flex-wrap items-center gap-3"><button className="btn-primary" type="submit">保存</button><span className="text-xs text-ink-3">下の「録音の書き起こし」でファイルを選んでいれば、それもいっしょに保存します。</span></div>
       </form>
 
       <section className="mt-16 border-t hairline pt-8 max-w-[880px]">
-        <h2 className="serif text-[17px]">録音の書き起こし<span className="text-[13px] text-ink-3 font-normal ml-2">上の「保存」とは別に登録します</span></h2>
+        <h2 className="serif text-[17px]">録音の書き起こし<span className="text-[13px] text-ink-3 font-normal ml-2">上の記録といっしょに保存します（入力中の内容は消えません）</span></h2>
         <p className="text-xs text-ink-3 mt-1">録音の文字起こしファイルを、ここから登録します。新しく登録すると前のものは置き換わります。AIには、ベレネッツ側が読み上げた冒頭の説明と7問を除いて、約4万字を渡します。</p>
         {intake?.transcript ? (
           <div className="mt-3 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-sm">
             <p>登録済み：<span className="font-medium">{intake.transcript_name || "書き起こし"}</span><span className="num text-ink-3 ml-2">{intake.transcript.length.toLocaleString()} 字</span></p>
             <p className="text-[12px] text-ink-2 mt-2 whitespace-pre-line line-clamp-6">{intake.transcript.slice(0, 600)}{intake.transcript.length > 600 ? "…" : ""}</p>
-            <form action={removeTranscript} className="mt-2"><input type="hidden" name="company_id" value={c.id} /><button className="btn-text text-xs" type="submit">外す</button></form>
+            <button form="intake-form" name="remove_transcript" value="1" formNoValidate className="btn-text text-xs mt-2" type="submit">外す（上の記録は保存されます）</button>
           </div>
         ) : <p className="mt-3 text-sm text-ink-3">まだ登録されていません。</p>}
-        <form action={saveTranscript} className="mt-4 space-y-3">
-          <input type="hidden" name="company_id" value={c.id} />
-          <FilePicker key={intake?.updated_at ?? "new"} name="transcript_file" accept=".txt,.md,.vtt,.pdf,text/plain,text/markdown,text/vtt,application/pdf" hint="対応：.txt / .md / .vtt / .pdf（4MBまで）。Zoomや文字起こしアプリの書き出しをそのまま" />
+        <div className="mt-4 space-y-3">
+          <FilePicker key={intake?.updated_at ?? "new"} form="intake-form" name="transcript_file" accept=".txt,.md,.vtt,.pdf,text/plain,text/markdown,text/vtt,application/pdf" hint="対応：.txt / .md / .vtt / .pdf（4MBまで）。Zoomや文字起こしアプリの書き出しをそのまま" />
           <details className="text-[13px]">
             <summary className="cursor-pointer text-ink-3">ファイルでなく、テキストを貼り付ける場合</summary>
-            <textarea name="transcript_text" rows={6} className={ta + " mt-2"} placeholder="ここに貼り付け" />
+            <textarea form="intake-form" name="transcript_text" rows={6} className={ta + " mt-2"} placeholder="ここに貼り付け" />
           </details>
-          <button className="btn-primary" type="submit">書き起こしを登録</button>
-        </form>
+          <button form="intake-form" className="btn-primary" type="submit">書き起こしを登録（上の記録もいっしょに保存）</button>
+        </div>
       </section>
     </div>
   );
