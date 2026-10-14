@@ -65,12 +65,13 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
 
         <section>
           <h2 className="serif text-[17px]">3. まだ言葉になっていないブレーキ（最大2）</h2>
+          <p className="text-xs text-ink-3 mt-1">御社の「買い手」が、競合でなく御社を選ぶ直前に抱くためらい（4つの不）。面談相手がブランディングに進むことへの迷いではありません。</p>
           {[0, 1].map((i) => (
             <div key={i} className="mt-3 grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3 items-start">
               <select name={`brake${i + 1}_kind`} defaultValue={brakes[i]?.kind ?? "distrust"} className="border-b hairline py-2 text-sm">
                 {Object.entries(BRAKE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
-              <GrowText name={`brake${i + 1}_words`} defaultValue={brakes[i]?.words ?? ""} className={inp} placeholder="お客様の言葉で（カギ括弧は自動）。例：本当にうちの業界でもできるの？" />
+              <GrowText name={`brake${i + 1}_words`} defaultValue={brakes[i]?.words ?? ""} className={inp} placeholder="買い手の心の声で（カギ括弧は自動）。例：本当にうちの規模でも頼めるのか" />
             </div>
           ))}
         </section>
