@@ -99,6 +99,12 @@ body {
 @layer components {
 .hairline { border-color: var(--hair); }
 
+
+/* 診断結果などの章見出し：上に短い暖色のバーを置いて「章の区切り」と分かるようにする */
+.sec-title { position: relative; padding-top: 14px; font-size: 24px; line-height: 1.35; }
+.sec-title::before { content: ""; position: absolute; left: 0; top: 0; width: 36px; height: 3px; background: var(--warm); border-radius: 2px; }
+@media (min-width: 640px) { .sec-title { font-size: 26px; } }
+
 .btn-text {
   color: var(--ink-2);
   font-size: 13px;

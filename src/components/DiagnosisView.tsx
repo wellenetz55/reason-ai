@@ -98,7 +98,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
 
       {d.one_liner_before && (
         <section className="mt-12">
-          <h2 className="serif text-[20px]">「御社を一言で言うと？」</h2>
+          <h2 className="serif sec-title">「御社を一言で言うと？」</h2>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <p className="text-[11px] text-ink-3">いま（面談でのお答え）</p>
@@ -118,7 +118,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
 
       {seeds.length > 0 && (
         <section className="mt-14">
-          <h2 className="serif text-[20px]">初回ヒアリングで、もう見つかったもの</h2>
+          <h2 className="serif sec-title">初回ヒアリングで、もう見つかったもの</h2>
           <p className="text-sm text-ink-2 mt-1 max-w-[40em]">御社の中では当たり前すぎて、誰も言っていなかったこと。お話しいただいた言葉を「御社は〜できる。だから、お客様は〜と感じられる」の型に仮に置いたものです。まだ仮説です。8週間で事実にします。</p>
           <ol className="mt-5 space-y-4">
             {seeds.map((s, i) => (
@@ -143,7 +143,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
 
       {brakes.length > 0 && (
         <section className="mt-14">
-          <h2 className="serif text-[20px]">まだ言葉になっていないブレーキ</h2>
+          <h2 className="serif sec-title">まだ言葉になっていないブレーキ</h2>
           <p className="text-sm text-ink-2 mt-1 max-w-[40em]">お客様が御社を選ぶ直前に、おそらくこう迷っています。ここを言葉で先回りできると、見積りの前の会話が変わります。3〜5週目の仕事です。</p>
           <ul className="mt-5 space-y-3">
             {brakes.map((b, i) => (
@@ -161,7 +161,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
 
       {fit.length > 0 && (
         <section className="mt-14">
-          <h2 className="serif text-[20px]">なぜ「つくれる」と判断したか</h2>
+          <h2 className="serif sec-title">なぜ「つくれる」と判断したか</h2>
           <ul className="mt-5 space-y-4">
             {fit.map((f, i) => (
               <li key={i}>
@@ -175,7 +175,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
 
       {comp && comp.claims?.length > 0 && (
         <section className="mt-14">
-          <h2 className="serif text-[20px]">{comp.name?.trim() || "競合他社"} が、いま言っていること</h2>
+          <h2 className="serif sec-title">{comp.name?.trim() || "競合他社"} が、いま言っていること</h2>
           <ul className="mt-4 space-y-2 text-ink-2">
             {comp.claims.map((c, i) => <li key={i} className="pl-4 border-l-2 hairline">{c}</li>)}
           </ul>
@@ -184,7 +184,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
       )}
 
       <section className="mt-14">
-        <h2 className="serif text-[20px]">「選ばれる理由」をつくろうとして、多くの会社がやること</h2>
+        <h2 className="serif sec-title">「選ばれる理由」をつくろうとして、多くの会社がやること</h2>
         <ol className="mt-5 space-y-3">
           {MISTAKES.map((m, i) => (
             <li key={i} className="grid grid-cols-[28px_1fr] gap-3 items-start">
@@ -200,7 +200,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
       </section>
 
       <section className="mt-14">
-        <h2 className="serif text-[20px]">{company.name}様が8週間でやること、3つ</h2>
+        <h2 className="serif sec-title">{company.name}様が8週間でやること、3つ</h2>
         <ol className="mt-5 space-y-6">
           {STEPS3.map((x) => (
             <li key={x.n} className="grid grid-cols-[90px_1fr] gap-4">
@@ -227,7 +227,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
 
       {company.status === "diagnosed" && (<>
       <section className="mt-16">
-        <h2 className="serif text-[24px] sm:text-[26px] leading-snug">ここから、{company.name}様には<span className="text-warm">2つの道</span>があります。</h2>
+        <h2 className="serif sec-title">ここから、{company.name}様には<span className="text-warm">2つの道</span>があります。</h2>
         <p className="text-sm text-ink-2 mt-2 max-w-[40em]">見つかった芽を30組まで育て、「選ばれる理由」として言い切れる形にする。やることは同じです。違うのは、誰が問いを立て、誰が揃えるかです。</p>
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-5">
@@ -245,7 +245,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
       </section>
 
       <section className="mt-16 border-t hairline pt-8 print:hidden">
-        <h2 className="serif text-[20px]">ここから、8週間が始まるまで</h2>
+        <h2 className="serif sec-title">ここから、8週間が始まるまで</h2>
         <p className="text-sm text-ink-2 mt-1 max-w-[40em]">契約と請求はメールでやりとりします。アプリでは、いまどこまで進んでいるかが見えます。</p>
         <ol className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[12px]">
           {steps.map((st, i) => (
