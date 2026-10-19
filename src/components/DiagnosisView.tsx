@@ -257,29 +257,37 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
           ))}
         </ol>
 
-        {/* キックオフの重み：全部AIではなく、最初の3時間は代表が直接行う。期待感をつくる */}
+        {/* キックオフの重み：全部AIではなく、最初の3時間は代表が直接行う。中身を具体的に見せて期待感をつくる */}
         <div className="mt-8 rounded-[var(--radius)] border-2 border-navy bg-navy-soft px-6 sm:px-8 py-6">
           <p className="text-[11px] font-semibold tracking-[0.2em] text-navy">8週間は、ここから始まります</p>
           <h3 className="serif text-[22px] sm:text-[24px] leading-snug mt-2">キックオフ（3時間・オンライン）は、<br className="hidden sm:block" />ベレネッツ代表の平松が直接行います。</h3>
-          <p className="text-sm text-ink-2 mt-3 max-w-[40em]">AIは、毎日の問いを出す道具です。ただし、その問いに「どう答えると選ばれる理由になるのか」という考え方は、最初に人が渡します。それがキックオフの3時間です。ここを飛ばして始めることはありません。</p>
-          <ol className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <li className="rounded-[var(--radius)] bg-paper px-4 py-4">
-              <p className="num text-[11px] text-ink-3">1</p>
-              <p className="serif text-[16px] leading-snug mt-1">「選ばれる理由」の原理</p>
-              <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">なぜ「品質・納期・対応力」では選ばれないのか。お客様が比べる前に決めている仕組みを、御社の業界に置き換えて説明します。</p>
-            </li>
-            <li className="rounded-[var(--radius)] bg-paper px-4 py-4">
-              <p className="num text-[11px] text-ink-3">2</p>
-              <p className="serif text-[16px] leading-snug mt-1">脳科学・行動科学の応用</p>
-              <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">人が「ここにする」と決める瞬間に、頭の中で何が起きているか。提供価値と体験価値を分けて書く理由は、ここにあります。</p>
-            </li>
-            <li className="rounded-[var(--radius)] bg-paper px-4 py-4">
-              <p className="num text-[11px] text-ink-3">3</p>
-              <p className="serif text-[16px] leading-snug mt-1">御社の8週間の進め方</p>
-              <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">AIが読み込んだ御社の資料をその場で確かめ、最初の数組をいっしょに作ります。翌日から、何にどう答えればよいかが分かった状態で始まります。</p>
-            </li>
-          </ol>
-          <p className="text-[13px] mt-4 max-w-[40em] pl-4 border-l-2 border-warm"><span className="font-semibold">キックオフのあとも、人が入ります。</span>2週目・5週目・8週目の面談と中間チェックは、すべてベレネッツが直接行います。AIに任せきりにはしません。</p>
+          <p className="text-sm text-ink-2 mt-3 max-w-[42em]">最初の問いはこれです。<span className="font-semibold text-ink">「15秒で、初めてのお客様に御社を“伝わるように”説明できますか」</span>。多くの会社が、ここで止まります。伝えているのに、伝わっていない。キックオフの3時間は、その理由を御社の言葉で解きほぐし、8週間で何をどう答えればよいかが分かった状態をつくる時間です。AIが出す毎日の問いは、この3時間を前提に設計されています。</p>
+
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-[1fr_1.4fr] gap-4">
+            <div className="rounded-[var(--radius)] bg-paper px-5 py-4">
+              <p className="text-[11px] text-ink-3">なぜ、平松が話すのか</p>
+              <p className="text-[13px] leading-relaxed mt-2">NTTドコモで広告宣伝を担当し、年間数百億円の広告を打っても「やればやるほどシェアが下がる」場面に立ち会いました。そこから25年、「押し付けずに引き寄せる」仕組みだけを作り続け、750社以上を支援。営業・コンペ・見積競争を一度もせずに選ばれてきた、その原理を本人が話します。</p>
+            </div>
+            <div className="rounded-[var(--radius)] bg-paper px-5 py-4">
+              <p className="text-[11px] text-ink-3">3時間で扱う、7つのテーマ</p>
+              <ol className="mt-2 space-y-1.5 text-[13px] leading-snug">
+                <li className="flex gap-2"><span className="num text-ink-3 shrink-0 w-4">1</span><span><span className="font-semibold">差別化は「光の当て方」で見つかる</span>　御社が思う強みと、お客様が反応する強みは別物です</span></li>
+                <li className="flex gap-2"><span className="num text-ink-3 shrink-0 w-4">2</span><span><span className="font-semibold">脳科学：原始脳と理性脳</span>　人はまず直感で「捉え」、あとから理屈で納得する。順番を逆にすると届きません</span></li>
+                <li className="flex gap-2"><span className="num text-ink-3 shrink-0 w-4">3</span><span><span className="font-semibold">意識の階層</span>　「今すぐ客」は5%以下。残り95%にどう気づかせるか</span></li>
+                <li className="flex gap-2"><span className="num text-ink-3 shrink-0 w-4">4</span><span><span className="font-semibold">人が動く6つの欲求</span>　お客様が「能動的に」動いてしまう起点</span></li>
+                <li className="flex gap-2"><span className="num text-ink-3 shrink-0 w-4">5</span><span><span className="font-semibold">買う直前の「4つの不」</span>　不信・不要・不適・不急を、先回りして取り除く</span></li>
+                <li className="flex gap-2"><span className="num text-ink-3 shrink-0 w-4">6</span><span><span className="font-semibold">「なぜなら」の接続詞</span>　有名になる必要はない。選ばれる理由に根拠をつける型</span></li>
+                <li className="flex gap-2"><span className="num text-ink-3 shrink-0 w-4">7</span><span><span className="font-semibold">AI時代にも通用するのか</span>　AIにまだできない3つのこと（交渉・場を導く・人を動かす）と、この8週間の役割分担</span></li>
+              </ol>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-[var(--radius)] bg-paper px-5 py-4">
+            <p className="text-[11px] text-ink-3">その場でやること</p>
+            <p className="text-[13px] leading-relaxed mt-2">AIが読み込んだ御社の資料とWebから作った「御社はこういう会社です」の下書きを、その場で確かめます。そのうえで、御社のお客様が「どんな場面で、どんな気持ちのときに」御社を必要とするのかを言葉にし、最初の数組を一緒に作ります。翌日からは、毎日の問いに答えるだけで進みます。</p>
+          </div>
+
+          <p className="text-[13px] mt-4 max-w-[42em] pl-4 border-l-2 border-warm"><span className="font-semibold">キックオフのあとも、人が入ります。</span>2週目・5週目・8週目の面談と中間チェックは、すべてベレネッツが直接行います。AIに任せきりにはしません。</p>
         </div>
 
         <div className="mt-6">
