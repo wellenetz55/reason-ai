@@ -257,6 +257,31 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
           ))}
         </ol>
 
+        {/* キックオフの重み：全部AIではなく、最初の3時間は代表が直接行う。期待感をつくる */}
+        <div className="mt-8 rounded-[var(--radius)] border-2 border-navy bg-navy-soft px-6 sm:px-8 py-6">
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-navy">8週間は、ここから始まります</p>
+          <h3 className="serif text-[22px] sm:text-[24px] leading-snug mt-2">キックオフ（3時間・オンライン）は、<br className="hidden sm:block" />ベレネッツ代表の平松が直接行います。</h3>
+          <p className="text-sm text-ink-2 mt-3 max-w-[40em]">AIは、毎日の問いを出す道具です。ただし、その問いに「どう答えると選ばれる理由になるのか」という考え方は、最初に人が渡します。それがキックオフの3時間です。ここを飛ばして始めることはありません。</p>
+          <ol className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <li className="rounded-[var(--radius)] bg-paper px-4 py-4">
+              <p className="num text-[11px] text-ink-3">1</p>
+              <p className="serif text-[16px] leading-snug mt-1">「選ばれる理由」の原理</p>
+              <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">なぜ「品質・納期・対応力」では選ばれないのか。お客様が比べる前に決めている仕組みを、御社の業界に置き換えて説明します。</p>
+            </li>
+            <li className="rounded-[var(--radius)] bg-paper px-4 py-4">
+              <p className="num text-[11px] text-ink-3">2</p>
+              <p className="serif text-[16px] leading-snug mt-1">脳科学・行動科学の応用</p>
+              <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">人が「ここにする」と決める瞬間に、頭の中で何が起きているか。提供価値と体験価値を分けて書く理由は、ここにあります。</p>
+            </li>
+            <li className="rounded-[var(--radius)] bg-paper px-4 py-4">
+              <p className="num text-[11px] text-ink-3">3</p>
+              <p className="serif text-[16px] leading-snug mt-1">御社の8週間の進め方</p>
+              <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">AIが読み込んだ御社の資料をその場で確かめ、最初の数組をいっしょに作ります。翌日から、何にどう答えればよいかが分かった状態で始まります。</p>
+            </li>
+          </ol>
+          <p className="text-[13px] mt-4 max-w-[40em] pl-4 border-l-2 border-warm"><span className="font-semibold">キックオフのあとも、人が入ります。</span>2週目・5週目・8週目の面談と中間チェックは、すべてベレネッツが直接行います。AIに任せきりにはしません。</p>
+        </div>
+
         <div className="mt-6">
           {!applied && d.expires_at && new Date(d.expires_at) < new Date() ? (
             <p className="text-sm">このページの閲覧期限（<span className="num">{fmtMeeting(d.expires_at)}</span>）が過ぎたため、ここからのお申し込みは締め切りました。お申し込みを希望される場合は「ベレネッツに質問を残す」からご連絡ください。</p>
