@@ -7,6 +7,7 @@ export type GateCtx = {
   brakeKinds: number;    // 書き出したブレーキの種類数（最大4）
   brakesOpen: number;    // 先回りの答えがまだないブレーキ数
   evidences: number;     // 集めた証拠の数
+  step0Ready: boolean;   // STEP 0 に資料・URL・会社の説明のどれかが入っているか（空のまま先へ進めない）
 };
 
 export type Gate = {
@@ -34,6 +35,7 @@ export function stepGate(key: string, c: GateCtx): Gate {
   }
   switch (key) {
     case "step0":
+      if (!c.step0Ready) return { next, ready: false, note: "会社案内やWebサイトを1つ以上登録するか、御社の説明を1項目以上入れると、提供価値の書き出しに進めます。AIの下書きはここが土台になります。" };
       return atLeast(c.status, "week1_2")
         ? { next, ready: true, note: "会社の説明を直し終えたら、提供価値の書き出しに進めます。" }
         : { next, ready: false, byOperator: true, note: "キックオフ面談のあと、ベレネッツが次のステップを開きます。" };

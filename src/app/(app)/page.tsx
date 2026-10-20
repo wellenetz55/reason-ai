@@ -4,6 +4,7 @@ import { requireCustomer } from "@/lib/session";
 import { STAGES, currentStep, NOT_READY } from "@/lib/stages";
 import { ProgramStart } from "@/components/ProgramStart";
 import { loadKickoff } from "@/server/kickoff";
+import { isStep0Ready } from "@/server/gates";
 
 function greeting() {
   const h = Number(new Intl.DateTimeFormat("ja-JP", { hour: "numeric", hour12: false, timeZone: "Asia/Tokyo" }).format(new Date()));
@@ -52,7 +53,10 @@ export default async function Home() {
   ]);
   const openHomework = hw?.length ?? 0;
   const rows = progress?.pair_count ?? 0;
-  const step = currentStep(company.status, rows);
+  const step0Ready = await isStep0Ready(supabase, company.id);
+  const step = step0Ready
+    ? currentStep(company.status, rows)
+    : { key: "step0", title: "会社資料を上げる", body: "まず、会社案内やWebサイトを登録するか、御社の説明を入れてください。AIはここを土台に下書きを作るので、空のままでは次の段階（提供価値の書き出し）が開きません。" };
   const stage = STAGES.find((s) => s.key === step.key);
   const closed = company.status === "locked" || company.status === "cancelled";
 

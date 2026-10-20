@@ -5,6 +5,7 @@ import { STAGES, STATUS_LABEL, isStageOpen, currentStep, NOT_READY } from "@/lib
 import { SignOutButton } from "@/components/SignOutButton";
 import { NavRail } from "@/components/NavRail";
 import { ProgramOutline } from "@/components/ProgramOutline";
+import { isStep0Ready } from "@/server/gates";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
 import { APP_VERSION } from "@/lib/version";
 import { PendingBar } from "@/components/PendingBar";
@@ -28,17 +29,19 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     supabase.from("company_meetings").select("id").eq("company_id", company.id).eq("kind", "kickoff").not("held_at", "is", null).limit(1).maybeSingle(),
   ]);
   const kickoffDone = company.status === "diagnosed" && !!company.paid_at && !!heldKickoff;
+  // STEP 0 が空のうちは、STEP 1 以降を左メニューで開かない（押すと STEP 0 への案内が出る）
+  const step0Ready = ["diagnosed", "locked", "cancelled"].includes(company.status) ? true : await isStep0Ready(supabase, company.id);
 
   const openHomework = openHw?.length ?? 0;
   const shownMeeting = nextMeeting;
   const overdue = (openHw ?? []).filter((h) => h.due_at && new Date(h.due_at) < new Date()).length;
   const nearest = (openHw ?? []).find((h) => h.due_at);
-  const nowKey = currentStep(company.status, progress?.pair_count ?? 0).key;
+  const nowKey = step0Ready ? currentStep(company.status, progress?.pair_count ?? 0).key : "step0";
   const pairs = progress?.pair_count ?? 0;
   const stages = STAGES.map((s) => ({
     ...s,
     // まとめて絞る（STEP 2）は、1〜2週目のうちは20組そろってから開く（次へボタンの条件と同じ）
-    open: isStageOpen(s, company.status) && !(s.key === "merge" && company.status === "week1_2" && pairs < 20),
+    open: isStageOpen(s, company.status) && !(s.key === "merge" && company.status === "week1_2" && pairs < 20) && (s.key === "step0" || step0Ready),
     ready: !NOT_READY.has(s.key),
     now: s.key === nowKey,
   }));

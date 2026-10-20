@@ -1,4 +1,6 @@
 import { ClosedStage } from "@/components/ClosedStage";
+import { Step0Required } from "@/components/Step0Required";
+import { isStep0Ready } from "@/server/gates";
 import { STAGES, isStageOpen } from "@/lib/stages";
 import { ExportButton } from "@/components/ExportButton";
 import { NextStepBar } from "@/components/NextStepBar";
@@ -18,6 +20,7 @@ export const maxDuration = 60;
 export default async function Page() {
   const { supabase, company } = await requireCustomer();
   if (!isStageOpen(STAGES.find((x) => x.key === "merge")!, company.status)) return <ClosedStage stageKey="merge" status={company.status} />;
+  if (!(await isStep0Ready(supabase, company.id))) return <Step0Required stageKey="merge" />;
   if (company.status === "week1_2") {
     const { data: pg } = await supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle();
     const n = pg?.pair_count ?? 0;

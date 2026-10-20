@@ -1,4 +1,6 @@
 import { ClosedStage } from "@/components/ClosedStage";
+import { Step0Required } from "@/components/Step0Required";
+import { isStep0Ready } from "@/server/gates";
 import { STAGES, isStageOpen } from "@/lib/stages";
 import { ExportButton } from "@/components/ExportButton";
 import { NextStepBar } from "@/components/NextStepBar";
@@ -18,6 +20,7 @@ export const maxDuration = 60;
 export default async function Page() {
   const { supabase, company } = await requireCustomer();
   if (!isStageOpen(STAGES.find((x) => x.key === "trust")!, company.status)) return <ClosedStage stageKey="trust" status={company.status} />;
+  if (!(await isStep0Ready(supabase, company.id))) return <Step0Required stageKey="trust" />;
   const [{ data: rows }, ctx, fixed] = await Promise.all([
     supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, experience_value, because_phrase, because_tag, because_only_us, because_by, trust_axis").eq("company_id", company.id).eq("status", "active").order("seq"),
     loadGateCtx(supabase, company.id, company.status),
