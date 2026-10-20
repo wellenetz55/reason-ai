@@ -127,7 +127,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
                 <li>社内への浸透戦略</li>
                 <li>マーケティング戦略</li>
               </ul>
-              <p className="text-[12px] text-warm mt-auto pt-4">AIの契約は不要。使うほど賢くなる</p>
+              <p className="text-[12px] text-warm mt-auto pt-4">AIの契約は不要。どんどん賢くなる</p>
             </div>
           </div>
           <p className="text-[12px] text-ink-3 text-center mt-4">どちらを選んでも、完成した脚本は御社の資産として活用できます。</p>
@@ -176,8 +176,8 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
               <p className="text-[13px] leading-relaxed mt-1.5">ブラウザで開くだけ。ChatGPTやClaudeなどを御社で契約していなくても、そのまま使えます。社内の誰が使っても、出てくる言葉は御社の脚本に沿います。</p>
             </div>
             <div className="rounded-[var(--radius)] bg-paper text-ink px-4 py-4">
-              <p className="text-[11px] font-semibold tracking-wide text-warm">使うほど、賢くなります</p>
-              <p className="text-[13px] leading-relaxed mt-1.5">御社が使った言葉、通った提案、お客様の反応が脚本に積み上がり、AIは御社のことを月ごとに深く学びます。ベレネッツの月次のレビューで、脚本も更新されます。</p>
+              <p className="text-[11px] font-semibold tracking-wide text-warm">どんどん、賢くなります</p>
+              <p className="text-[13px] leading-relaxed mt-1.5">ベレネッツが、脳科学・行動科学の知見や、積み上がり続ける成功パターンを、このAIに学ばせ続けます。契約した日より、半年後のAIのほうが賢い。御社の脚本そのものも、顧問の面談で更新していきます。</p>
             </div>
           </div>
           <p className="text-[12px] text-on-accent/70 mt-4">8週間の成果物はすべて御社のものとしてお渡しします。継続契約（顧問）は、そのうえで「使い続け、育て続ける」ための選択肢です。</p>
