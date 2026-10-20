@@ -8,7 +8,7 @@ export type StartCompany = { name: string; applied_at: string | null; contracted
  * 「ここから、8週間が始まるまで」：申込 → 契約 → 入金 → キックオフ日 の進み具合と、いまやること。
  * 申込前は診断結果ページの下に、申込後はホームに出す。
  */
-export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = false, heading = true, actionFirst = false }: { company: StartCompany; chosenDate: string | null; dates: string[]; expiresAt: string | null; preview?: boolean; heading?: boolean; actionFirst?: boolean }) {
+export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = false, heading = true, actionFirst = false, kickoffDone = false }: { company: StartCompany; chosenDate: string | null; dates: string[]; expiresAt: string | null; preview?: boolean; heading?: boolean; actionFirst?: boolean; kickoffDone?: boolean }) {
   // 運営が段階を飛ばして記録しても矛盾しないよう、後の段階が済んでいれば前の段階も済みとみなす
   const paid = !!company.paid_at;
   const contracted = paid || !!company.contracted_at;
@@ -17,7 +17,7 @@ export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = 
     { key: "apply", label: "申し込む", at: company.applied_at, done: applied, now: !applied },
     { key: "contract", label: "契約書を取り交わす", at: company.contracted_at, done: contracted, now: applied && !contracted },
     { key: "pay", label: "入金", at: company.paid_at, done: paid, now: contracted && !paid },
-    { key: "kickoff", label: "キックオフ日を選ぶ", at: chosenDate, done: paid && !!chosenDate, now: paid && !chosenDate },
+    { key: "kickoff", label: kickoffDone ? "キックオフ 実施済" : "キックオフ日を選ぶ", at: chosenDate, done: paid && (!!chosenDate || kickoffDone), now: paid && !chosenDate && !kickoffDone },
   ];
   const action = (
         <div className="mt-6">
@@ -39,6 +39,8 @@ export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = 
                 ? "ご契約ありがとうございます。入金を確認しだい、キックオフの日程をこの画面でお選びいただけます。"
                 : "お申し込みを受け付けました（受付メールをお送りしています）。2営業日以内に、ベレネッツから申込書・契約書と請求書をメールでお送りします。届かない場合は「ベレネッツに質問を残す」からお知らせください。"}
             </p>
+          ) : kickoffDone ? (
+            <p className="text-sm">キックオフは終わりました。ベレネッツが次の段階を開くと、左メニューに STEP 0・STEP 1 が出ます。開いたら、まず STEP 0 で会社の説明を確かめるところから始まります。</p>
           ) : chosenDate ? (
             <p className="text-sm">キックオフは <span className="num font-semibold">{fmtMeeting(chosenDate)}</span> で承りました。会議URLは決まりしだい、画面左の「次の面談」に表示します。</p>
           ) : dates.length > 0 ? (
@@ -67,6 +69,7 @@ export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = 
           ))}
         </ol>
 
+        {!kickoffDone && (<>
         {/* キックオフの重み：全部AIではなく、最初の3時間は代表が直接行う。中身を具体的に見せて期待感をつくる */}
         <div className="mt-8 rounded-[var(--radius)] border-2 border-navy bg-navy-soft px-6 sm:px-8 py-6">
           <p className="text-[11px] font-semibold tracking-[0.2em] text-navy">8週間は、ここから始まります</p>
@@ -100,6 +103,7 @@ export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = 
           <p className="text-[13px] mt-4 max-w-[42em] pl-4 border-l-2 border-warm"><span className="font-semibold">キックオフのあとも、人が入ります。</span>2週目・5週目・8週目の面談と中間チェックは、すべてベレネッツが直接行います。AIに任せきりにはしません。</p>
         </div>
 
+        </>)}
         {!actionFirst && action}
         {/* 費用と返金保証は、申し込むまで表示する（申込後は契約書でご案内） */}
         {!applied && <div className="mt-6 flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
