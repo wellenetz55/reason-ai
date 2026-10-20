@@ -7,7 +7,7 @@ export type StartCompany = { name: string; applied_at: string | null; contracted
  * 「ここから、8週間が始まるまで」：申込 → 契約 → 入金 → キックオフ日 の進み具合と、いまやること。
  * 申込前は診断結果ページの下に、申込後はホームに出す。
  */
-export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = false, heading = true }: { company: StartCompany; chosenDate: string | null; dates: string[]; expiresAt: string | null; preview?: boolean; heading?: boolean }) {
+export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = false, heading = true, actionFirst = false }: { company: StartCompany; chosenDate: string | null; dates: string[]; expiresAt: string | null; preview?: boolean; heading?: boolean; actionFirst?: boolean }) {
   // 運営が段階を飛ばして記録しても矛盾しないよう、後の段階が済んでいれば前の段階も済みとみなす
   const paid = !!company.paid_at;
   const contracted = paid || !!company.contracted_at;
@@ -18,10 +18,51 @@ export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = 
     { key: "pay", label: "入金", at: company.paid_at, done: paid, now: contracted && !paid },
     { key: "kickoff", label: "キックオフ日を選ぶ", at: chosenDate, done: paid && !!chosenDate, now: paid && !chosenDate },
   ];
+  const action = (
+        <div className="mt-6">
+          {!applied && expiresAt && new Date(expiresAt) < new Date() ? (
+            <p className="text-sm">このページの閲覧期限（<span className="num">{fmtMeeting(expiresAt)}</span>）が過ぎたため、ここからのお申し込みは締め切りました。お申し込みを希望される場合は「ベレネッツに質問を残す」からご連絡ください。</p>
+          ) : !applied ? (
+            <>
+              <div className="rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-6 sm:px-8 py-7 text-center">
+                <p className="text-sm text-ink-2 max-w-[36em] mx-auto">診断結果を読んで「進めたい」と思われたら、下のボタンを押してください。受付メールが届き、2営業日以内にベレネッツから申込書・契約書と請求書をメールでお送りします。</p>
+                <form action={preview ? undefined : applyProgram} className="mt-5">
+                  <button type="submit" disabled={preview} className="w-full sm:w-auto sm:min-w-[380px] rounded-[var(--radius)] bg-warm text-on-accent serif text-[20px] sm:text-[22px] font-semibold px-10 py-5 shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:brightness-110 active:translate-y-px disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-navy">このプログラムに申し込む →</button>
+                </form>
+                <p className="text-[12px] text-ink-2 mt-4">ボタンを押した時点では費用は発生しません。契約書の内容を確認してからのご契約です。</p>
+              </div>
+            </>
+          ) : !paid ? (
+            <p className="text-sm">
+              {contracted
+                ? "ご契約ありがとうございます。入金を確認しだい、キックオフの日程をこの画面でお選びいただけます。"
+                : "お申し込みを受け付けました（受付メールをお送りしています）。2営業日以内に、ベレネッツから申込書・契約書と請求書をメールでお送りします。届かない場合は「ベレネッツに質問を残す」からお知らせください。"}
+            </p>
+          ) : chosenDate ? (
+            <p className="text-sm">キックオフは <span className="num font-semibold">{fmtMeeting(chosenDate)}</span> で承りました。会議URLは決まりしだい、画面左の「次の面談」に表示します。</p>
+          ) : dates.length > 0 ? (
+            <>
+              <p className="text-sm">入金を確認しました。キックオフ（3時間・オンライン）の日を選んでください。</p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                {dates.map((iso) => (
+                  <form key={iso} action={preview ? undefined : chooseKickoff}>
+                    <input type="hidden" name="date" value={iso} />
+                    <button className="btn-primary num" type="submit" disabled={preview}>{fmtMeeting(iso)}</button>
+                  </form>
+                ))}
+              </div>
+              <p className="text-[12px] text-ink-3 mt-3">どれも合わない場合は「ベレネッツに質問を残す」からご希望日をお知らせください。</p>
+            </>
+          ) : (
+            <p className="text-sm">入金を確認しました。キックオフの候補日は、ベレネッツからご連絡します。</p>
+          )}
+        </div>
+  );
   return (
-      <section className="mt-16 border-t hairline pt-8 print:hidden">
+      <section className={`${actionFirst ? "mt-4" : "mt-16 border-t hairline pt-8"} print:hidden`}>
         {heading && <h2 className="serif sec-title">ここから、8週間が始まるまで</h2>}
-        <p className="text-sm text-ink-2 mt-1 max-w-[40em]">契約と請求はメールでやりとりします。アプリでは、いまどこまで進んでいるかが見えます。</p>
+        {actionFirst && action}
+        <p className={`text-sm text-ink-2 max-w-[40em] ${actionFirst ? "mt-8" : "mt-1"}`}>契約と請求はメールでやりとりします。アプリでは、いまどこまで進んでいるかが見えます。</p>
         <ol className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[12px] print-two-col">
           {steps.map((st, i) => (
             <li key={st.key} className={`rounded-[var(--radius)] border px-3 py-2.5 ${st.done ? "border-navy bg-navy text-on-accent" : st.now ? "border-warm bg-warm-soft" : "hairline text-ink-3"}`}>
@@ -65,44 +106,7 @@ export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = 
           <p className="text-[13px] mt-4 max-w-[42em] pl-4 border-l-2 border-warm"><span className="font-semibold">キックオフのあとも、人が入ります。</span>2週目・5週目・8週目の面談と中間チェックは、すべてベレネッツが直接行います。AIに任せきりにはしません。</p>
         </div>
 
-        <div className="mt-6">
-          {!applied && expiresAt && new Date(expiresAt) < new Date() ? (
-            <p className="text-sm">このページの閲覧期限（<span className="num">{fmtMeeting(expiresAt)}</span>）が過ぎたため、ここからのお申し込みは締め切りました。お申し込みを希望される場合は「ベレネッツに質問を残す」からご連絡ください。</p>
-          ) : !applied ? (
-            <>
-              <div className="rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-6 sm:px-8 py-7 text-center">
-                <p className="text-sm text-ink-2 max-w-[36em] mx-auto">診断結果を読んで「進めたい」と思われたら、下のボタンを押してください。受付メールが届き、2営業日以内にベレネッツから申込書・契約書と請求書をメールでお送りします。</p>
-                <form action={preview ? undefined : applyProgram} className="mt-5">
-                  <button type="submit" disabled={preview} className="w-full sm:w-auto sm:min-w-[380px] rounded-[var(--radius)] bg-warm text-on-accent serif text-[20px] sm:text-[22px] font-semibold px-10 py-5 shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:brightness-110 active:translate-y-px disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-navy">このプログラムに申し込む →</button>
-                </form>
-                <p className="text-[12px] text-ink-2 mt-4">ボタンを押した時点では費用は発生しません。契約書の内容を確認してからのご契約です。</p>
-              </div>
-            </>
-          ) : !paid ? (
-            <p className="text-sm">
-              {contracted
-                ? "ご契約ありがとうございます。入金を確認しだい、キックオフの日程をこの画面でお選びいただけます。"
-                : "お申し込みを受け付けました（受付メールをお送りしています）。2営業日以内に、ベレネッツから申込書・契約書と請求書をメールでお送りします。届かない場合は「ベレネッツに質問を残す」からお知らせください。"}
-            </p>
-          ) : chosenDate ? (
-            <p className="text-sm">キックオフは <span className="num font-semibold">{fmtMeeting(chosenDate)}</span> で承りました。会議URLは決まりしだい、画面左の「次の面談」に表示します。</p>
-          ) : dates.length > 0 ? (
-            <>
-              <p className="text-sm">入金を確認しました。キックオフ（3時間・オンライン）の日を選んでください。</p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {dates.map((iso) => (
-                  <form key={iso} action={preview ? undefined : chooseKickoff}>
-                    <input type="hidden" name="date" value={iso} />
-                    <button className="btn-primary num" type="submit" disabled={preview}>{fmtMeeting(iso)}</button>
-                  </form>
-                ))}
-              </div>
-              <p className="text-[12px] text-ink-3 mt-3">どれも合わない場合は「ベレネッツに質問を残す」からご希望日をお知らせください。</p>
-            </>
-          ) : (
-            <p className="text-sm">入金を確認しました。キックオフの候補日は、ベレネッツからご連絡します。</p>
-          )}
-        </div>
+        {!actionFirst && action}
         {/* 費用と返金保証は、申し込むまで表示する（申込後は契約書でご案内） */}
         {!applied && <div className="mt-6 flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
           <span className="shrink-0 self-start inline-flex items-center gap-1.5 rounded-full border-2 border-warm bg-warm-soft text-warm text-[12px] font-bold px-3 py-1.5 whitespace-nowrap">

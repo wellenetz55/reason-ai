@@ -40,7 +40,7 @@ export default async function Home() {
           <p className="text-[13px] text-ink-3">いま</p>
           <h2 className="serif text-[22px] mt-1">{now}</h2>
         </section>
-        <ProgramStart company={company} chosenDate={kickoff.chosen} dates={kickoff.candidates} expiresAt={d?.expires_at ?? null} />
+        <ProgramStart company={company} chosenDate={kickoff.chosen} dates={kickoff.candidates} expiresAt={d?.expires_at ?? null} heading={false} actionFirst />
       </div>
     );
   }
