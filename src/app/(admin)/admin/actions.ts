@@ -1,5 +1,7 @@
 "use server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireOperator } from "@/lib/session";
 
 export async function createCompany(formData: FormData) {
@@ -14,11 +16,15 @@ export async function setStatus(formData: FormData) {
   const { supabase } = await requireOperator();
   const id = String(formData.get("company_id"));
   const status = String(formData.get("status"));
+  await applyStatus(supabase, id, status);
+  revalidatePath(`/admin/${id}`);
+  revalidatePath("/admin");
+}
+
+/** 状態を変える本体（会社ページの「変更」と、キックオフ実施済→自動で「骨格をつくる」から使う）。同じ状態なら何もしない */
+export async function applyStatus(supabase: SupabaseClient, id: string, status: string): Promise<boolean> {
   const { data: before } = await supabase.from("companies").select("status").eq("id", id).single();
-  if (before?.status === status) {
-    revalidatePath(`/admin/${id}`);
-    return;
-  }
+  if (before?.status === status) return false;
   const nowD = new Date();
   const patch: Record<string, string> = { status, status_changed_at: nowD.toISOString() };
   // 猶予・延長は終わりの日を決める（毎朝の自動処理がこの日を過ぎたら次の状態に移す）。期限は会社ページで変えられる
@@ -38,8 +44,17 @@ export async function setStatus(formData: FormData) {
       await supabase.from("alerts").update({ resolved_at: now }).eq("company_id", id).is("resolved_at", null).contains("payload", { type });
     }
   }
-  revalidatePath(`/admin/${id}`);
-  revalidatePath("/admin");
+  revalidatePath("/", "layout");
+  return true;
+}
+
+/** キックオフを実施済にしたら、契約前／キックオフ前の会社は「骨格をつくる（1〜2週目）」に進める（お客様側に STEP 1 が開く） */
+export async function advanceAfterKickoff(supabase: SupabaseClient, companyId: string): Promise<boolean> {
+  const { data: c } = await supabase.from("companies").select("status, kickoff_at").eq("id", companyId).single();
+  if (!c) return false;
+  if (!c.kickoff_at) await supabase.from("companies").update({ kickoff_at: new Date().toISOString() }).eq("id", companyId);
+  if (c.status !== "diagnosed" && c.status !== "onboarding") return false;
+  return applyStatus(supabase, companyId, "week1_2");
 }
 
 /** 会社の担当者を登録して招待メールを送る（既存アカウントならマジックリンク） */
@@ -155,6 +170,13 @@ export async function updateMeeting(formData: FormData) {
   if (formData.get("held") === "1") patch.held_at = new Date().toISOString();
   if (formData.get("unheld") === "1") patch.held_at = null; // 押し間違いを戻す（記録はそのまま残る）
   await supabase.from("company_meetings").update(patch).eq("id", id);
+  if (formData.get("held") === "1") {
+    const { data: m } = await supabase.from("company_meetings").select("kind").eq("id", id).maybeSingle();
+    if (m?.kind === "kickoff" && (await advanceAfterKickoff(supabase, companyId))) {
+      revalidatePath(`/admin/${companyId}`);
+      redirect(`/admin/${companyId}?status_ok=${encodeURIComponent("キックオフを実施済にしたので、状態を「骨格をつくる（1〜2週目）」に進めました。お客様側に STEP 1 が開きます")}`);
+    }
+  }
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/");
 }

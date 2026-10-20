@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireOperator } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readTranscript, MAX_TRANSCRIPT } from "@/server/transcript";
+import { advanceAfterKickoff } from "@/app/(admin)/admin/actions";
 
 const back = (companyId: string, meetingId: string, q: string): never => redirect(`/admin/${companyId}/meetings/${meetingId}?${q}`);
 const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
@@ -32,12 +33,17 @@ export async function saveMeetingRecord(formData: FormData) {
   if (tr && "text" in tr) { patch.transcript = tr.text.slice(0, MAX_TRANSCRIPT); patch.transcript_name = tr.name; }
   const { error } = await admin.from("meeting_records").upsert(patch, { onConflict: "meeting_id" });
   if (error) back(companyId, meetingId, `error=${encodeURIComponent("保存できませんでした" + (/meeting_records/.test(error.message) ? "（SQL 0026 が未実行の可能性があります）" : "") + "：" + error.message)}`);
-  if (formData.get("held") === "1") await admin.from("company_meetings").update({ held_at: new Date().toISOString() }).eq("id", meetingId);
+  let advanced = false;
+  if (formData.get("held") === "1") {
+    await admin.from("company_meetings").update({ held_at: new Date().toISOString() }).eq("id", meetingId);
+    if (m!.kind === "kickoff") advanced = await advanceAfterKickoff(admin, companyId);
+  }
   await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "meeting.record", payload: { meeting_id: meetingId, kind: m!.kind, transcript: !!(tr && "text" in tr) } });
   revalidatePath(`/admin/${companyId}`);
   revalidatePath(`/admin/${companyId}/meetings/${meetingId}`);
   revalidatePath("/", "layout");
   if (tr && "error" in tr) back(companyId, meetingId, `error=${encodeURIComponent("記録は保存しました。" + tr.error)}`);
+  if (advanced) back(companyId, meetingId, "ok=advanced");
   back(companyId, meetingId, removing ? "ok=removed" : tr && "text" in tr ? "ok=saved_tr" : "ok=saved");
 }
 

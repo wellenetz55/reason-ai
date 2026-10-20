@@ -24,6 +24,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const linkError = typeof sp?.link_error === "string" ? sp.link_error : null;
   const hwOk = typeof sp?.hw_ok === "string" ? HW_OK[sp.hw_ok] ?? null : null;
   const statusError = typeof sp?.status_error === "string" ? sp.status_error : null;
+  const statusOk = typeof sp?.status_ok === "string" ? sp.status_ok : null;
   const hwError = typeof sp?.hw_error === "string" ? sp.hw_error : null;
   const { supabase, isSuper } = await requireOperator();
   const [{ data: c }, { data: rows }, { data: reviews }, { data: hw }, { data: qs }, { data: progress }, { data: meetings }, { data: errs }] = await Promise.all([
@@ -76,7 +77,8 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
   return (
     <div>
-      <ClearQuery keys={["member_ok", "member_error", "link_error", "hw_ok", "hw_error", "status_error"]} />
+      <ClearQuery keys={["member_ok", "member_error", "link_error", "hw_ok", "hw_error", "status_error", "status_ok"]} />
+      {statusOk && <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-4 py-3 text-sm max-w-[44em]">{statusOk}</p>}
       <h1 className="serif text-[28px] leading-tight">{c.name}</h1>
       <p className="text-sm text-ink-2 mt-1">{STATUS_LABEL[c.status]} · <Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 hover:text-ink">適合診断の記録</Link> · <Link href={`/admin/${c.id}/diagnosis`} className="underline underline-offset-4 hover:text-ink">適合診断の結果を書く</Link></p>
       <p className="text-xs text-ink-3 mt-1">
