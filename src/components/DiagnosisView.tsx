@@ -49,7 +49,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
   const tagCls: Record<string, string> = { fact: "tag-fact", verify: "tag-verify", hypothesis: "tag-hypo" };
 
   return (
-    <article className="max-w-[880px]">
+    <article className="max-w-[880px] print-root">
       <p className="inline-flex flex-wrap items-center gap-x-2 rounded-full bg-navy text-on-accent text-[13px] font-semibold tracking-wide px-4 py-1.5">適合診断の結果<span className="font-normal text-on-accent/80">── 8週間でつくる「選ばれる理由の脚本」に、御社が進めるかの判定</span></p>
       {/* 判定：左に「◎ 適合」のスタンプ、右に結論。社名は結論から外して上に小さく（結論が1行で読めるように） */}
       <div className="mt-6 flex items-center gap-4 sm:gap-6">
@@ -311,7 +311,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
 
         <div className="mt-6">
           <p className="serif text-[17px] leading-snug">つくり方：AIが毎日の問いと下書き、ベレネッツが<span className="num">5</span>回の面談で確定。</p>
-          <ol className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2 text-[12px]">
+          <ol className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2 text-[12px] print-two-col">
             {[
               ["キックオフ", "3時間", "代表が直接"],
               ["確認①", "2週目末", "①〜③を確定"],
@@ -394,7 +394,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
       <section className="mt-16 border-t hairline pt-8 print:hidden">
         <h2 className="serif sec-title">ここから、8週間が始まるまで</h2>
         <p className="text-sm text-ink-2 mt-1 max-w-[40em]">契約と請求はメールでやりとりします。アプリでは、いまどこまで進んでいるかが見えます。</p>
-        <ol className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[12px]">
+        <ol className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[12px] print-two-col">
           {steps.map((st, i) => (
             <li key={st.key} className={`rounded-[var(--radius)] border px-3 py-2.5 ${st.done ? "border-navy bg-navy text-on-accent" : st.now ? "border-warm bg-warm-soft" : "hairline text-ink-3"}`}>
               <p className={`num text-[10px] tracking-wide ${st.done ? "text-on-accent/70" : st.now ? "text-warm" : ""}`}>{i + 1}{st.done ? " ✓" : st.now ? " ← いまここ" : ""}</p>
@@ -410,7 +410,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
           <h3 className="serif text-[22px] sm:text-[24px] leading-snug mt-2">キックオフ（3時間・オンライン）は、<br className="hidden sm:block" />ベレネッツ代表の平松が直接行います。</h3>
           <p className="text-sm text-ink-2 mt-3 max-w-[42em]">最初の問いはこれです。<span className="font-semibold text-ink">「15秒で、初めてのお客様に御社を“伝わるように”説明できますか」</span>。多くの会社が、ここで止まります。伝えているのに、伝わっていない。キックオフの3時間は、その理由を御社の言葉で解きほぐし、8週間で何をどう答えればよいかが分かった状態をつくる時間です。AIが出す毎日の問いは、この3時間を前提に設計されています。</p>
 
-          <div className="mt-5 grid grid-cols-1 sm:grid-cols-[1fr_1.4fr] gap-4">
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-[1fr_1.4fr] gap-4 print-one-col">
             <div className="rounded-[var(--radius)] bg-paper px-5 py-4">
               <p className="text-[11px] text-ink-3">なぜ、平松が話すのか</p>
               <p className="text-[13px] leading-relaxed mt-2">NTTドコモで広告宣伝を担当し、年間数百億円の広告を打っても「やればやるほどシェアが下がる」場面に立ち会いました。そこから25年、「押し付けずに引き寄せる」仕組みだけを作り続け、750社以上を支援。営業・コンペ・見積競争を一度もせずに選ばれてきた、その原理を本人が話します。</p>

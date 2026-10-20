@@ -17,7 +17,7 @@ export default async function DiagnosisPreview({ params }: PageProps<"/admin/[co
   if (!c) notFound();
   return (
     <div>
-      <div className="sticky top-0 z-10 -mx-10 -mt-10 mb-8 px-10 py-3 bg-warm-soft border-b border-warm flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+      <div data-print-hide className="sticky top-0 z-10 -mx-10 -mt-10 mb-8 px-10 py-3 bg-warm-soft border-b border-warm flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
         <span className="font-semibold text-warm">プレビュー</span>
         <span className="text-ink-2">お客様にはこのように見えます（「保存する」を押した内容。申込・日程のボタンは押せません）。{d?.published_at ? "公開済みです。" : "まだ公開していません。"}</span>
         <Link href={`/admin/${c.id}/diagnosis`} className="ml-auto underline underline-offset-4">← 結果を書く画面へ戻る</Link>
@@ -25,7 +25,7 @@ export default async function DiagnosisPreview({ params }: PageProps<"/admin/[co
       {!d ? (
         <p className="text-sm text-ink-2">まだ何も保存されていません。「適合診断の結果を書く」で入力して「保存する」を押すと、ここに表示されます。</p>
       ) : (
-        <div className="rounded-[var(--radius)] border hairline bg-paper overflow-hidden flex flex-col md:flex-row">
+        <div className="rounded-[var(--radius)] border hairline bg-paper overflow-hidden flex flex-col md:flex-row print:border-0">
           {/* お客様の画面の左メニュー（見た目だけ。押せない） */}
           <aside aria-label="お客様の左メニュー（見本）" className="md:w-[260px] shrink-0 border-b md:border-b-0 md:border-r hairline px-6 py-8 bg-paper">
             <ReasonLogo width={212} />

@@ -174,6 +174,20 @@ textarea:focus-visible, input:focus-visible { box-shadow: 0 1px 0 0 var(--navy);
   body { background: #fff; color: #000; }
   main { padding: 0 !important; }
   a { text-decoration: none; color: inherit; }
+  /* 左メニュー・管理画面の帯・固定バーは出さない。本文は紙の幅いっぱいに */
+  aside, nav[aria-label="適合診断"], [data-print-hide] { display: none !important; }
+  .print-root { max-width: none !important; }
+  /* 囲み・カード・見出しの途中で改ページしない */
+  section, li, blockquote, .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+  h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+  /* 画面用の影・固定位置・ホバーは不要 */
+  * { box-shadow: none !important; position: static !important; }
+  .sec-title::before { position: absolute !important; }
+  .sec-title { position: relative !important; }
+  /* 横並びのグリッドは紙幅に合わせて2列まで */
+  .print-two-col { grid-template-columns: 1fr 1fr !important; }
+  .print-one-col { grid-template-columns: 1fr !important; }
+  body { font-size: 12.5px; }
   /* 各ページ下に小さく運営表記 */
   main::after { content: "選ばれる理由AI · 株式会社ベレネッツ · www.wellenetz.co.jp"; display: block; margin-top: 24px; padding-top: 8px; border-top: 1px solid #e6e6e3; font-size: 10px; color: #777; }
 }
