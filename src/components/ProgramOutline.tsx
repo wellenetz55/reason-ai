@@ -32,10 +32,21 @@ export function ProgramOutline({ kickoffDone = false }: { kickoffDone?: boolean 
                 ? <p className="flex items-center gap-2 py-[5px] pl-3 -ml-3 text-[11px] text-ink-3"><span aria-hidden>✓</span>キックオフ 終了</p>
                 : <p className="flex items-center gap-2 py-[5px] pl-3 -ml-3 text-[11px] text-navy"><span aria-hidden>▶</span>{MEETING_AFTER.step0}</p>
             )}
-            <div className={`flex items-center gap-2.5 py-[6px] pl-3 -ml-3 ${kickoffDone && s.key === "step0" ? "text-ink border-l-2 border-navy" : "text-ink-3 opacity-60"}`} title={kickoffDone && s.key === "step0" ? "ベレネッツが開くと、ここから始まります" : "契約後にスタートできます"}>
-              <span className="num inline-block shrink-0 w-[60px] text-center rounded-full py-[3px] text-[9px] font-semibold tracking-[0.1em] leading-none border border-dashed border-ink-3">{s.step}</span>
-              <span className="text-[13px] leading-tight">{s.label}</span>
-            </div>
+            {kickoffDone && s.key === "step0" ? (
+              <div className="rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-3 py-2.5 -ml-1 my-1" title="ベレネッツが開くと、ここから始まります">
+                <p className="flex items-center gap-1.5 text-[11px] font-bold text-warm"><span className="now-dot" aria-hidden />次はここから</p>
+                <div className="flex items-center gap-2.5 mt-1.5">
+                  <span className="num inline-block shrink-0 w-[60px] text-center rounded-full py-[3px] text-[9px] font-semibold tracking-[0.1em] leading-none bg-warm text-on-accent">{s.step}</span>
+                  <span className="text-[14px] font-semibold leading-tight">{s.label}</span>
+                </div>
+                <p className="text-[11px] text-ink-2 mt-1.5">ベレネッツが開くと押せるようになります</p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5 py-[6px] pl-3 -ml-3 text-ink-3 opacity-60" title="契約後にスタートできます">
+                <span className="num inline-block shrink-0 w-[60px] text-center rounded-full py-[3px] text-[9px] font-semibold tracking-[0.1em] leading-none border border-dashed border-ink-3">{s.step}</span>
+                <span className="text-[13px] leading-tight">{s.label}</span>
+              </div>
+            )}
             {s.key !== "step0" && MEETING_AFTER[s.key] && (
               <p className="flex items-center gap-2 py-[5px] pl-3 -ml-3 text-[11px] text-navy"><span aria-hidden>▶</span>{MEETING_AFTER[s.key]}</p>
             )}
