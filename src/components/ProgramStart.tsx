@@ -58,7 +58,7 @@ export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = 
       <section className={`${actionFirst ? "mt-4" : "mt-16 border-t hairline pt-8"} print:hidden`}>
         {heading && <h2 className="serif sec-title">ここから、8週間が始まるまで</h2>}
         {actionFirst && action}
-        <p className={`text-sm text-ink-2 max-w-[40em] ${actionFirst ? "mt-8" : "mt-1"}`}>契約と請求はメールでやりとりします。アプリでは、いまどこまで進んでいるかが見えます。</p>
+        {!kickoffDone && <p className={`text-sm text-ink-2 max-w-[40em] ${actionFirst ? "mt-8" : "mt-1"}`}>契約と請求はメールでやりとりします。アプリでは、いまどこまで進んでいるかが見えます。</p>}
         <ol className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[12px] print-two-col">
           {steps.map((st, i) => (
             <li key={st.key} className={`rounded-[var(--radius)] border px-3 py-2.5 ${st.done ? "border-navy bg-navy text-on-accent" : st.now ? "border-warm bg-warm-soft" : "hairline text-ink-3"}`}>

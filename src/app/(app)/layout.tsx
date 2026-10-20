@@ -19,13 +19,15 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   // 契約前（適合診断済み）はキックオフ以外の面談を見せない。枠は残して「——」
   let meetingQ = supabase.from("company_meetings").select("kind, scheduled_at, meeting_url").eq("company_id", company.id).is("held_at", null).gte("scheduled_at", new Date(Date.now() - 3 * 3600_000).toISOString());
   if (company.status === "diagnosed") meetingQ = meetingQ.eq("kind", "kickoff");
-  const [{ data: openHw }, { data: nextMeeting }, { data: progress }, { data: diag }, { count: hwTotal }] = await Promise.all([
+  const [{ data: openHw }, { data: nextMeeting }, { data: progress }, { data: diag }, { count: hwTotal }, { data: heldKickoff }] = await Promise.all([
     supabase.from("homeworks").select("id, title, due_at").eq("company_id", company.id).eq("status", "open").order("due_at"),
     meetingQ.order("scheduled_at").limit(1).maybeSingle(),
     supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle(),
     supabase.from("diagnosis_results").select("company_id").eq("company_id", company.id).maybeSingle(),
     supabase.from("homeworks").select("id", { count: "exact", head: true }).eq("company_id", company.id),
+    supabase.from("company_meetings").select("id").eq("company_id", company.id).eq("kind", "kickoff").not("held_at", "is", null).limit(1).maybeSingle(),
   ]);
+  const kickoffDone = company.status === "diagnosed" && !!company.paid_at && !!heldKickoff;
 
   const openHomework = openHw?.length ?? 0;
   const shownMeeting = nextMeeting;
@@ -51,7 +53,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <p className="text-[13px] text-ink-2 mt-1">{profile.display_name} <span className="text-ink-3">さん</span></p>
         <div className="mt-3 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-3.5 py-2.5">
           <p className="text-[11px] font-semibold text-navy tracking-wide">現在のフェーズ</p>
-          <p className="text-[13px] text-ink mt-0.5">{company.status === "diagnosed" ? (company.paid_at ? "キックオフ前（日程調整）" : company.applied_at || company.contracted_at ? "お申し込み済み（契約手続き中）" : "適合診断の結果をご確認ください") : STATUS_LABEL[company.status] ?? company.status}</p>
+          <p className="text-[13px] text-ink mt-0.5">{company.status === "diagnosed" ? (kickoffDone ? "キックオフ終了（STEP 1 の準備中）" : company.paid_at ? "キックオフ前（日程調整）" : company.applied_at || company.contracted_at ? "お申し込み済み（契約手続き中）" : "適合診断の結果をご確認ください") : STATUS_LABEL[company.status] ?? company.status}</p>
         </div>
         {/* 宿題：フェーズのすぐ下。未回答があれば暖色で目立たせる（契約前は出さない） */}
         {!["diagnosed", "locked", "cancelled"].includes(company.status) && (openHomework > 0 ? (
@@ -77,7 +79,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             ) : (
               <Link href="/diagnosis" className="block text-[14px] py-[7px] pl-3 -ml-3 border-l-2 border-navy">適合診断の結果</Link>
             )}
-            <ProgramOutline />
+            <ProgramOutline kickoffDone={kickoffDone} />
           </nav>
         ) : (
           <>

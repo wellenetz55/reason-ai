@@ -13,7 +13,7 @@ const MEETING_AFTER: Record<string, string> = {
  * 契約前の左メニュー：8週間で何が完成するかと、ステップ＋面談の一覧。
  * お客様の画面と、ベレネッツのプレビューで同じものを使う。
  */
-export function ProgramOutline() {
+export function ProgramOutline({ kickoffDone = false }: { kickoffDone?: boolean } = {}) {
   return (
     <>
       <div className="mt-5 rounded-[var(--radius)] bg-warm-soft border border-warm/40 px-3.5 py-3">
@@ -28,9 +28,11 @@ export function ProgramOutline() {
         {STAGES.map((s) => (
           <li key={s.key}>
             {s.key === "step0" && (
-              <p className="flex items-center gap-2 py-[5px] pl-3 -ml-3 text-[11px] text-navy"><span aria-hidden>▶</span>{MEETING_AFTER.step0}</p>
+              kickoffDone
+                ? <p className="flex items-center gap-2 py-[5px] pl-3 -ml-3 text-[11px] text-ink-3"><span aria-hidden>✓</span>キックオフ 終了</p>
+                : <p className="flex items-center gap-2 py-[5px] pl-3 -ml-3 text-[11px] text-navy"><span aria-hidden>▶</span>{MEETING_AFTER.step0}</p>
             )}
-            <div className="flex items-center gap-2.5 py-[6px] pl-3 -ml-3 text-ink-3 opacity-60" title="契約後にスタートできます">
+            <div className={`flex items-center gap-2.5 py-[6px] pl-3 -ml-3 ${kickoffDone && s.key === "step0" ? "text-ink border-l-2 border-navy" : "text-ink-3 opacity-60"}`} title={kickoffDone && s.key === "step0" ? "ベレネッツが開くと、ここから始まります" : "契約後にスタートできます"}>
               <span className="num inline-block shrink-0 w-[60px] text-center rounded-full py-[3px] text-[9px] font-semibold tracking-[0.1em] leading-none border border-dashed border-ink-3">{s.step}</span>
               <span className="text-[13px] leading-tight">{s.label}</span>
             </div>
