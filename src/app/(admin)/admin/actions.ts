@@ -153,6 +153,7 @@ export async function updateMeeting(formData: FormData) {
   const patch: Record<string, unknown> = { meeting_url: url || null };
   if (local) patch.scheduled_at = new Date(`${local}:00+09:00`).toISOString();
   if (formData.get("held") === "1") patch.held_at = new Date().toISOString();
+  if (formData.get("unheld") === "1") patch.held_at = null; // 押し間違いを戻す（記録はそのまま残る）
   await supabase.from("company_meetings").update(patch).eq("id", id);
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/");

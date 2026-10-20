@@ -330,7 +330,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
                 <input type="datetime-local" name="scheduled_at" defaultValue={toLocalInput(m.scheduled_at)} className="border-b hairline py-1 num" />
                 <input type="url" name="meeting_url" defaultValue={m.meeting_url ?? ""} placeholder="会議URL（Zoom / Meet など）" className="border-b hairline py-1 flex-1 min-w-[260px]" />
                 <button className="btn-text" type="submit">保存</button>
-                {m.held_at ? <span className="text-xs">実施済 {fmtMeeting(m.held_at)}</span> : (
+                {m.held_at ? <span className="text-xs inline-flex items-center gap-2">実施済 {fmtMeeting(m.held_at)}<button className="btn-text text-xs" type="submit" name="unheld" value="1" title="押し間違いのとき。記録は残ります">戻す</button></span> : (
                   <button className="btn-text" type="submit" name="held" value="1">実施済にする</button>
                 )}
                 <Link href={`/admin/${c.id}/meetings/${m.id}`} className={`rounded-[var(--radius)] border px-3 py-1 text-xs ${recordIds.has(m.id) ? "border-navy text-navy hover:bg-navy-soft" : "border-warm text-warm hover:bg-warm-soft"}`}>{recordIds.has(m.id) ? "記録を見る・直す" : "記録を書く"}</Link>
