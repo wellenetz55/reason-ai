@@ -73,13 +73,139 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
               <p key={i} className={i === 0 ? "serif text-[19px] sm:text-[21px] leading-relaxed" : "text-[15px] leading-relaxed text-on-accent/90"}>{t}</p>
             ))}
           </div>
+          {/* 下に診断の中身が続くことを示す目次。売り込みより先に「診断」を読んでもらう */}
+          <nav aria-label="この結果の中身" className="mt-5 border-t border-on-accent/25 pt-4">
+            <p className="text-[11px] tracking-[0.2em] text-on-accent/70">↓ この下に、診断の中身が続きます</p>
+            <ol className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-[13px]">
+              {[
+                d.one_liner_before ? ["#one-liner", "「御社を一言で言うと？」── 面談でのお答え"] : null,
+                seeds.length ? ["#seeds", `初回ヒアリングで、もう見つかったもの（${seeds.length}組）`] : null,
+                brakes.length ? ["#brakes", `まだ言葉になっていないブレーキ（${brakes.length}つ）`] : null,
+                fit.length ? ["#why", "なぜ「つくれる」と判断したか"] : null,
+                ["#deliverables", "8週間で、御社に残るもの"],
+                company.status === "diagnosed" ? ["#paths", "ここから、2つの道があります"] : null,
+              ].filter((x): x is [string, string] => !!x).map(([href, label], i) => (
+                <li key={href} className="flex gap-2"><span className="num text-on-accent/60 shrink-0">{i + 1}</span><a href={href} className="underline underline-offset-4 decoration-on-accent/40 hover:decoration-on-accent">{label}</a></li>
+              ))}
+            </ol>
+          </nav>
+        </section>
+      )}
+
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-ink-3">
+        {d.published_at && <span className="num">{fmtMeeting(d.published_at)} 公開</span>}
+        {d.expires_at && company.status === "diagnosed" && new Date(d.expires_at) > new Date() && <span>このページは <span className="num">{fmtMeeting(d.expires_at)}</span> まで</span>}
+        <PrintButton />
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
+          <p className="text-[11px] text-ink-3">初回ヒアリングで見えた芽</p>
+          <p className="serif text-[30px] leading-none mt-1"><span className="num">{seeds.length}</span><span className="text-[14px] ml-1">組</span></p>
+        </div>
+        <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
+          <p className="text-[11px] text-ink-3">まだ言葉になっていないブレーキ</p>
+          <p className="serif text-[30px] leading-none mt-1"><span className="num">{brakes.length}</span><span className="text-[14px] ml-1">つ</span></p>
+        </div>
+        <div className="rounded-[var(--radius)] bg-navy text-on-accent px-5 py-4">
+          <p className="text-[11px] text-on-accent/70">8週間後に完成</p>
+          <p className="serif text-[22px] leading-tight mt-1">選ばれる理由の脚本</p>
+          <p className="text-[12px] text-on-accent/80 mt-1"><span className="num">30</span>組を目標に出し、強いものに絞り込む</p>
+        </div>
+      </div>
+
+      {d.one_liner_before && (
+        <section id="one-liner" className="mt-12 scroll-mt-6">
+          <h2 className="serif sec-title">「御社を一言で言うと？」</h2>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p className="text-[11px] text-ink-3">いま（面談でのお答え）</p>
+              <blockquote className="serif text-[20px] leading-snug mt-2 border-l-2 border-navy pl-4">「{d.one_liner_before}」</blockquote>
+            </div>
+            <div>
+              <p className="text-[11px] text-ink-3">8週間後</p>
+              <div className="mt-2 rounded-[var(--radius)] border border-dashed border-ink-3 px-4 py-5 text-ink-3">
+                <p className="serif text-[20px] leading-snug">「────────」</p>
+                <p className="text-[12px] mt-2">8週間の最後の面談で、同じ問いにもう一度お答えいただきます。ここが埋まります。</p>
+              </div>
+            </div>
+          </div>
+          <p className="text-sm text-ink-2 mt-4 max-w-[40em]">多くの会社で、左は業種と所在地の説明、右はお客様が選ぶ理由になります。同じ会社の、同じ人の言葉で。</p>
+        </section>
+      )}
+
+      {seeds.length > 0 && (
+        <section id="seeds" className="mt-14 scroll-mt-6">
+          <h2 className="serif sec-title">初回ヒアリングで、もう見つかったもの</h2>
+          <p className="text-sm text-ink-2 mt-1 max-w-[40em]">御社の中では当たり前すぎて、誰も言っていなかったこと。お話しいただいた言葉を「御社は〜できる。だから、お客様は〜と感じられる」の型に仮に置いたものです。まだ仮説です。8週間で事実にします。</p>
+          <ol className="mt-5 space-y-4">
+            {seeds.map((s, i) => (
+              <li key={i} className={`tag-line ${tagCls[s.tag] ?? "tag-hypo"} pl-5 py-1`}>
+                <p className="serif text-[17px] leading-snug">御社は、{s.feature}</p>
+                {s.experience && <p className="text-ink-2 mt-1">だから、お客様は {s.experience}</p>}
+                <p className="text-[11px] text-ink-3 mt-1">{TAG_LABEL[s.tag] ?? "仮説"}</p>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-8">
+            <p className="text-[12px] text-ink-3">これは、最初の{seeds.length}組です。</p>
+            <div className="mt-2 grid grid-cols-10 gap-1.5 max-w-[360px]" aria-label="30組のうち見つかった数">
+              {Array.from({ length: 30 }, (_, i) => (
+                <span key={i} className={`h-[18px] rounded-[3px] ${i < seeds.length ? "bg-navy" : "border border-dashed border-ink-3"}`} />
+              ))}
+            </div>
+            <p className="text-sm mt-3 max-w-[40em]"><span className="font-semibold">残りは、御社の中にあります。</span>毎日ちがう角度の問いに答えるうちに、「言われてみれば、それもそうだ」が積み上がっていきます。まず30組を目標に出し、そこから強いものに絞り込みます。面談では、その入口が見えただけです。</p>
+          </div>
+        </section>
+      )}
+
+      {brakes.length > 0 && (
+        <section id="brakes" className="mt-14 scroll-mt-6">
+          <h2 className="serif sec-title">まだ言葉になっていないブレーキ</h2>
+          <p className="text-sm text-ink-2 mt-1 max-w-[40em]">お客様が御社を選ぶ直前に、おそらくこう迷っています。ここを言葉で先回りできると、見積りの前の会話が変わります。3〜5週目の仕事です。</p>
+          <ul className="mt-5 space-y-3">
+            {brakes.map((b, i) => (
+              <li key={i} className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
+                <p className="text-[11px] text-ink-3">{BRAKE_LABEL[b.kind] ?? b.kind}</p>
+                <p className="serif text-[16px] mt-1">「{b.words}」</p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-5 text-sm max-w-[40em] pl-4 border-l-2 border-warm">
+            <span className="font-semibold">ここを放っておくと、</span>御社は「比べられたら負ける会社」のままです。選ばれる時は値引きと相見積もりで選ばれ、選ばれない時は理由を教えてもらえません。
+          </p>
+        </section>
+      )}
+
+      {fit.length > 0 && (
+        <section id="why" className="mt-14 scroll-mt-6">
+          <h2 className="serif sec-title">なぜ「つくれる」と判断したか</h2>
+          <ul className="mt-5 space-y-4">
+            {fit.map((f, i) => (
+              <li key={i}>
+                <p className="font-medium">{f.condition}</p>
+                {f.quote && <p className="text-ink-2 mt-1 pl-4 border-l-2 hairline">{f.quote}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {comp && comp.claims?.length > 0 && (
+        <section className="mt-14">
+          <h2 className="serif sec-title">{comp.name?.trim() || "競合他社"} が、いま言っていること</h2>
+          <ul className="mt-4 space-y-2 text-ink-2">
+            {comp.claims.map((c, i) => <li key={i} className="pl-4 border-l-2 hairline">{c}</li>)}
+          </ul>
+          <p className="text-sm text-ink-2 mt-4 max-w-[40em]">向こうは言葉にしています。御社は、まだ言葉にしていないだけです。</p>
         </section>
       )}
 
       {/* 何が完成し、何が残るか。「診断ソフト」ではなく、AI＋ベレネッツで完成品をつくるプログラムだと最初に示す */}
-      <section className="mt-6 rounded-[var(--radius)] border-2 border-warm px-6 sm:px-8 py-6">
+      <section id="deliverables" className="mt-16 rounded-[var(--radius)] border-2 border-warm px-6 sm:px-8 py-6 scroll-mt-6">
         <h2 className="serif sec-title">8週間で、御社に残るもの</h2>
-        <p className="text-sm text-ink-2 mt-2 max-w-[42em]">これは診断ソフトではありません。終わったとき、御社には「完成品」が残ります。</p>
+        <p className="text-sm text-ink-2 mt-2 max-w-[42em]">ここまでが、初回ヒアリングで見えたことです。ここからは、見えた芽をどう「完成品」にするかの話です。これは診断ソフトではありません。終わったとき、御社には「完成品」が残ります。</p>
 
         {/* 全体の流れ：脚本の言語化 → ダウンロード → 上演（2通り）。縦に読む図 */}
         <div className="mt-6 rounded-[var(--radius)] border hairline bg-paper px-4 sm:px-6 py-6" aria-label="8週間とその先の流れ">
@@ -204,115 +330,6 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
         </div>
       </section>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-ink-3">
-        {d.published_at && <span className="num">{fmtMeeting(d.published_at)} 公開</span>}
-        {d.expires_at && company.status === "diagnosed" && new Date(d.expires_at) > new Date() && <span>このページは <span className="num">{fmtMeeting(d.expires_at)}</span> まで</span>}
-        <PrintButton />
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
-          <p className="text-[11px] text-ink-3">初回ヒアリングで見えた芽</p>
-          <p className="serif text-[30px] leading-none mt-1"><span className="num">{seeds.length}</span><span className="text-[14px] ml-1">組</span></p>
-        </div>
-        <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
-          <p className="text-[11px] text-ink-3">まだ言葉になっていないブレーキ</p>
-          <p className="serif text-[30px] leading-none mt-1"><span className="num">{brakes.length}</span><span className="text-[14px] ml-1">つ</span></p>
-        </div>
-        <div className="rounded-[var(--radius)] bg-navy text-on-accent px-5 py-4">
-          <p className="text-[11px] text-on-accent/70">8週間後に完成</p>
-          <p className="serif text-[22px] leading-tight mt-1">選ばれる理由の脚本</p>
-          <p className="text-[12px] text-on-accent/80 mt-1"><span className="num">30</span>組を目標に出し、強いものに絞り込む</p>
-        </div>
-      </div>
-
-      {d.one_liner_before && (
-        <section className="mt-12">
-          <h2 className="serif sec-title">「御社を一言で言うと？」</h2>
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <p className="text-[11px] text-ink-3">いま（面談でのお答え）</p>
-              <blockquote className="serif text-[20px] leading-snug mt-2 border-l-2 border-navy pl-4">「{d.one_liner_before}」</blockquote>
-            </div>
-            <div>
-              <p className="text-[11px] text-ink-3">8週間後</p>
-              <div className="mt-2 rounded-[var(--radius)] border border-dashed border-ink-3 px-4 py-5 text-ink-3">
-                <p className="serif text-[20px] leading-snug">「────────」</p>
-                <p className="text-[12px] mt-2">8週間の最後の面談で、同じ問いにもう一度お答えいただきます。ここが埋まります。</p>
-              </div>
-            </div>
-          </div>
-          <p className="text-sm text-ink-2 mt-4 max-w-[40em]">多くの会社で、左は業種と所在地の説明、右はお客様が選ぶ理由になります。同じ会社の、同じ人の言葉で。</p>
-        </section>
-      )}
-
-      {seeds.length > 0 && (
-        <section className="mt-14">
-          <h2 className="serif sec-title">初回ヒアリングで、もう見つかったもの</h2>
-          <p className="text-sm text-ink-2 mt-1 max-w-[40em]">御社の中では当たり前すぎて、誰も言っていなかったこと。お話しいただいた言葉を「御社は〜できる。だから、お客様は〜と感じられる」の型に仮に置いたものです。まだ仮説です。8週間で事実にします。</p>
-          <ol className="mt-5 space-y-4">
-            {seeds.map((s, i) => (
-              <li key={i} className={`tag-line ${tagCls[s.tag] ?? "tag-hypo"} pl-5 py-1`}>
-                <p className="serif text-[17px] leading-snug">御社は、{s.feature}</p>
-                {s.experience && <p className="text-ink-2 mt-1">だから、お客様は {s.experience}</p>}
-                <p className="text-[11px] text-ink-3 mt-1">{TAG_LABEL[s.tag] ?? "仮説"}</p>
-              </li>
-            ))}
-          </ol>
-          <div className="mt-8">
-            <p className="text-[12px] text-ink-3">これは、最初の{seeds.length}組です。</p>
-            <div className="mt-2 grid grid-cols-10 gap-1.5 max-w-[360px]" aria-label="30組のうち見つかった数">
-              {Array.from({ length: 30 }, (_, i) => (
-                <span key={i} className={`h-[18px] rounded-[3px] ${i < seeds.length ? "bg-navy" : "border border-dashed border-ink-3"}`} />
-              ))}
-            </div>
-            <p className="text-sm mt-3 max-w-[40em]"><span className="font-semibold">残りは、御社の中にあります。</span>毎日ちがう角度の問いに答えるうちに、「言われてみれば、それもそうだ」が積み上がっていきます。まず30組を目標に出し、そこから強いものに絞り込みます。面談では、その入口が見えただけです。</p>
-          </div>
-        </section>
-      )}
-
-      {brakes.length > 0 && (
-        <section className="mt-14">
-          <h2 className="serif sec-title">まだ言葉になっていないブレーキ</h2>
-          <p className="text-sm text-ink-2 mt-1 max-w-[40em]">お客様が御社を選ぶ直前に、おそらくこう迷っています。ここを言葉で先回りできると、見積りの前の会話が変わります。3〜5週目の仕事です。</p>
-          <ul className="mt-5 space-y-3">
-            {brakes.map((b, i) => (
-              <li key={i} className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
-                <p className="text-[11px] text-ink-3">{BRAKE_LABEL[b.kind] ?? b.kind}</p>
-                <p className="serif text-[16px] mt-1">「{b.words}」</p>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-5 text-sm max-w-[40em] pl-4 border-l-2 border-warm">
-            <span className="font-semibold">ここを放っておくと、</span>御社は「比べられたら負ける会社」のままです。選ばれる時は値引きと相見積もりで選ばれ、選ばれない時は理由を教えてもらえません。
-          </p>
-        </section>
-      )}
-
-      {fit.length > 0 && (
-        <section className="mt-14">
-          <h2 className="serif sec-title">なぜ「つくれる」と判断したか</h2>
-          <ul className="mt-5 space-y-4">
-            {fit.map((f, i) => (
-              <li key={i}>
-                <p className="font-medium">{f.condition}</p>
-                {f.quote && <p className="text-ink-2 mt-1 pl-4 border-l-2 hairline">{f.quote}</p>}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {comp && comp.claims?.length > 0 && (
-        <section className="mt-14">
-          <h2 className="serif sec-title">{comp.name?.trim() || "競合他社"} が、いま言っていること</h2>
-          <ul className="mt-4 space-y-2 text-ink-2">
-            {comp.claims.map((c, i) => <li key={i} className="pl-4 border-l-2 hairline">{c}</li>)}
-          </ul>
-          <p className="text-sm text-ink-2 mt-4 max-w-[40em]">向こうは言葉にしています。御社は、まだ言葉にしていないだけです。</p>
-        </section>
-      )}
-
       <section className="mt-14">
         <h2 className="serif sec-title">「選ばれる理由」をつくろうとして、多くの会社がやること</h2>
         <ol className="mt-5 space-y-3">
@@ -356,7 +373,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
       )}
 
       {company.status === "diagnosed" && (<>
-      <section className="mt-16">
+      <section id="paths" className="mt-16 scroll-mt-6">
         <h2 className="serif sec-title">ここから、{company.name}様には<span className="text-warm">2つの道</span>があります。</h2>
         <p className="text-sm text-ink-2 mt-2 max-w-[40em]">見つかった芽を広げ、強いものに絞り込み、「選ばれる理由」として言い切れる形にする。やることは同じです。違うのは、誰が問いを立て、誰が揃えるかです。</p>
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
