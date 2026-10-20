@@ -86,8 +86,8 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
           <p className="text-[14px] leading-relaxed mt-2 max-w-[42em]">「御社は〜できる。だから、お客様は〜と感じられる。なぜなら〜」の三連で書かれた、御社の「選ばれる理由」。まず<span className="num font-semibold">30</span>組を目標に広く出し、リトマス試験紙やマグニチュード（強さの採点）で、本当に強いものだけに絞り込みます。残る数は会社によって違います。数ではなく、「比べられても、これで選ばれる」と言い切れる言葉が残ります。ベレネッツとの面談で一つずつ確定（封）した、御社の言葉だけで書かれたものです。</p>
         </div>
 
-        <p className="text-[11px] text-ink-3 mt-5">お手元に残る3つ</p>
-        <ol className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <p className="text-[11px] text-ink-3 mt-5">8週間の終わりに、すべてダウンロードできます</p>
+        <ol className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <li className="rounded-[var(--radius)] bg-paper-2 px-4 py-4">
             <p className="num text-[11px] text-ink-3">1</p>
             <p className="serif text-[16px] leading-snug mt-1">完成した提供価値シート</p>
@@ -95,15 +95,24 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
           </li>
           <li className="rounded-[var(--radius)] bg-paper-2 px-4 py-4">
             <p className="num text-[11px] text-ink-3">2</p>
-            <p className="serif text-[16px] leading-snug mt-1">貴社専用の「選ばれる理由AI」</p>
-            <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">御社の脚本を読み込んだAI。顧問期間中は継続して使えます。</p>
-          </li>
-          <li className="rounded-[var(--radius)] bg-paper-2 px-4 py-4">
-            <p className="num text-[11px] text-ink-3">3</p>
-            <p className="serif text-[16px] leading-snug mt-1">活用パッケージ</p>
+            <p className="serif text-[16px] leading-snug mt-1">選ばれる理由のまとめ一式（活用パッケージ）</p>
             <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">営業トーク台本／価格説明／Web原稿／採用の言葉／見積の言葉／社内共有用1枚。</p>
           </li>
         </ol>
+
+        {/* その先：継続契約で開く、自社専用のブランディング・マーケティングAI */}
+        <div className="mt-5 rounded-[var(--radius)] bg-navy text-on-accent px-5 sm:px-6 py-5">
+          <p className="text-[11px] tracking-[0.2em] text-on-accent/70">その先に</p>
+          <p className="serif text-[19px] sm:text-[21px] leading-snug mt-1">継続契約で、御社専用の<br className="sm:hidden" />ブランディング・マーケティングAIが開きます。</p>
+          <p className="text-[14px] leading-relaxed mt-3 text-on-accent/90 max-w-[42em]">ベレネッツが25年・750社で積み上げたマーケティングのノウハウと成功パターンが入ったAIに、8週間で完成した御社の「勝ちパターン（選ばれる理由の脚本）」が統合されます。一般的なAIに頼むのとは違い、出てくる言葉はすべて御社の脚本に沿ったものです。</p>
+          <p className="text-[11px] text-on-accent/70 mt-4">御社専用で出てくるもの</p>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {["コピーライティング", "営業トーク", "Webサイトの文章", "マーケティング素材", "動画シナリオ", "SNS発信コンテンツ"].map((t) => (
+              <li key={t} className="rounded-full border border-on-accent/40 px-3 py-1 text-[13px]">{t}</li>
+            ))}
+          </ul>
+          <p className="text-[12px] text-on-accent/70 mt-4">8週間の成果物はすべて御社のものとしてお渡しします。継続契約（顧問）は、そのうえで「使い続ける」ための選択肢です。</p>
+        </div>
 
         <div className="mt-6">
           <p className="serif text-[17px] leading-snug">つくり方：AIが毎日の問いと下書き、ベレネッツが<span className="num">5</span>回の面談で確定。</p>

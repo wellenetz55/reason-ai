@@ -19,7 +19,8 @@ export function ProgramOutline() {
       <div className="mt-5 rounded-[var(--radius)] bg-warm-soft border border-warm/40 px-3.5 py-3">
         <p className="text-[11px] font-semibold tracking-wide text-warm">8週間で完成するもの</p>
         <p className="text-[13px] leading-snug mt-1">選ばれる理由の脚本<span className="text-ink-3">（提供価値シート。広く出して、強いものに絞る）</span></p>
-        <p className="text-[12px] text-ink-2 mt-1 leading-snug">＋ 営業・価格説明・Web・採用に使える原稿</p>
+        <p className="text-[12px] text-ink-2 mt-1 leading-snug">＋ 営業・価格説明・Web・採用に使える原稿（すべてダウンロード可）</p>
+        <p className="text-[11px] text-ink-2 mt-1.5 leading-snug">継続契約で、御社専用のブランディング・マーケティングAIへ</p>
         <p className="text-[11px] text-ink-3 mt-2 leading-snug">AIが毎日の問い、ベレネッツが5回の面談で確定</p>
       </div>
       <p className="mt-5 text-[11px] font-semibold tracking-wide text-ink-3">契約後にスタートできる8週間のステップ</p>
