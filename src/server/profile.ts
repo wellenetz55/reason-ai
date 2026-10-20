@@ -77,6 +77,8 @@ export async function loadProfileContext(supabase: { from: SupabaseClient["from"
   if (intake.notes) ctx["適合診断の面談記録（ベレネッツが聞き取った要点）"] = intake.notes.slice(0, 4000);
   if (intake.transcript) ctx["適合診断の書き起こし（抜粋。お客様の発言だけを材料にする）"] = intake.transcript;
   if (intake.memos) ctx["適合診断の面談メモ・資料（抜粋。お客様の発言・事実だけを材料にする）"] = intake.memos;
+  const { data: comps } = await supabase.from("competitors").select("name, product, website, is_reference").eq("company_id", companyId);
+  if (comps?.length) ctx["競合（お客様が登録。比べられる相手。参考＝こうなりたい会社）"] = comps.map((c) => `${c.is_reference ? "参考：" : "競合："}${c.name}${c.product ? "／" + c.product : ""}${c.website ? "（" + c.website + "）" : ""}`).join("\n");
   const meetings = await loadMeetingContext(companyId, 8000).catch(() => "");
   if (meetings) ctx["面談の記録（キックオフ・確認セッションなど。新しい順。適合診断より新しい情報として優先）"] = meetings;
   return ctx;

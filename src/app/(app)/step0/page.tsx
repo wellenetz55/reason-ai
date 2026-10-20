@@ -7,7 +7,7 @@ import { StepGuide } from "@/components/StepGuide";
 import { stepGate } from "@/lib/gates";
 import { loadGateCtx } from "@/server/gates";
 import { requireCustomer } from "@/lib/session";
-import { addUrl, addText, removeDocument, getUsage } from "./actions";
+import { addUrl, addText, removeDocument, getUsage, addCompetitor, removeCompetitor } from "./actions";
 import { DirectUploadForm } from "@/components/DirectUploadForm";
 import { LIMITS } from "@/lib/limits";
 import { requestProfileDraft, reviewProfileItem } from "./actions";
@@ -31,13 +31,15 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
   const docError = typeof sp?.error === "string" ? sp.error : null;
   const { supabase, company } = await requireCustomer();
   if (!isStageOpen(STAGES.find((x) => x.key === "step0")!, company.status)) return <ClosedStage stageKey="step0" status={company.status} />;
-  const [{ data: docs }, ctx, { data: items }, { data: summary }, bq] = await Promise.all([
+  const [{ data: docs }, ctx, { data: items }, { data: summary }, bq, compRes] = await Promise.all([
     supabase.from("company_documents").select("id, kind, title, storage_path, url, text_content, mime_type, size_bytes, created_at").eq("company_id", company.id).order("created_at", { ascending: false }),
     loadGateCtx(supabase, company.id, company.status),
     supabase.from("profile_items").select("key, draft, value, status, tag, source").eq("company_id", company.id),
     supabase.from("company_profile_summary").select("q1_before").eq("company_id", company.id).maybeSingle(),
     loadBQuestions(),
+    supabase.from("competitors").select("id, name, product, website, is_reference, created_at").eq("company_id", company.id).order("is_reference").order("created_at"),
   ]);
+  const competitors = compRes.data ?? [];
   const drafted = (items ?? []).some((i) => i.status !== "empty");
   // 適合診断の記録（ベレネッツが聞き取った内容）があれば、資料が無くても下書きを作れる。中身はお客様に見せず、有無だけ見る
   const { count: intakeCount } = await createAdminClient().from("diagnosis_intakes").select("company_id", { count: "exact", head: true }).eq("company_id", company.id);
@@ -120,6 +122,34 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="mt-14">
+        <h2 className="serif text-[18px]">競合他社 <span className="num text-ink-3 text-[14px]">{competitors.filter((c) => !c.is_reference).length}/3</span></h2>
+        <p className="text-sm text-ink-2 mt-1 max-w-[40em]">お客様が御社と比べる相手を、最大3社。加えて「こうなりたい」参考の会社を1社入れられます。AIが「競合の弱みの裏返し」や競合比較の材料に使います。会社名だけでも構いません。</p>
+        {compRes.error && <p className="text-[12px] text-warm mt-2">競合の登録先に不足があります（SQL 0027 が未実行の可能性があります）。</p>}
+        {competitors.length > 0 && (
+          <ul className="mt-3 divide-y divide-hair">
+            {competitors.map((c) => (
+              <li key={c.id} className="py-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                <span className="text-[11px] text-ink-3 w-10 shrink-0">{c.is_reference ? "参考" : "競合"}</span>
+                <span className="font-medium">{c.name}</span>
+                {c.product && <span className="text-ink-2">{c.product}</span>}
+                {c.website && <a href={c.website} target="_blank" rel="noopener noreferrer" className="num text-[12px] underline underline-offset-4 break-all">{c.website.replace(/^https?:\/\//, "")} ↗</a>}
+                <form action={removeCompetitor} className="ml-auto"><input type="hidden" name="id" value={c.id} /><button className="btn-text text-xs" type="submit">外す</button></form>
+              </li>
+            ))}
+          </ul>
+        )}
+        {(
+          <form action={addCompetitor} className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_1.2fr_auto_auto] items-end max-w-[900px]">
+            <label className="block"><span className="text-[11px] text-ink-3">会社名（必須）</span><input name="name" required className="block w-full border-b hairline py-2 text-sm" placeholder="例：サンプル工業" /></label>
+            <label className="block"><span className="text-[11px] text-ink-3">商品・サービス名</span><input name="product" className="block w-full border-b hairline py-2 text-sm" placeholder="例：ハヤブサ加工" /></label>
+            <label className="block"><span className="text-[11px] text-ink-3">URL</span><input name="website" className="block w-full border-b hairline py-2 text-sm num" placeholder="https://…" /></label>
+            <label className="flex items-center gap-1.5 text-[12px] text-ink-2 whitespace-nowrap pb-2"><input type="checkbox" name="is_reference" value="1" className="size-4" />参考の会社</label>
+            <button className="btn-primary" type="submit">追加</button>
+          </form>
         )}
       </section>
 

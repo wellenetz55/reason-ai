@@ -179,3 +179,32 @@ export async function reviewProfileItem(formData: FormData) {
   await supabase.from("activity_log").insert({ company_id: company.id, event: "profile.review" });
   revalidatePath("/step0");
 }
+
+/** 競合他社を登録（最大3社＋参考1社）。会社名は必須、商品・サービス名とURLは任意 */
+export async function addCompetitor(formData: FormData) {
+  const { company, user, supabase } = await requireWritableCustomer();
+  const name = String(formData.get("name") || "").trim();
+  const product = String(formData.get("product") || "").trim();
+  const raw = String(formData.get("website") || "").trim();
+  const isReference = formData.get("is_reference") === "1";
+  if (!name) fail("競合の会社名を入れてください。");
+  const website = raw ? normalizeWebUrl(raw) : null;
+  if (raw && !website) fail("URLの形式が正しくありません（例：https://www.example.co.jp）。");
+  const { data: ex } = await supabase.from("competitors").select("id, is_reference, name").eq("company_id", company.id);
+  if ((ex ?? []).some((c) => c.name.trim() === name)) fail("同じ名前の競合がすでに登録されています。");
+  const n = (ex ?? []).filter((c) => c.is_reference === isReference).length;
+  if (!isReference && n >= 3) fail("競合は3社までです。参考にしたい会社は「参考」として1社入れられます。");
+  if (isReference && n >= 1) fail("参考の会社は1社までです。");
+  const { error } = await supabase.from("competitors").insert({ company_id: company.id, name, product: product || null, website, is_reference: isReference, created_by: user.id });
+  if (error) fail("登録できませんでした" + (/product|created_by/.test(error.message) ? "（SQL 0027 が未実行の可能性があります）" : "") + "：" + error.message);
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "competitor.add", payload: { name, reference: isReference } });
+  revalidatePath("/step0");
+}
+
+export async function removeCompetitor(formData: FormData) {
+  const { company, user, supabase } = await requireWritableCustomer();
+  const id = String(formData.get("id") || "");
+  await supabase.from("competitors").delete().eq("id", id).eq("company_id", company.id);
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "competitor.remove", payload: { id } });
+  revalidatePath("/step0");
+}
