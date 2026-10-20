@@ -7,6 +7,7 @@ import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
 import { createHomework, updateHomework, withdrawHomework, reopenHomework } from "./homework-actions";
 import { ClearQuery } from "@/components/ClearQuery";
 import { loadKickoff } from "@/server/kickoff";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { loadIntake, describeTarget, VERDICT_LABEL, inviteGate } from "@/server/intake";
 
 const HW_OK: Record<string, string> = { created: "宿題を出しました。お客様の左メニューと「宿題」画面に表示されます。", updated: "宿題を直しました。", withdrawn: "宿題を取り下げました。", reopened: "宿題をもう一度出しました（前の回答は残しています）。" };
@@ -51,6 +52,9 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const ALERT_LABEL: Record<string, string> = { stale7: "7日操作なし", escalation: "要対応", homework_overdue: "宿題の期限超過", attitude_flag: "姿勢シグナル", disclosure_request: "開示要求", quota_reached: "生成上限", grace_ending: "猶予終了間近", extension_ending: "延長終了間近", no_internal_meeting: "社内打合せ未登録" };
   const alertText = (a: { kind: string; payload: unknown }) => { const t = (a.payload as { type?: string } | null)?.type; return t === "program_applied" ? "申込がありました" : t === "kickoff_chosen" ? "キックオフ日が選ばれました" : t === "diagnosis_viewed" ? "診断結果を開きました" : ALERT_LABEL[a.kind] ?? a.kind; };
   if (!c) notFound();
+  // 面談の記録があるか（ボタンの文言用。表が無ければ空）
+  const { data: recs } = await createAdminClient().from("meeting_records").select("meeting_id").eq("company_id", companyId);
+  const recordIds = new Set((recs ?? []).map((r) => r.meeting_id as string));
   // 開いたら既読にする（未返信は返事するまで残る）
   await Promise.all([
     supabase.from("questions_to_operator").update({ read_at: new Date().toISOString() }).eq("company_id", companyId).is("read_at", null),
@@ -329,6 +333,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
                 {m.held_at ? <span className="text-xs">実施済 {fmtMeeting(m.held_at)}</span> : (
                   <button className="btn-text" type="submit" name="held" value="1">実施済にする</button>
                 )}
+                <Link href={`/admin/${c.id}/meetings/${m.id}`} className={`rounded-[var(--radius)] border px-3 py-1 text-xs ${recordIds.has(m.id) ? "border-navy text-navy hover:bg-navy-soft" : "border-warm text-warm hover:bg-warm-soft"}`}>{recordIds.has(m.id) ? "記録を見る・直す" : "記録を書く"}</Link>
               </form>
             </li>
           ))}
@@ -342,7 +347,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
           <input type="url" name="meeting_url" placeholder="会議URL（任意・後から追加可）" className="border-b hairline py-1 flex-1 min-w-[260px]" />
           <button className="btn-primary" type="submit">面談を追加</button>
         </form>
-        <p className="text-xs text-ink-3 mt-2">日時は日本時間。URLが空のままだと顧客側に「会議URL未設定」と出ます。</p>
+        <p className="text-xs text-ink-3 mt-2">日時は日本時間。URLが空のままだと顧客側に「会議URL未設定」と出ます。面談が終わったら「記録を書く」で聞いたこと・書き起こし・メモを残してください（AIの下書きの材料になります）。</p>
       </section>
 
       <section className="mt-10">

@@ -4,6 +4,7 @@ import { complete, parseJson, loadFixedText } from "@/server/ai/client";
 import { extractCompanyDocs } from "@/server/extract";
 import { PROFILE_ITEMS } from "@/lib/profileItems";
 import { loadIntakeContext, targetRule } from "@/server/intake";
+import { loadMeetingContext } from "@/server/meetingRecords";
 
 type DraftItem = { key: string; draft: string; tag: "fact" | "verify" | "hypothesis"; source: string };
 
@@ -15,12 +16,13 @@ export async function loadBQuestions() {
 
 /** 資料から「御社の説明」の下書きを作る */
 export async function draftProfile(companyId: string, companyName: string): Promise<{ items: DraftItem[]; skipped: string[]; errors: string[]; docCount: number }> {
-  const [{ docs, skipped, errors }, intake] = await Promise.all([extractCompanyDocs(companyId), loadIntakeContext(companyId, companyName)]);
+  const [{ docs, skipped, errors }, intake, meetings] = await Promise.all([extractCompanyDocs(companyId), loadIntakeContext(companyId, companyName), loadMeetingContext(companyId).catch(() => "")]);
   // 適合診断の聞き取りも資料の一つとして渡す。書き起こしの枠を先に取り、残りを会社資料で埋める（合計12万字）
   const head: { title: string; kind: string; text: string }[] = [];
   if (intake.notes) head.push({ title: "適合診断の面談記録（ベレネッツが聞き取った要点）", kind: "diagnosis_memo", text: intake.notes });
   if (intake.transcript) head.push({ title: "適合診断の書き起こし（ベレネッツとお客様の両方が話している。お客様の発言だけを材料にする）", kind: "diagnosis_memo", text: intake.transcript });
   if (intake.memos) head.push({ title: "適合診断の面談メモ・資料（ベレネッツがヒアリング中に取ったメモと受け取った資料。お客様の発言・事実だけを材料にする）", kind: "diagnosis_memo", text: intake.memos });
+  if (meetings) head.unshift({ title: "面談の記録（キックオフ・確認セッションなど。新しい順。お客様の発言・事実だけを材料にする。適合診断より新しい情報として優先）", kind: "meeting_record", text: meetings });
   const all = [...head, ...docs];
   if (all.length === 0) return { items: [], skipped, errors, docCount: 0 };
   const bq = await loadBQuestions();
@@ -75,5 +77,7 @@ export async function loadProfileContext(supabase: { from: SupabaseClient["from"
   if (intake.notes) ctx["適合診断の面談記録（ベレネッツが聞き取った要点）"] = intake.notes.slice(0, 4000);
   if (intake.transcript) ctx["適合診断の書き起こし（抜粋。お客様の発言だけを材料にする）"] = intake.transcript;
   if (intake.memos) ctx["適合診断の面談メモ・資料（抜粋。お客様の発言・事実だけを材料にする）"] = intake.memos;
+  const meetings = await loadMeetingContext(companyId, 8000).catch(() => "");
+  if (meetings) ctx["面談の記録（キックオフ・確認セッションなど。新しい順。適合診断より新しい情報として優先）"] = meetings;
   return ctx;
 }

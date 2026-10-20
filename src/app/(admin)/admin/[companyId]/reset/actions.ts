@@ -30,6 +30,8 @@ export async function resetCompany(formData: FormData) {
   if (parts.includes("communication")) {
     const { data } = await admin.from("error_reports").select("screenshot_path").eq("company_id", companyId).not("screenshot_path", "is", null);
     files.push(...(data ?? []).map((d) => d.screenshot_path as string));
+    const { data: mf } = await admin.from("meeting_files").select("storage_path").eq("company_id", companyId);
+    files.push(...(mf ?? []).map((d) => d.storage_path as string));
   }
 
   if (parts.includes("diagnosis")) {

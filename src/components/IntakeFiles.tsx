@@ -22,7 +22,7 @@ const kb = (n: number | null) => (n == null ? "" : n < 1024 * 1024 ? `${Math.max
 /**
  * 面談メモ・資料を複数まとめて登録する。選んだらすぐ送る（ページを読み直さないので、上で入力中の記録は消えない）。
  */
-export function IntakeFiles({ companyId, initial }: { companyId: string; initial: IntakeFile[] }) {
+export function IntakeFiles({ companyId, initial, meetingId }: { companyId: string; initial: IntakeFile[]; meetingId?: string }) {
   const [files, setFiles] = useState<IntakeFile[]>(initial);
   const [busy, setBusy] = useState<string>("");
   const [msgs, setMsgs] = useState<string[]>([]);
@@ -36,7 +36,7 @@ export function IntakeFiles({ companyId, initial }: { companyId: string; initial
     for (const [i, f] of list.entries()) {
       setBusy(`送っています（${i + 1}/${list.length}）：${f.name}`);
       try {
-        const prep = await prepareIntakeFile({ companyId, name: f.name, size: f.size });
+        const prep = await prepareIntakeFile({ companyId, name: f.name, size: f.size, meetingId });
         if (!prep.ok) { notes.push(prep.error); continue; }
         const { error } = await createClient().storage.from("company-docs").uploadToSignedUrl(prep.path, prep.token, f, { contentType: contentTypeOf(f) });
         if (error) {
@@ -44,7 +44,7 @@ export function IntakeFiles({ companyId, initial }: { companyId: string; initial
           notes.push(/mime|type/i.test(m) ? `${f.name}：この形式は保管場所の設定でまだ受け付けていません（${contentTypeOf(f)}）` : /size|large/i.test(m) ? `${f.name}：大きすぎます（25MBまで）` : `${f.name}：送れませんでした（${m || "通信エラー"}）。もう一度お試しください`);
           continue;
         }
-        const fin = await finishIntakeFile({ companyId, path: prep.path, name: f.name, type: contentTypeOf(f) });
+        const fin = await finishIntakeFile({ companyId, path: prep.path, name: f.name, type: contentTypeOf(f), meetingId });
         if (!fin.ok) { notes.push(fin.error); continue; }
         setFiles((x) => [...x, fin.file]);
         if (fin.note) notes.push(fin.note);
@@ -59,7 +59,7 @@ export function IntakeFiles({ companyId, initial }: { companyId: string; initial
 
   async function remove(id: string) {
     setConfirmId("");
-    const r = await removeIntakeFile({ companyId, id });
+    const r = await removeIntakeFile({ companyId, id, meetingId });
     if (r.ok) setFiles((x) => x.filter((f) => f.id !== id));
     else setMsgs([`外せませんでした：${r.error ?? ""}`]);
   }
