@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOperator } from "@/lib/session";
 import { DiagnosisView } from "@/components/DiagnosisView";
+import { loadKickoff } from "@/server/kickoff";
 import { ReasonLogo } from "@/components/Brand";
 import { STATUS_LABEL } from "@/lib/stages";
 import { ProgramOutline } from "@/components/ProgramOutline";
@@ -10,9 +11,10 @@ import { ProgramOutline } from "@/components/ProgramOutline";
 export default async function DiagnosisPreview({ params }: PageProps<"/admin/[companyId]/diagnosis/preview">) {
   const { companyId } = await params;
   const { supabase } = await requireOperator();
-  const [{ data: c }, { data: d }] = await Promise.all([
+  const [{ data: c }, { data: d }, kickoff] = await Promise.all([
     supabase.from("companies").select("id, name, status, applied_at, contracted_at, paid_at").eq("id", companyId).single(),
     supabase.from("diagnosis_results").select("*").eq("company_id", companyId).maybeSingle(),
+    loadKickoff(companyId),
   ]);
   if (!c) notFound();
   return (
@@ -43,7 +45,7 @@ export default async function DiagnosisPreview({ params }: PageProps<"/admin/[co
             <p className="mt-1.5 text-[11px] text-ink-3 text-center">ベレネッツからの回答は、質問と同じ画面に表示されます。</p>
           </aside>
           <div className="flex-1 min-w-0 px-6 sm:px-10 py-10">
-            <DiagnosisView company={c} d={d} preview />
+            <DiagnosisView company={c} d={d} preview kickoff={kickoff} />
           </div>
         </div>
       )}

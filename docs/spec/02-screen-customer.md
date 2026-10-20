@@ -115,3 +115,5 @@
 | メソッド・出典の開示要求 | 固定の返し（05-ai-behavior.md）。`disclosure_requests` に記録 |
 
 - 契約前（diagnosed）の左メニュー：「8週間で完成するもの」の枠＋ステップ一覧の間に面談（キックオフ／確認①／中間チェック／確認②／確認③）を差し込む（`ProgramOutline`。プレビューと共通）
+
+- キックオフ候補日：結果ページの候補日（diagnosis_results.candidate_dates）と、面談に登録した未実施のキックオフ（company_meetings）の両方を候補として出す（未来の日だけ）。結果ページに候補が無く面談に1件だけなら確定扱い。お客様が選ぶと、選んだ日の面談を残し、ほかの未実施候補は外す（`src/server/kickoff.ts`）。

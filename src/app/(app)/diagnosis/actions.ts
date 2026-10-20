@@ -49,18 +49,30 @@ export async function chooseKickoff(formData: FormData) {
   const admin = createAdminClient();
   const { data: c } = await admin.from("companies").select("paid_at").eq("id", company.id).single();
   if (!c?.paid_at) return;
-  const { data: d } = await admin.from("diagnosis_results").select("candidate_dates, chosen_date").eq("company_id", company.id).maybeSingle();
-  const candidates = (d?.candidate_dates ?? []) as string[];
-  // 過ぎた候補日は選べない
-  if (!d || !candidates.includes(iso) || new Date(iso) <= new Date()) {
+  // 候補は、結果ページの候補日と、面談に登録した未実施のキックオフの両方（過ぎた日は選べない）
+  const { loadKickoff } = await import("@/server/kickoff");
+  const k = await loadKickoff(company.id);
+  if (k.chosen || !k.candidates.includes(iso) || new Date(iso) <= new Date()) {
     revalidatePath("/diagnosis");
     return;
   }
-  await admin.from("diagnosis_results").update({ chosen_date: iso, chosen_at: new Date().toISOString() }).eq("company_id", company.id);
-  // 既存のキックオフ予定があれば日時だけ差し替える（ベレネッツが入れた会議URLは残す）
-  const { data: km } = await admin.from("company_meetings").select("id").eq("company_id", company.id).eq("kind", "kickoff").is("held_at", null).order("created_at").limit(1).maybeSingle();
-  if (km) await admin.from("company_meetings").update({ scheduled_at: iso }).eq("id", km.id);
-  else await admin.from("company_meetings").insert({ company_id: company.id, kind: "kickoff", scheduled_at: iso, created_by: user.id });
+  await admin.from("diagnosis_results").upsert({ company_id: company.id, chosen_date: iso, chosen_at: new Date().toISOString() }, { onConflict: "company_id" });
+  // 面談のキックオフ：選んだ日時のものがあればそれを残し（会議URLは残る）、ほかの未実施の候補は外す。無ければ1件作る
+  const { data: kms } = await admin.from("company_meetings").select("id, scheduled_at").eq("company_id", company.id).eq("kind", "kickoff").is("held_at", null);
+  const same = (kms ?? []).find((m) => new Date(m.scheduled_at as string).getTime() === new Date(iso).getTime());
+  const others = (kms ?? []).filter((m) => m.id !== same?.id && new Date(m.scheduled_at as string).getTime() > Date.now());
+  if (same) {
+    if (others.length) await admin.from("company_meetings").delete().in("id", others.map((m) => m.id));
+  } else {
+    const first = (kms ?? [])[0];
+    if (first) {
+      await admin.from("company_meetings").update({ scheduled_at: iso }).eq("id", first.id);
+      const rest = (kms ?? []).slice(1).filter((m) => new Date(m.scheduled_at as string).getTime() > Date.now());
+      if (rest.length) await admin.from("company_meetings").delete().in("id", rest.map((m) => m.id));
+    } else {
+      await admin.from("company_meetings").insert({ company_id: company.id, kind: "kickoff", scheduled_at: iso, created_by: user.id });
+    }
+  }
   await admin.from("alerts").insert({ company_id: company.id, kind: "escalation", payload: { type: "kickoff_chosen", date: iso, by: user.id } });
   await notifyOperators({ subject: `${company.name} がキックオフ日を選びました（${fmtMeeting(iso)}）`, lines: [`${company.name} の担当者が、キックオフの日程を ${fmtMeeting(iso)} に決めました。`, "面談に会議URLを入れ、状態を「キックオフ前」に変えると STEP 0 が開きます。"], path: `/admin/${company.id}` });
   revalidatePath("/diagnosis");

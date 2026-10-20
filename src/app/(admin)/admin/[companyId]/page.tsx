@@ -6,6 +6,7 @@ import { setStatus, setReaccess, setPhaseEnd, resolveAlert, createMeeting, updat
 import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
 import { createHomework, updateHomework, withdrawHomework, reopenHomework } from "./homework-actions";
 import { ClearQuery } from "@/components/ClearQuery";
+import { loadKickoff } from "@/server/kickoff";
 import { loadIntake, describeTarget, VERDICT_LABEL, inviteGate } from "@/server/intake";
 
 const HW_OK: Record<string, string> = { created: "宿題を出しました。お客様の左メニューと「宿題」画面に表示されます。", updated: "宿題を直しました。", withdrawn: "宿題を取り下げました。", reopened: "宿題をもう一度出しました（前の回答は残しています）。" };
@@ -35,12 +36,13 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
     supabase.from("error_reports").select("id, body, page, user_agent, screenshot_path, created_at, resolved_at, resolved_note").eq("company_id", companyId).order("created_at", { ascending: false }),
   ]);
   // 1回の往復でまとめて読む（順番に待つと会社が増えたときに遅くなる）
-  const [{ data: members }, intake, { data: openAlerts }, gate, { data: diag }] = await Promise.all([
+  const [{ data: members }, intake, { data: openAlerts }, gate, { data: diag }, kickoff] = await Promise.all([
     supabase.from("profiles").select("id, display_name, role, created_at").eq("company_id", companyId).order("created_at"),
     loadIntake(companyId).catch(() => null),
     supabase.from("alerts").select("id, kind, payload, created_at").eq("company_id", companyId).is("resolved_at", null).order("created_at", { ascending: false }),
     c ? inviteGate(companyId, c.status) : Promise.resolve({ ok: false, reason: "" }),
-    supabase.from("diagnosis_results").select("published_at, first_viewed_at, last_viewed_at, view_count").eq("company_id", companyId).maybeSingle(),
+    supabase.from("diagnosis_results").select("published_at, first_viewed_at, last_viewed_at, view_count, chosen_at").eq("company_id", companyId).maybeSingle(),
+    loadKickoff(companyId),
   ]);
   // メールアドレスは、この会社の担当者の分だけ取る（全ユーザー一覧は読まない）
   const adminAuth = (await import("@/lib/supabase/admin")).createAdminClient().auth.admin;
@@ -108,7 +110,11 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">申込・契約・入金（契約書と請求書はメールで）</h2>
-        <p className="text-xs text-ink-3 mt-1">お客様が診断結果ページで「申し込む」を押すと申込が入ります。契約書を取り交わしたら「契約済」、入金を確認したら「入金済」を押してください。入金済にすると、お客様にメールが届き、キックオフ日を候補（最大3つ）から選べるようになります。候補日は先に「適合診断の結果を書く」の 6. で入れておいてください（入れていないと「候補日はベレネッツからご連絡します」と届きます）。</p>
+        <p className="text-xs text-ink-3 mt-1">お客様が診断結果ページで「申し込む」を押すと申込が入ります。契約書を取り交わしたら「契約済」、入金を確認したら「入金済」を押してください。入金済にすると、お客様にメールが届き、キックオフ日を候補（最大3つ）から選べるようになります。候補日は「適合診断の結果を書く」の 6. に入れるか、下の「面談」にキックオフを複数登録してください（どちらも候補として出ます。未来の日だけ有効。面談に1件だけ入れると、その日で確定として扱います）。</p>
+        {c.status === "diagnosed" && c.paid_at && !kickoff.chosen && kickoff.candidates.length === 0 && (
+          <p className="mt-2 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-2.5 text-[13px]">入金済ですが、これからのキックオフ候補日がありません。お客様には「候補日はベレネッツからご連絡します」と出ています。「適合診断の結果を書く」の 6. か、下の「面談」で未来の日を入れてください。</p>
+        )}
+        {c.status === "diagnosed" && kickoff.chosen && <p className="mt-2 text-[13px]">キックオフ：<span className="num font-semibold">{fmtMeeting(kickoff.chosen)}</span>{diag?.chosen_at ? "（お客様が選択）" : "（面談の登録から確定）"}</p>}
         {diag?.published_at && (
           <p className="text-xs mt-2">
             診断結果：{fmtMeeting(diag.published_at)} 公開 ·{" "}

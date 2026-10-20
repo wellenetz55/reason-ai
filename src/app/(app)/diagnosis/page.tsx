@@ -1,6 +1,7 @@
 import { requireCustomer } from "@/lib/session";
 import { recordDiagnosisView } from "./actions";
 import { DiagnosisView } from "@/components/DiagnosisView";
+import { loadKickoff } from "@/server/kickoff";
 
 export default async function DiagnosisPage() {
   const { supabase, company } = await requireCustomer();
@@ -13,6 +14,6 @@ export default async function DiagnosisPage() {
       </div>
     );
   }
-  await recordDiagnosisView();
-  return <DiagnosisView company={company} d={d} />;
+  const [kickoff] = await Promise.all([loadKickoff(company.id), recordDiagnosisView()]);
+  return <DiagnosisView company={company} d={d} kickoff={kickoff} />;
 }
