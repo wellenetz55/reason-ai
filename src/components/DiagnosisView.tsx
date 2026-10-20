@@ -122,7 +122,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
               <p className="serif text-[22px] leading-tight mt-1">御社専用AIと上演</p>
               <p className="text-[12px] text-warm mt-1">別途・継続契約</p>
               <Bot size={20} strokeWidth={1.75} className="mt-4 text-warm" aria-hidden />
-              <p className="text-[13px] mt-2 leading-relaxed">ネタ（脚本）を完全に学習した貴社専用AIを活用。コピー・営業トーク・Web文章・素材・動画シナリオ・SNSが御社専用で出てくる</p>
+              <p className="text-[13px] mt-2 leading-relaxed">ネタ（脚本）を完全に学習した貴社専用AIを活用。コピー・営業トーク・Web文章・広告素材・動画シナリオ・SNS・採用の文章まで、御社専用で出てくる</p>
               <ul className="border-t hairline mt-4 pt-3 text-[13px] space-y-2">
                 <li>社内への浸透戦略</li>
                 <li>マーケティング戦略</li>
@@ -164,9 +164,9 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
           <p className="text-[11px] tracking-[0.2em] text-on-accent/70">OPTION B　── 御社専用AIと上演する</p>
           <p className="serif text-[19px] sm:text-[21px] leading-snug mt-1">継続契約で、御社専用の<br className="sm:hidden" />ブランディング・マーケティングAIが開きます。</p>
           <p className="text-[14px] leading-relaxed mt-3 text-on-accent/90 max-w-[42em]">ベレネッツが25年・750社で積み上げたマーケティングのノウハウと成功パターンが入ったAIに、8週間で完成した御社の「勝ちパターン（選ばれる理由の脚本）」が統合されます。一般的なAIに頼むのとは違い、出てくる言葉はすべて御社の脚本に沿ったものです。</p>
-          <p className="text-[11px] text-on-accent/70 mt-4">御社専用で出てくるもの</p>
+          <p className="text-[11px] text-on-accent/70 mt-4">御社専用で出てくるもの（一例）</p>
           <ul className="mt-2 flex flex-wrap gap-2">
-            {["コピーライティング", "営業トーク", "Webサイトの文章", "マーケティング素材", "動画シナリオ", "SNS発信コンテンツ"].map((t) => (
+            {["コピーライティング", "営業トーク・提案書", "価格・見積の説明", "Webサイト・LPの文章", "広告・チラシ・パンフレット", "メルマガ・DM", "プレスリリース", "動画シナリオ", "SNS発信コンテンツ", "セミナー・展示会の原稿", "採用の文章（求人・面接・会社説明）", "社内への浸透（朝礼・研修・評価の言葉）", "お客様の声の整理", "新商品・新サービスの打ち出し方", "クレーム・失注への返答"].map((t) => (
               <li key={t} className="rounded-full border border-on-accent/40 px-3 py-1 text-[13px]">{t}</li>
             ))}
           </ul>
