@@ -42,7 +42,8 @@ export default async function MeetingRecordPage({ params, searchParams }: PagePr
   return (
     <div>
       <ClearQuery keys={["error", "ok", "n"]} />
-      <p className="text-xs text-ink-3"><Link href={`/admin/${c.id}`} className="hover:text-ink">{c.name}</Link> / 面談の記録</p>
+      <Link href={`/admin/${c.id}`} className="inline-flex items-center gap-1.5 rounded-[var(--radius)] border hairline px-3 py-1.5 text-sm text-ink-2 hover:text-ink hover:bg-paper-2">← {c.name} の会社ページへ戻る</Link>
+      <p className="text-xs text-ink-3 mt-4"><Link href={`/admin/${c.id}`} className="hover:text-ink">{c.name}</Link> / 面談の記録</p>
       <h1 className="serif text-[28px] leading-tight mt-1">{label}の記録<span className="text-[14px] text-ink-3 font-normal ml-3 num">{fmtMeeting(m.scheduled_at)}{m.held_at ? "　実施済" : ""}</span></h1>
       <p className="text-sm text-ink-2 mt-2 max-w-[44em]">ベレネッツだけが見ます。お客様には出ません。ここに残した「聞いたこと」「書き起こし」「メモ・資料」は、会社プロフィールの下書き、STEP 1 の問いと下書き、「なぜなら」の下書きの材料になります（新しい面談ほど優先）。</p>
       {missing && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[44em]">面談の記録の保存先がまだありません（SQL 0026 が未実行の可能性があります）。</p>}
@@ -127,6 +128,11 @@ export default async function MeetingRecordPage({ params, searchParams }: PagePr
         <p className="text-xs text-ink-3 mt-1">ワークショップで書いた紙の写真、ホワイトボード、お客様から受け取った資料など。文字を取り出せたものはAIの材料になります（画像は保管のみ）。</p>
         {filesRes.error ? <p className="mt-3 text-sm text-warm">面談の記録の保存先がまだありません（SQL 0026 が未実行の可能性があります）。</p> : <div className="mt-4"><IntakeFiles companyId={c.id} meetingId={m.id} initial={files} /></div>}
       </section>
+
+      <div className="mt-12 border-t hairline pt-6 max-w-[880px] flex flex-wrap gap-3">
+        <Link href={`/admin/${c.id}`} className="inline-flex items-center gap-1.5 rounded-[var(--radius)] border hairline px-4 py-2 text-sm text-ink-2 hover:text-ink hover:bg-paper-2">← {c.name} の会社ページへ戻る</Link>
+        {!m.held_at && <span className="text-xs text-ink-3 self-center">キックオフが終わったら：保存して実施済にする → 会社ページで状態を「骨格をつくる（1〜2週目）」に。</span>}
+      </div>
     </div>
   );
 }
