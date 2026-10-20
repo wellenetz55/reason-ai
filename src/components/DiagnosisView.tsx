@@ -91,12 +91,18 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
           <li className="rounded-[var(--radius)] bg-paper-2 px-4 py-4">
             <p className="num text-[11px] text-ink-3">1</p>
             <p className="serif text-[16px] leading-snug mt-1">完成した提供価値シート</p>
-            <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">全列のExcel。根拠の印、削った行と理由、競合比較、お客様の声の分類まで含みます。</p>
+            <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">御社の「選ばれる理由」の原本。全列のExcelでお渡しします。</p>
+            <ul className="mt-2 flex flex-wrap gap-1.5">
+              {["三連の全文", "根拠の印（事実／要確認／仮説）", "削った行と、その理由", "競合比較", "お客様の声の分類", "未回収の宿題"].map((t) => <li key={t} className="rounded-full bg-paper border hairline px-2.5 py-0.5 text-[12px]">{t}</li>)}
+            </ul>
           </li>
           <li className="rounded-[var(--radius)] bg-paper-2 px-4 py-4">
             <p className="num text-[11px] text-ink-3">2</p>
             <p className="serif text-[16px] leading-snug mt-1">選ばれる理由のまとめ一式（活用パッケージ）</p>
-            <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">営業トーク台本／価格説明／Web原稿／採用の言葉／見積の言葉／社内共有用1枚。</p>
+            <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">脚本を、実際に使う場面の形にしたもの。そのまま現場で使えます。</p>
+            <ul className="mt-2 flex flex-wrap gap-1.5">
+              {["接点マップ", "営業トーク台本", "価格説明", "Web原稿", "採用の言葉", "見積の言葉", "社内共有用1枚", "月次運用の型"].map((t) => <li key={t} className="rounded-full bg-paper border hairline px-2.5 py-0.5 text-[12px]">{t}</li>)}
+            </ul>
           </li>
         </ol>
 
