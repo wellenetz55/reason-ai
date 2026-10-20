@@ -28,15 +28,19 @@ export default async function Home() {
       <div>
         <h1 className="serif text-[30px] leading-tight">{company.name}様、{greeting()}。</h1>
         <p className="text-ink-2 mt-3 max-w-[40em] leading-relaxed">お申し込みありがとうございます。8週間は、キックオフから始まります。</p>
+        <Link href="/diagnosis" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border-2 border-navy bg-navy-soft px-5 py-4 hover:brightness-[0.98]">
+          <span>
+            <span className="block text-[11px] font-semibold tracking-wide text-navy">初回ヒアリングの診断結果</span>
+            <span className="serif block text-[18px] leading-snug mt-0.5">適合診断の結果を振り返る</span>
+            <span className="block text-[12px] text-ink-2 mt-0.5">見つかった芽・ブレーキ・8週間で残るもの。いつでも読み返せます</span>
+          </span>
+          <span className="text-navy text-[20px]" aria-hidden>→</span>
+        </Link>
         <section className="mt-10">
           <p className="text-[13px] text-ink-3">いま</p>
           <h2 className="serif text-[22px] mt-1">{now}</h2>
         </section>
         <ProgramStart company={company} chosenDate={kickoff.chosen} dates={kickoff.candidates} expiresAt={d?.expires_at ?? null} />
-        <section className="mt-12 border-t hairline pt-6">
-          <p className="text-sm text-ink-2">初回ヒアリングの診断結果（見つかった芽・ブレーキ）は、いつでも振り返れます。</p>
-          <Link href="/diagnosis" className="inline-block mt-2 text-sm underline underline-offset-4">適合診断の結果を振り返る →</Link>
-        </section>
       </div>
     );
   }
