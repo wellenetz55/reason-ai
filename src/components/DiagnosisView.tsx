@@ -80,6 +80,37 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
         <h2 className="serif sec-title">8週間で、御社に残るもの</h2>
         <p className="text-sm text-ink-2 mt-2 max-w-[42em]">これは診断ソフトではありません。終わったとき、御社には「完成品」が残ります。</p>
 
+        {/* 全体の流れ：脚本の言語化 → 完成品 → 上演（2通り）。一目で商品構造が分かるように */}
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto_1.25fr] gap-3 md:gap-2 items-stretch" aria-label="8週間とその先の流れ">
+          <div className="rounded-[var(--radius)] bg-navy text-on-accent px-4 py-4">
+            <p className="text-[10px] tracking-[0.2em] text-on-accent/70">第1幕　8週間</p>
+            <p className="serif text-[18px] leading-snug mt-1">脚本の言語化</p>
+            <p className="text-[12px] text-on-accent/80 mt-0.5">ネタ（選ばれる理由）を決める</p>
+            <p className="text-[12px] text-on-accent/90 mt-2 leading-relaxed">AIが毎日の問いと下書き。ベレネッツが5回の面談で確定。</p>
+          </div>
+          <div className="hidden md:flex items-center text-ink-3 text-[22px]" aria-hidden>→</div>
+          <p className="md:hidden text-center text-ink-3 text-[20px] leading-none" aria-hidden>↓</p>
+          <div className="rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-4 py-4">
+            <p className="text-[10px] tracking-[0.2em] text-warm">完成品</p>
+            <p className="serif text-[18px] leading-snug mt-1">選ばれる理由の脚本</p>
+            <p className="text-[12px] text-ink-2 mt-0.5">提供価値シート＋まとめ一式</p>
+            <p className="text-[12px] text-ink-2 mt-2 leading-relaxed">すべてダウンロードして、御社のものに。</p>
+          </div>
+          <div className="hidden md:flex items-center text-ink-3 text-[22px]" aria-hidden>→</div>
+          <p className="md:hidden text-center text-ink-3 text-[20px] leading-none" aria-hidden>↓</p>
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] tracking-[0.2em] text-ink-3 md:pl-1">第2幕　上演（浸透・マーケティング）── 2通り</p>
+            <div className="rounded-[var(--radius)] bg-paper-2 px-4 py-3 flex-1">
+              <p className="serif text-[15px] leading-snug"><span className="num text-[11px] text-ink-3 mr-1.5">A</span>自社で上演する</p>
+              <p className="text-[12px] text-ink-2 mt-1 leading-relaxed">ダウンロードした脚本をもとに、営業・Web・採用へ御社自身で展開。</p>
+            </div>
+            <div className="rounded-[var(--radius)] bg-navy text-on-accent px-4 py-3 flex-1">
+              <p className="serif text-[15px] leading-snug"><span className="num text-[11px] text-on-accent/70 mr-1.5">B</span>御社専用AIで上演する<span className="text-[11px] font-normal text-on-accent/70 ml-2">継続契約</span></p>
+              <p className="text-[12px] text-on-accent/90 mt-1 leading-relaxed">脚本を完全に学習した貴社専用AIが、コピー・営業トーク・Web文章・素材・動画シナリオ・SNSを御社専用で出し続ける。</p>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-5 rounded-[var(--radius)] bg-warm-soft px-5 py-4">
           <p className="text-[11px] font-semibold tracking-wide text-warm">完成品</p>
           <p className="serif text-[20px] sm:text-[22px] leading-snug mt-1">選ばれる理由の脚本（提供価値シート）</p>
@@ -108,7 +139,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
 
         {/* その先：継続契約で開く、自社専用のブランディング・マーケティングAI */}
         <div className="mt-5 rounded-[var(--radius)] bg-navy text-on-accent px-5 sm:px-6 py-5">
-          <p className="text-[11px] tracking-[0.2em] text-on-accent/70">その先に</p>
+          <p className="text-[11px] tracking-[0.2em] text-on-accent/70">第2幕 B　── 御社専用AIで上演する</p>
           <p className="serif text-[19px] sm:text-[21px] leading-snug mt-1">継続契約で、御社専用の<br className="sm:hidden" />ブランディング・マーケティングAIが開きます。</p>
           <p className="text-[14px] leading-relaxed mt-3 text-on-accent/90 max-w-[42em]">ベレネッツが25年・750社で積み上げたマーケティングのノウハウと成功パターンが入ったAIに、8週間で完成した御社の「勝ちパターン（選ばれる理由の脚本）」が統合されます。一般的なAIに頼むのとは違い、出てくる言葉はすべて御社の脚本に沿ったものです。</p>
           <p className="text-[11px] text-on-accent/70 mt-4">御社専用で出てくるもの</p>
