@@ -1,5 +1,6 @@
 import { fmtMeeting } from "@/lib/meetings";
 import { chooseKickoff, applyProgram } from "@/app/(app)/diagnosis/actions";
+import { KickoffPicker } from "@/components/KickoffPicker";
 
 export type StartCompany = { name: string; applied_at: string | null; contracted_at: string | null; paid_at: string | null };
 
@@ -43,14 +44,7 @@ export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = 
           ) : dates.length > 0 ? (
             <>
               <p className="text-sm">入金を確認しました。キックオフ（3時間・オンライン）の日を選んでください。</p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {dates.map((iso) => (
-                  <form key={iso} action={preview ? undefined : chooseKickoff}>
-                    <input type="hidden" name="date" value={iso} />
-                    <button className="btn-primary num" type="submit" disabled={preview}>{fmtMeeting(iso)}</button>
-                  </form>
-                ))}
-              </div>
+              <KickoffPicker dates={dates} action={chooseKickoff} preview={preview} />
               <p className="text-[12px] text-ink-3 mt-3">どれも合わない場合は「ベレネッツに質問を残す」からご希望日をお知らせください。</p>
             </>
           ) : (
