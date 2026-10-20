@@ -49,7 +49,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
 
   return (
     <article className="max-w-[880px]">
-      <p className="inline-block rounded-full bg-navy text-on-accent text-[13px] font-semibold tracking-wide px-4 py-1.5">適合診断の結果</p>
+      <p className="inline-flex flex-wrap items-center gap-x-2 rounded-full bg-navy text-on-accent text-[13px] font-semibold tracking-wide px-4 py-1.5">適合診断の結果<span className="font-normal text-on-accent/80">── 8週間でつくる「選ばれる理由の脚本」に、御社が進めるかの判定</span></p>
       {/* 判定：左に「◎ 適合」のスタンプ、右に結論。社名は結論から外して上に小さく（結論が1行で読めるように） */}
       <div className="mt-6 flex items-center gap-4 sm:gap-6">
         <div aria-hidden className="shrink-0 -rotate-6 w-[84px] h-[84px] sm:w-[104px] sm:h-[104px] rounded-full border-[3px] border-warm text-warm flex flex-col items-center justify-center leading-none">
@@ -75,6 +75,57 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
         </section>
       )}
 
+      {/* 何が完成し、何が残るか。「診断ソフト」ではなく、AI＋ベレネッツで完成品をつくるプログラムだと最初に示す */}
+      <section className="mt-6 rounded-[var(--radius)] border-2 border-warm px-6 sm:px-8 py-6">
+        <h2 className="serif sec-title">8週間で、御社に残るもの</h2>
+        <p className="text-sm text-ink-2 mt-2 max-w-[42em]">これは診断ソフトではありません。終わったとき、御社には「完成品」が残ります。</p>
+
+        <div className="mt-5 rounded-[var(--radius)] bg-warm-soft px-5 py-4">
+          <p className="text-[11px] font-semibold tracking-wide text-warm">完成品</p>
+          <p className="serif text-[20px] sm:text-[22px] leading-snug mt-1">選ばれる理由の脚本（提供価値シート）</p>
+          <p className="text-[14px] leading-relaxed mt-2 max-w-[42em]">「御社は〜できる。だから、お客様は〜と感じられる。なぜなら〜」の三連を<span className="num font-semibold">30</span>組。ベレネッツとの面談で一つずつ確定（封）した、御社の言葉だけで書かれたものです。</p>
+        </div>
+
+        <p className="text-[11px] text-ink-3 mt-5">お手元に残る3つ</p>
+        <ol className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <li className="rounded-[var(--radius)] bg-paper-2 px-4 py-4">
+            <p className="num text-[11px] text-ink-3">1</p>
+            <p className="serif text-[16px] leading-snug mt-1">完成した提供価値シート</p>
+            <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">全列のExcel。根拠の印、削った行と理由、競合比較、お客様の声の分類まで含みます。</p>
+          </li>
+          <li className="rounded-[var(--radius)] bg-paper-2 px-4 py-4">
+            <p className="num text-[11px] text-ink-3">2</p>
+            <p className="serif text-[16px] leading-snug mt-1">貴社専用の「選ばれる理由AI」</p>
+            <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">御社の脚本を読み込んだAI。顧問期間中は継続して使えます。</p>
+          </li>
+          <li className="rounded-[var(--radius)] bg-paper-2 px-4 py-4">
+            <p className="num text-[11px] text-ink-3">3</p>
+            <p className="serif text-[16px] leading-snug mt-1">活用パッケージ</p>
+            <p className="text-[13px] text-ink-2 mt-2 leading-relaxed">営業トーク台本／価格説明／Web原稿／採用の言葉／見積の言葉／社内共有用1枚。</p>
+          </li>
+        </ol>
+
+        <div className="mt-6">
+          <p className="serif text-[17px] leading-snug">つくり方：AIが毎日の問いと下書き、ベレネッツが<span className="num">5</span>回の面談で確定。</p>
+          <ol className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2 text-[12px]">
+            {[
+              ["キックオフ", "3時間", "代表が直接"],
+              ["確認①", "2週目末", "①〜③を確定"],
+              ["中間チェック", "3週目末", "詰まりを解く"],
+              ["確認②", "5週目末", "順位・競合優位を確定"],
+              ["確認③", "8週目末", "全列を確定・運用設計"],
+            ].map(([t, w, b], i) => (
+              <li key={t} className="rounded-[var(--radius)] border border-navy bg-navy-soft px-3 py-2.5">
+                <p className="num text-[10px] tracking-wide text-navy">{i + 1}　{w}</p>
+                <p className="font-semibold mt-0.5">{t}</p>
+                <p className="text-[11px] text-ink-2 mt-0.5">{b}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="text-[13px] text-ink-2 mt-3 max-w-[42em]">面談で確定した言葉には「封」をして、以降は変えません。だから8週間で、完成します。</p>
+        </div>
+      </section>
+
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-ink-3">
         {d.published_at && <span className="num">{fmtMeeting(d.published_at)} 公開</span>}
         {d.expires_at && company.status === "diagnosed" && new Date(d.expires_at) > new Date() && <span>このページは <span className="num">{fmtMeeting(d.expires_at)}</span> まで</span>}
@@ -91,8 +142,9 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
           <p className="serif text-[30px] leading-none mt-1"><span className="num">{brakes.length}</span><span className="text-[14px] ml-1">つ</span></p>
         </div>
         <div className="rounded-[var(--radius)] bg-navy text-on-accent px-5 py-4">
-          <p className="text-[11px] text-on-accent/70">8週間での目標</p>
+          <p className="text-[11px] text-on-accent/70">8週間後に完成</p>
           <p className="serif text-[30px] leading-none mt-1"><span className="num">30</span><span className="text-[14px] ml-1">組</span></p>
+          <p className="text-[12px] text-on-accent/80 mt-1">選ばれる理由の脚本（提供価値シート）</p>
         </div>
       </div>
 
