@@ -83,7 +83,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
         <div className="mt-5 rounded-[var(--radius)] bg-warm-soft px-5 py-4">
           <p className="text-[11px] font-semibold tracking-wide text-warm">完成品</p>
           <p className="serif text-[20px] sm:text-[22px] leading-snug mt-1">選ばれる理由の脚本（提供価値シート）</p>
-          <p className="text-[14px] leading-relaxed mt-2 max-w-[42em]">「御社は〜できる。だから、お客様は〜と感じられる。なぜなら〜」の三連を<span className="num font-semibold">30</span>組。ベレネッツとの面談で一つずつ確定（封）した、御社の言葉だけで書かれたものです。</p>
+          <p className="text-[14px] leading-relaxed mt-2 max-w-[42em]">「御社は〜できる。だから、お客様は〜と感じられる。なぜなら〜」の三連で書かれた、御社の「選ばれる理由」。まず<span className="num font-semibold">30</span>組を目標に広く出し、リトマス試験紙やマグニチュード（強さの採点）で、本当に強いものだけに絞り込みます。残る数は会社によって違います。数ではなく、「比べられても、これで選ばれる」と言い切れる言葉が残ります。ベレネッツとの面談で一つずつ確定（封）した、御社の言葉だけで書かれたものです。</p>
         </div>
 
         <p className="text-[11px] text-ink-3 mt-5">お手元に残る3つ</p>
@@ -143,8 +143,8 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
         </div>
         <div className="rounded-[var(--radius)] bg-navy text-on-accent px-5 py-4">
           <p className="text-[11px] text-on-accent/70">8週間後に完成</p>
-          <p className="serif text-[30px] leading-none mt-1"><span className="num">30</span><span className="text-[14px] ml-1">組</span></p>
-          <p className="text-[12px] text-on-accent/80 mt-1">選ばれる理由の脚本（提供価値シート）</p>
+          <p className="serif text-[22px] leading-tight mt-1">選ばれる理由の脚本</p>
+          <p className="text-[12px] text-on-accent/80 mt-1"><span className="num">30</span>組を目標に出し、強いものに絞り込む</p>
         </div>
       </div>
 
@@ -188,7 +188,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
                 <span key={i} className={`h-[18px] rounded-[3px] ${i < seeds.length ? "bg-navy" : "border border-dashed border-ink-3"}`} />
               ))}
             </div>
-            <p className="text-sm mt-3 max-w-[40em]"><span className="font-semibold">残りは、御社の中にあります。</span>毎日ちがう角度の問いに答えるうちに、「言われてみれば、それもそうだ」が積み上がっていきます。目標は30組。面談では、その入口が見えただけです。</p>
+            <p className="text-sm mt-3 max-w-[40em]"><span className="font-semibold">残りは、御社の中にあります。</span>毎日ちがう角度の問いに答えるうちに、「言われてみれば、それもそうだ」が積み上がっていきます。まず30組を目標に出し、そこから強いものに絞り込みます。面談では、その入口が見えただけです。</p>
           </div>
         </section>
       )}
@@ -280,11 +280,11 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
       {company.status === "diagnosed" && (<>
       <section className="mt-16">
         <h2 className="serif sec-title">ここから、{company.name}様には<span className="text-warm">2つの道</span>があります。</h2>
-        <p className="text-sm text-ink-2 mt-2 max-w-[40em]">見つかった芽を30組まで育て、「選ばれる理由」として言い切れる形にする。やることは同じです。違うのは、誰が問いを立て、誰が揃えるかです。</p>
+        <p className="text-sm text-ink-2 mt-2 max-w-[40em]">見つかった芽を広げ、強いものに絞り込み、「選ばれる理由」として言い切れる形にする。やることは同じです。違うのは、誰が問いを立て、誰が揃えるかです。</p>
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-5">
           <p className="serif text-[20px] leading-tight"><span className="num text-[13px] font-semibold tracking-wide text-ink-3 block mb-1">道 1</span>自力でやる場合</p>
-          <p className="text-sm mt-2 leading-relaxed">30組を集めるには、毎日ちがう角度で問いを立てる人と、答えを「御社は〜できる。だから〜」の型に揃える人が要ります。担当の方がひとりで両方をやると、最初の数組で止まります。</p>
+          <p className="text-sm mt-2 leading-relaxed">広く出して絞り込むには、毎日ちがう角度で問いを立てる人と、答えを「御社は〜できる。だから〜」の型に揃え、強さを見極める人が要ります。担当の方がひとりで両方をやると、最初の数組で止まります。</p>
         </div>
         <div className="rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-5 py-5">
           <p className="serif text-[20px] leading-tight text-warm"><span className="num text-[13px] font-semibold tracking-wide block mb-1">道 2</span>8週間プログラムの場合</p>
