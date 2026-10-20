@@ -2,6 +2,7 @@ import { BRAKE_LABEL, TAG_LABEL } from "@/lib/diagnosis";
 import { fmtMeeting } from "@/lib/meetings";
 import { chooseKickoff, applyProgram } from "@/app/(app)/diagnosis/actions";
 import { PrintButton } from "@/components/PrintButton";
+import { Download, Users, Bot } from "lucide-react";
 
 type Seed = { feature: string; experience: string; tag: string };
 type Brake = { kind: string; words: string };
@@ -80,35 +81,56 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
         <h2 className="serif sec-title">8週間で、御社に残るもの</h2>
         <p className="text-sm text-ink-2 mt-2 max-w-[42em]">これは診断ソフトではありません。終わったとき、御社には「完成品」が残ります。</p>
 
-        {/* 全体の流れ：脚本の言語化 → 完成品 → 上演（2通り）。一目で商品構造が分かるように */}
-        <div className="mt-5 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto_1.25fr] gap-3 md:gap-2 items-stretch" aria-label="8週間とその先の流れ">
-          <div className="rounded-[var(--radius)] bg-navy text-on-accent px-4 py-4">
-            <p className="text-[10px] tracking-[0.2em] text-on-accent/70">第1幕　8週間</p>
-            <p className="serif text-[18px] leading-snug mt-1">脚本の言語化</p>
-            <p className="text-[12px] text-on-accent/80 mt-0.5">ネタ（選ばれる理由）を決める</p>
-            <p className="text-[12px] text-on-accent/90 mt-2 leading-relaxed">AIが毎日の問いと下書き。ベレネッツが5回の面談で確定。</p>
+        {/* 全体の流れ：脚本の言語化 → ダウンロード → 上演（2通り）。縦に読む図 */}
+        <div className="mt-6 rounded-[var(--radius)] border hairline bg-paper px-4 sm:px-6 py-6" aria-label="8週間とその先の流れ">
+          <div className="rounded-[var(--radius)] bg-navy text-on-accent px-6 py-6 text-center">
+            <p className="text-[11px] tracking-[0.2em] text-on-accent/60">STEP 01　|　初期契約・8週間</p>
+            <p className="serif text-[24px] sm:text-[26px] leading-tight mt-2">脚本の言語化</p>
+            <p className="serif text-[18px] leading-tight mt-1">「ネタの決定」</p>
+            <p className="text-[13px] text-on-accent/85 mt-3">御社ならではの価値・強み・伝えるべき物語を明確にする。AIが毎日の問い、ベレネッツが5回の面談で確定。</p>
           </div>
-          <div className="hidden md:flex items-center text-ink-3 text-[22px]" aria-hidden>→</div>
-          <p className="md:hidden text-center text-ink-3 text-[20px] leading-none" aria-hidden>↓</p>
-          <div className="rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-4 py-4">
-            <p className="text-[10px] tracking-[0.2em] text-warm">完成品</p>
-            <p className="serif text-[18px] leading-snug mt-1">選ばれる理由の脚本</p>
-            <p className="text-[12px] text-ink-2 mt-0.5">提供価値シート＋まとめ一式</p>
-            <p className="text-[12px] text-ink-2 mt-2 leading-relaxed">すべてダウンロードして、御社のものに。</p>
+
+          <div className="text-center mt-3">
+            <p className="text-ink-3 text-[18px] leading-none" aria-hidden>↓</p>
+            <p className="mt-2 inline-flex items-center gap-2 text-[15px] font-semibold"><Download size={16} strokeWidth={1.75} aria-hidden />完成した脚本をダウンロード</p>
+            <p className="text-[12px] text-ink-3 mt-1">ここで初期契約の成果物が完成。すべて御社のものに</p>
           </div>
-          <div className="hidden md:flex items-center text-ink-3 text-[22px]" aria-hidden>→</div>
-          <p className="md:hidden text-center text-ink-3 text-[20px] leading-none" aria-hidden>↓</p>
-          <div className="flex flex-col gap-2">
-            <p className="text-[10px] tracking-[0.2em] text-ink-3 md:pl-1">第2幕　上演（浸透・マーケティング）── 2通り</p>
-            <div className="rounded-[var(--radius)] bg-paper-2 px-4 py-3 flex-1">
-              <p className="serif text-[15px] leading-snug"><span className="num text-[11px] text-ink-3 mr-1.5">A</span>自社で上演する</p>
-              <p className="text-[12px] text-ink-2 mt-1 leading-relaxed">ダウンロードした脚本をもとに、営業・Web・採用へ御社自身で展開。</p>
+
+          <div className="border-t hairline mt-5 pt-6 text-center">
+            <p className="serif text-[20px] sm:text-[22px] leading-tight">上演方法は、2つから選択できます</p>
+            <p className="text-[12px] text-ink-3 mt-1">上演＝社内への浸透とマーケティング。脚本を「使う」段階です</p>
+            <svg className="mx-auto mt-3 text-ink-3" width="240" height="36" viewBox="0 0 240 36" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+              <path d="M120 0v10M40 10h160M40 10v26M200 10v26M34 30l6 6 6-6M194 30l6 6 6-6" />
+            </svg>
+          </div>
+
+          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-5 flex flex-col">
+              <p className="text-[11px] tracking-[0.15em] text-ink-3">OPTION A</p>
+              <p className="serif text-[22px] leading-tight mt-1">自社で上演</p>
+              <p className="text-[12px] text-ink-3 mt-1">継続契約は不要</p>
+              <Users size={20} strokeWidth={1.75} className="mt-4 text-ink-2" aria-hidden />
+              <p className="text-[13px] mt-2 leading-relaxed">ダウンロードした脚本をもとに、御社の体制で実行する</p>
+              <ul className="border-t hairline mt-4 pt-3 text-[13px] space-y-2">
+                <li>社内への浸透戦略</li>
+                <li>マーケティング戦略</li>
+              </ul>
+              <p className="text-[12px] text-ink-3 mt-auto pt-4">自社のペースと体制で活用</p>
             </div>
-            <div className="rounded-[var(--radius)] bg-navy text-on-accent px-4 py-3 flex-1">
-              <p className="serif text-[15px] leading-snug"><span className="num text-[11px] text-on-accent/70 mr-1.5">B</span>御社専用AIで上演する<span className="text-[11px] font-normal text-on-accent/70 ml-2">継続契約</span></p>
-              <p className="text-[12px] text-on-accent/90 mt-1 leading-relaxed">脚本を完全に学習した貴社専用AIが、コピー・営業トーク・Web文章・素材・動画シナリオ・SNSを御社専用で出し続ける。</p>
+            <div className="rounded-[var(--radius)] border-2 border-warm bg-paper px-5 py-5 flex flex-col">
+              <p className="text-[11px] tracking-[0.15em] text-warm">OPTION B</p>
+              <p className="serif text-[22px] leading-tight mt-1">御社専用AIと上演</p>
+              <p className="text-[12px] text-warm mt-1">別途・継続契約</p>
+              <Bot size={20} strokeWidth={1.75} className="mt-4 text-warm" aria-hidden />
+              <p className="text-[13px] mt-2 leading-relaxed">ネタ（脚本）を完全に学習した貴社専用AIを活用。コピー・営業トーク・Web文章・素材・動画シナリオ・SNSが御社専用で出てくる</p>
+              <ul className="border-t hairline mt-4 pt-3 text-[13px] space-y-2">
+                <li>社内への浸透戦略</li>
+                <li>マーケティング戦略</li>
+              </ul>
+              <p className="text-[12px] text-warm mt-auto pt-4">AIを使って継続的に実行・改善</p>
             </div>
           </div>
+          <p className="text-[12px] text-ink-3 text-center mt-4">どちらを選んでも、完成した脚本は御社の資産として活用できます。</p>
         </div>
 
         <div className="mt-5 rounded-[var(--radius)] bg-warm-soft px-5 py-4">
@@ -139,7 +161,7 @@ export function DiagnosisView({ company, d, preview = false }: { company: Diagno
 
         {/* その先：継続契約で開く、自社専用のブランディング・マーケティングAI */}
         <div className="mt-5 rounded-[var(--radius)] bg-navy text-on-accent px-5 sm:px-6 py-5">
-          <p className="text-[11px] tracking-[0.2em] text-on-accent/70">第2幕 B　── 御社専用AIで上演する</p>
+          <p className="text-[11px] tracking-[0.2em] text-on-accent/70">OPTION B　── 御社専用AIと上演する</p>
           <p className="serif text-[19px] sm:text-[21px] leading-snug mt-1">継続契約で、御社専用の<br className="sm:hidden" />ブランディング・マーケティングAIが開きます。</p>
           <p className="text-[14px] leading-relaxed mt-3 text-on-accent/90 max-w-[42em]">ベレネッツが25年・750社で積み上げたマーケティングのノウハウと成功パターンが入ったAIに、8週間で完成した御社の「勝ちパターン（選ばれる理由の脚本）」が統合されます。一般的なAIに頼むのとは違い、出てくる言葉はすべて御社の脚本に沿ったものです。</p>
           <p className="text-[11px] text-on-accent/70 mt-4">御社専用で出てくるもの</p>
