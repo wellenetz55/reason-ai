@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireCustomer } from "@/lib/session";
 import { STAGES, currentStep, NOT_READY } from "@/lib/stages";
+import { ProgramStart } from "@/components/ProgramStart";
+import { loadKickoff } from "@/server/kickoff";
 
 function greeting() {
   const h = Number(new Intl.DateTimeFormat("ja-JP", { hour: "numeric", hour12: false, timeZone: "Asia/Tokyo" }).format(new Date()));
@@ -12,7 +14,32 @@ function greeting() {
 
 export default async function Home() {
   const { company, supabase } = await requireCustomer();
-  if (company.status === "diagnosed") redirect("/diagnosis");
+  if (company.status === "diagnosed") {
+    // 申込前：診断結果が最初の画面。申込後：ここで「契約→入金→キックオフ日」の進み具合を見せ、診断結果は振り返り用のリンクに
+    if (!company.applied_at && !company.contracted_at && !company.paid_at) redirect("/diagnosis");
+    const [{ data: d }, kickoff] = await Promise.all([
+      supabase.from("diagnosis_results").select("expires_at").eq("company_id", company.id).maybeSingle(),
+      loadKickoff(company.id),
+    ]);
+    const paid = !!company.paid_at;
+    const contracted = paid || !!company.contracted_at;
+    const now = !contracted ? "ベレネッツから申込書・契約書と請求書がメールで届きます（2営業日以内）。" : !paid ? "入金が確認されると、この画面でキックオフの日を選べるようになります。" : !kickoff.chosen ? "キックオフの日を選んでください。" : "キックオフの日が決まりました。当日まで、会社案内や資料を手元にそろえておいてください。";
+    return (
+      <div>
+        <h1 className="serif text-[30px] leading-tight">{company.name}様、{greeting()}。</h1>
+        <p className="text-ink-2 mt-3 max-w-[40em] leading-relaxed">お申し込みありがとうございます。8週間は、キックオフから始まります。</p>
+        <section className="mt-10">
+          <p className="text-[13px] text-ink-3">いま</p>
+          <h2 className="serif text-[22px] mt-1">{now}</h2>
+        </section>
+        <ProgramStart company={company} chosenDate={kickoff.chosen} dates={kickoff.candidates} expiresAt={d?.expires_at ?? null} />
+        <section className="mt-12 border-t hairline pt-6">
+          <p className="text-sm text-ink-2">初回ヒアリングの診断結果（見つかった芽・ブレーキ）は、いつでも振り返れます。</p>
+          <Link href="/diagnosis" className="inline-block mt-2 text-sm underline underline-offset-4">適合診断の結果を振り返る →</Link>
+        </section>
+      </div>
+    );
+  }
   const [{ data: progress }, { data: hw }] = await Promise.all([
     supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle(),
     supabase.from("homeworks").select("id, title, why, due_at, priority").eq("company_id", company.id).eq("status", "open").order("priority", { ascending: false }).order("due_at").limit(3),

@@ -51,7 +51,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <p className="text-[13px] text-ink-2 mt-1">{profile.display_name} <span className="text-ink-3">さん</span></p>
         <div className="mt-3 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-3.5 py-2.5">
           <p className="text-[11px] font-semibold text-navy tracking-wide">現在のフェーズ</p>
-          <p className="text-[13px] text-ink mt-0.5">{company.status === "diagnosed" ? "適合診断の結果をご確認ください" : STATUS_LABEL[company.status] ?? company.status}</p>
+          <p className="text-[13px] text-ink mt-0.5">{company.status === "diagnosed" ? (company.paid_at ? "キックオフ前（日程調整）" : company.applied_at || company.contracted_at ? "お申し込み済み（契約手続き中）" : "適合診断の結果をご確認ください") : STATUS_LABEL[company.status] ?? company.status}</p>
         </div>
         {/* 宿題：フェーズのすぐ下。未回答があれば暖色で目立たせる（契約前は出さない） */}
         {!["diagnosed", "locked", "cancelled"].includes(company.status) && (openHomework > 0 ? (
@@ -69,7 +69,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         ))}
         {company.status === "diagnosed" ? (
           <nav className="mt-6">
-            <Link href="/diagnosis" className="block text-[14px] py-[7px] pl-3 -ml-3 border-l-2 border-navy">適合診断の結果</Link>
+            {company.applied_at || company.contracted_at || company.paid_at ? (
+              <>
+                <Link href="/" className="block text-[14px] py-[7px] pl-3 -ml-3 border-l-2 border-navy">キックオフまでの進み具合</Link>
+                <Link href="/diagnosis" className="block text-[13px] py-[6px] pl-3 -ml-3 text-ink-2 hover:text-ink">適合診断の結果<span className="text-ink-3">（振り返り）</span></Link>
+              </>
+            ) : (
+              <Link href="/diagnosis" className="block text-[14px] py-[7px] pl-3 -ml-3 border-l-2 border-navy">適合診断の結果</Link>
+            )}
             <ProgramOutline />
           </nav>
         ) : (
