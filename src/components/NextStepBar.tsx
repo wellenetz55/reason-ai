@@ -43,11 +43,11 @@ export function NextStepBar({ gate, meeting }: { gate: Gate; meeting?: { label: 
         ) : (
           <p className="serif text-[17px] mt-0.5">最終ステップ</p>
         )}
-        <p className={`text-[13px] mt-1 max-w-[40em] ${gate.byOperator || notReady ? "text-warm" : "text-ink-2"}`}>{notReady ? "次の段階の画面は準備中です。進め方は次の面談でご案内します。" : gate.note}</p>
+        <p className={`text-[13px] mt-1 max-w-[40em] ${gate.byOperator || notReady ? "text-warm" : "text-ink-2"}`}>{notReady ? "次の段階の画面は準備中です。できあがりしだい、ここから進めるようになります。それまでは、この段階の見直しを進めてください。" : gate.note}</p>
       </div>
       {n && (
         notReady ? (
-          <span className="btn-primary opacity-40 cursor-not-allowed" aria-disabled="true">準備中（面談でご案内）</span>
+          <span className="btn-primary opacity-40 cursor-not-allowed" aria-disabled="true">準備中</span>
         ) : gate.ready ? (
           <Link href={n.href} className="btn-primary">次へ：{n.label} →</Link>
         ) : (

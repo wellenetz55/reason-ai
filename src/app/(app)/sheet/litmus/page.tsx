@@ -11,7 +11,7 @@ export default async function Page() {
       <h1 className="serif text-[28px] leading-tight">リトマス試験紙</h1>
       <StepGuide stageKey="litmus" />
       <div className="mt-3"><ExportButton stageKey="litmus" /></div>
-      <p className="mt-6 rounded-[var(--radius)] bg-paper-2 px-5 py-4 text-sm text-ink-2 max-w-[40em]">この段階の画面は、いま準備中です。始めるときは、ベレネッツからご案内します。それまでは前の段階の見直しや、宿題を進めてください。</p>
+      <p className="mt-6 rounded-[var(--radius)] bg-paper-2 px-5 py-4 text-sm text-ink-2 max-w-[40em]">この段階の画面は、いま準備中です。できあがりしだい、この画面でご案内します。それまでは前の段階の見直しや、宿題を進めてください。</p>
     </div>
   );
 }

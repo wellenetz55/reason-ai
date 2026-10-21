@@ -86,7 +86,7 @@ export default async function Home() {
           </Link>
         )}
         {stage && NOT_READY.has(stage.key) && (
-          <p className="mt-6 rounded-[var(--radius)] bg-paper-2 px-5 py-4 text-sm text-ink-2 max-w-[40em]">この段階の画面は準備中です。進め方は次の面談でご案内します。それまでは宿題と、前の段階の見直しを進めてください。</p>
+          <p className="mt-6 rounded-[var(--radius)] bg-paper-2 px-5 py-4 text-sm text-ink-2 max-w-[40em]">この段階の画面は、いま準備中です。できあがりしだい、この画面でご案内します。それまでは前の段階の見直しや、宿題を進めてください。</p>
         )}
         {company.reaccess && company.reaccess_until && (
           <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-5 py-3 text-sm text-ink-2 max-w-[40em]">
@@ -95,7 +95,7 @@ export default async function Home() {
         )}
         {company.status === "locked" && <a href="/api/export?step=deploy" className="btn-primary inline-block mt-6">提供価値シートをダウンロード</a>}
         {!["locked", "cancelled"].includes(company.status) && <p className="text-[13px] text-ink-3 mt-6 max-w-[40em] leading-relaxed">
-          ステップは STEP 0 から順に進みます。各画面のいちばん下に「次のステップ」があり、条件を満たすとボタンが押せます。画面が準備中の段階は、面談でご案内します。ベレネッツとの面談のあとに開くステップもあります。
+          ステップは STEP 0 から順に進みます。各画面のいちばん下に「次のステップ」があり、条件を満たすとボタンが押せます。画面が準備中の段階は、できあがりしだいご案内します。ベレネッツとの面談のあとに開くステップもあります。
         </p>}
       </section>
 

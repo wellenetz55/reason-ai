@@ -61,7 +61,7 @@ export function NavRail({ stages, meetings = {} }: { stages: S[]; meetings?: Rec
                   {inner}
                 </Link>
               ) : (
-                <span className={clsx(base, "border-transparent text-ink-3")} title={s.open ? "この段階の画面は準備中です。進め方は面談でご案内します" : "面談のあと、ベレネッツが開きます"}>
+                <span className={clsx(base, "border-transparent text-ink-3")} title={s.open ? "この段階の画面は準備中です。できあがりしだいご案内します" : "面談のあと、ベレネッツが開きます"}>
                   {inner}
                   {s.open && <span className="ml-auto text-[10px] text-ink-3 border hairline rounded-full px-1.5 py-[1px] shrink-0">準備中</span>}
                 </span>
