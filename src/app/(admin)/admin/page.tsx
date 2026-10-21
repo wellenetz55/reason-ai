@@ -97,7 +97,7 @@ export default async function AdminHome() {
                       {alBy[c.id].map((x) => (
                         <li key={x.label} className="flex items-baseline gap-2">
                           <span className={`shrink-0 w-1.5 h-1.5 rounded-full translate-y-[-2px] ${x.urgent ? "bg-warm" : "bg-ink-3"}`} />
-                          <span className={x.urgent ? "text-ink font-medium" : "text-ink-2"}>{x.label}{x.count > 1 && <span className="num text-ink-3"> ×{x.count}</span>}</span>
+                          <span className={x.urgent ? "text-warm font-bold" : "text-ink-2"}>{x.label}{x.count > 1 && <span className="num text-ink-3"> ×{x.count}</span>}</span>
                           <span className="num text-ink-3 shrink-0">{fmtD(x.at)}</span>
                         </li>
                       ))}
@@ -119,6 +119,25 @@ export default async function AdminHome() {
           <span className="text-ink-3 text-[12px]">返事が遅れると、顧客のやる気が下がります</span>
         </p>
       )}
+      {(() => {
+        const todo = (companies ?? []).filter((c) => isUrgent(c.id)).map((c) => ({ c, items: (alBy[c.id] ?? []).filter((x) => x.urgent) }));
+        if (!todo.length) return null;
+        return (
+          <section role="status" className="mt-4 rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-5 py-4 text-sm max-w-[760px]">
+            <p className="inline-flex items-center gap-2 font-bold text-warm"><span className="now-dot" aria-hidden /><span className="attention-blink">ベレネッツの番</span><span className="num font-semibold text-ink">{todo.length}社</span></p>
+            <ul className="mt-2 space-y-1.5">
+              {todo.map(({ c, items }) => (
+                <li key={c.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                  <Link href={`/admin/${c.id}`} className="font-semibold underline underline-offset-2 hover:text-warm">{c.name}</Link>
+                  <span className="text-ink">{items.map((x) => x.label).join("／")}</span>
+                  <span className="num text-[11px] text-ink-3">{fmtD(items[0].at)}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-ink-3 text-[12px] mt-2">顧客側の作業が終わり、次の一手がベレネッツにある会社です。対応すると自動で消えます</p>
+          </section>
+        );
+      })()}
       {(companies ?? []).length === 0 ? (
         <p className="mt-8 rounded-[var(--radius)] bg-paper-2 px-5 py-4 text-sm text-ink-2 max-w-[40em]">まだ会社がありません。いちばん下の「新しい会社」に会社名を入れて追加してください。</p>
       ) : (
