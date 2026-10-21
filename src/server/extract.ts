@@ -143,8 +143,15 @@ async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; 
   // 大量の項目で読み込み自体にメモリと時間を使わせる細工を、ここで止める（正常なWordは数百件まで）
   {
     let n = 0;
+    let extra = 0;
     for (let i = buf.indexOf(CD_SIG); i >= 0; i = buf.indexOf(CD_SIG, i + 4)) {
       if (++n > 2000) return bad("Wordファイルの形式を確かめられませんでした");
+      // 目次の各項目の「補助情報（extra field）」の合計にも上限：jszip は補助情報を1つずつ読み込むため、
+      // 極端に多い補助情報で読み込み自体にメモリを使わせる細工を止める（正常なWordは数KB程度）
+      if (i + 46 <= buf.length) {
+        extra += buf.readUInt16LE(i + 30);
+        if (extra > 256 * 1024) return bad("Wordファイルの形式を確かめられませんでした");
+      }
     }
   }
   const JSZip = (await import("jszip")).default;
