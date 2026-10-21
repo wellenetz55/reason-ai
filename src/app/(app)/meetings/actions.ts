@@ -51,6 +51,17 @@ export async function requestOtherDates(formData: FormData) {
   const admin = createAdminClient();
   const { data: ms } = await admin.from("company_meetings").select("id, scheduled_at").eq("company_id", company.id).eq("kind", kind).is("held_at", null);
   const future = (ms ?? []).filter((m) => new Date(m.scheduled_at as string).getTime() > Date.now());
+  // 「候補」が並んでいるときだけ取り下げられる。確定済み（1件だけ／キックオフ日を選び済み）は消さない
+  let candidateCount = future.length;
+  if (kind === "kickoff") {
+    const { data: dr } = await admin.from("diagnosis_results").select("chosen_date, candidate_dates").eq("company_id", company.id).maybeSingle();
+    if (dr?.chosen_date) return;
+    const fromResults = ((dr?.candidate_dates ?? []) as string[]).filter((d) => new Date(d).getTime() > Date.now());
+    // loadKickoff と同じ判定：結果ページの候補が無く面談が1件だけ＝確定とみなす。それ以外の未選択は候補
+    if (fromResults.length === 0 && future.length === 1) return;
+    candidateCount = fromResults.length + future.length;
+    if (candidateCount < 1) return;
+  } else if (candidateCount < 2) return;
   if (future.length) await admin.from("company_meetings").delete().in("id", future.map((m) => m.id));
   if (kind === "kickoff") await admin.from("diagnosis_results").update({ candidate_dates: [] }).eq("company_id", company.id);
   const label = MEETING_LABEL[kind] ?? kind;
