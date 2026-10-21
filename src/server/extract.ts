@@ -134,11 +134,22 @@ const MAX_DOCX_UNZIPPED = 60 * 1024 * 1024;
  * jszip は読み込みの時点では展開しない（必要になったときに展開する）ので、この確認自体は安全。
  * 未知の圧縮方式・展開エラー・上限超えは、すべて「読まない」（fail closed）。
  */
+const CD_SIG = Buffer.from([0x50, 0x4b, 0x01, 0x02]);
+
 async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; reason: string }> {
   const bad = (reason: string) => ({ ok: false as const, reason });
   const BIG = "Wordファイルの中身が大きすぎるため、読み取りませんでした";
+  // jszip に読ませる前に、目次の項目（PK\x01\x02）の数を数える。jszip は申告の件数を無視して全部を読み込むので、
+  // 大量の項目で読み込み自体にメモリと時間を使わせる細工を、ここで止める（正常なWordは数百件まで）
+  {
+    let n = 0;
+    for (let i = buf.indexOf(CD_SIG); i >= 0; i = buf.indexOf(CD_SIG, i + 4)) {
+      if (++n > 2000) return bad("Wordファイルの形式を確かめられませんでした");
+    }
+  }
   const JSZip = (await import("jszip")).default;
-  const pako = await import("pako");
+  const pakoMod = (await import("pako")) as unknown as { Inflate?: typeof import("pako").Inflate; default?: { Inflate: typeof import("pako").Inflate } };
+  const PakoInflate = pakoMod.Inflate ?? pakoMod.default!.Inflate;
   let zip: InstanceType<typeof JSZip>;
   try { zip = await JSZip.loadAsync(buf); } catch { return bad("Wordファイルの形式を確かめられませんでした"); }
   const entries = Object.values(zip.files).filter((f) => !f.dir);
@@ -146,7 +157,8 @@ async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; 
   let total = 0;
   for (const f of entries) {
     // jszip の内部（3.x の CompressedObject）：compression.magic と compressedContent（この範囲を mammoth も展開する）
-    const data = (f as unknown as { _data?: { compression?: { magic?: string }; compressedContent?: unknown } })._data;
+    const raw = (f as unknown as { _data?: unknown })._data;
+    const data = raw as { compression?: { magic?: string }; compressedContent?: unknown } | undefined;
     const magic = data?.compression?.magic;
     const content = data?.compressedContent;
     if (!(content instanceof Uint8Array)) return bad("Wordファイルの形式を確かめられませんでした");
@@ -158,7 +170,7 @@ async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; 
     if (magic !== "\x08\x00") return bad("対応していない圧縮方式のWordファイルです");
     // jszip（lib/flate.js）と同じ：raw で、データを少しずつ push(…, false)、最後に push([], true)
     let over = false;
-    const inf = new pako.Inflate({ raw: true });
+    const inf = new PakoInflate({ raw: true });
     inf.onData = (chunk) => { total += chunk.length; if (total > MAX_DOCX_UNZIPPED) over = true; };
     try {
       for (let i = 0; i < content.length && !over; i += 4096) inf.push(content.subarray(i, Math.min(i + 4096, content.length)), false);
