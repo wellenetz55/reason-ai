@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { saveCounter, redraftCounter } from "@/app/(app)/sheet/counter/actions";
 import { BRAKE_KINDS, EVIDENCE_TAG_LABEL } from "@/lib/brakes";
-import { hasHole } from "@/lib/counter";
+import { hasHole, HOLE_SPLIT } from "@/lib/counter";
 
 export type CounterRow = { id: string; seq: number; value_raw: string | null; experience: string | null };
 export type CounterBrake = {
@@ -16,8 +16,8 @@ const OPT = "rounded-[var(--radius)] border px-3 py-1.5 text-[13px] font-medium 
 
 /** 穴（○・【要…】）を目立たせて表示する */
 function WithHoles({ text }: { text: string }) {
-  const parts = text.split(/(○|〇|【要[^】]*】)/);
-  return <>{parts.map((p, i) => (/^(○|〇|【要[^】]*】)$/.test(p) ? <mark key={i} className="bg-warm-soft text-warm font-semibold px-0.5 rounded-sm">{p}</mark> : <span key={i}>{p}</span>))}</>;
+  const parts = text.split(HOLE_SPLIT);
+  return <>{parts.map((p, i) => (i % 2 === 1 ? <mark key={i} className="bg-warm-soft text-warm font-semibold px-0.5 rounded-sm">{p}</mark> : <span key={i}>{p}</span>))}</>;
 }
 
 /** 組ごとに、ブレーキ1枚ずつ ⑤先回りの答え と ⑥なぜなら を並べる。直す／承認／AIに別案 */
