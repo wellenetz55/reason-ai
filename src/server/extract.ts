@@ -124,6 +124,13 @@ async function fetchUrlText(url: string) {
 
 const MAX_PDF_PAGES = 200;
 const MAX_DOCX_UNZIPPED = 60 * 1024 * 1024;
+/**
+ * Word の XML 部品（本文・スタイル・番号付けなど mammoth が読み込むもの）の要素数の上限。
+ * mammoth の負荷はバイト数ではなく要素の数で決まる（細かい要素が詰まった 1MB で約150MB・1秒、8MB で約1.4GB）。
+ * 普通の文書は数百ページでも十数万要素までなので、30万要素（mammoth で約400MB・約2秒）で止める。超えたら本文の取り出しだけを見送る（ファイルは保管）。
+ */
+const MAX_DOCX_XML_ELEMENTS = 300_000;
+const countLt = (u: Uint8Array) => { let n = 0; for (let i = 0; i < u.length; i++) if (u[i] === 0x3c) n++; return n; };
 
 
 /**
@@ -188,7 +195,10 @@ async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; 
     if (compressed > buf.length) return bad("Wordファイルの形式を確かめられませんでした");
   }
   let total = 0;
+  let elements = 0;
+  const TOO_COMPLEX = "Wordファイルの構造が細かすぎるため、本文を読み取りませんでした";
   for (const f of entries) {
+    const isXml = /\.(xml|rels)$/i.test(f.name);
     // jszip の内部（3.x の CompressedObject）：compression.magic と compressedContent（この範囲を mammoth も展開する）
     let raw = (f as unknown as { _data?: unknown })._data;
     // 中身が0バイトの部品は、jszip が「空の値（を返す Promise）」にしておき展開しない
@@ -206,18 +216,25 @@ async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; 
     if (magic === "\x00\x00") { // 無圧縮
       total += content.length;
       if (total > MAX_DOCX_UNZIPPED) return bad(BIG);
+      if (isXml && (elements += countLt(content)) > MAX_DOCX_XML_ELEMENTS) return bad(TOO_COMPLEX);
       continue;
     }
     if (magic !== "\x08\x00") return bad("対応していない圧縮方式のWordファイルです");
     // jszip（lib/flate.js）と同じ：raw で、データを少しずつ push(…, false)、最後に push([], true)
     let over = false;
+    let complex = false;
     const inf = new PakoInflate({ raw: true });
-    inf.onData = (chunk) => { total += chunk.length; if (total > MAX_DOCX_UNZIPPED) over = true; };
+    inf.onData = (chunk) => {
+      total += chunk.length;
+      if (total > MAX_DOCX_UNZIPPED) over = true;
+      if (isXml && (elements += countLt(chunk)) > MAX_DOCX_XML_ELEMENTS) complex = true;
+    };
     try {
-      for (let i = 0; i < content.length && !over; i += 4096) inf.push(content.subarray(i, Math.min(i + 4096, content.length)), false);
-      if (!over) inf.push([], true);
+      for (let i = 0; i < content.length && !over && !complex; i += 4096) inf.push(content.subarray(i, Math.min(i + 4096, content.length)), false);
+      if (!over && !complex) inf.push([], true);
     } catch { return bad("Wordファイルを展開できませんでした"); }
     if (over) return bad(BIG);
+    if (complex) return bad(TOO_COMPLEX);
     if (inf.err) return bad("Wordファイルを展開できませんでした");
   }
   return { ok: true };
