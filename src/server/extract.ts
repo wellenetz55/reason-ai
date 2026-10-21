@@ -29,10 +29,14 @@ async function isPublicHttpUrl(url: string): Promise<boolean> {
   const priv = (ip: string, fam: number) => {
     if (fam === 6) {
       const x = ip.toLowerCase();
-      return x === "::1" || x === "::" || x.startsWith("fc") || x.startsWith("fd") || x.startsWith("fe80") || x.startsWith("::ffff:");
+      // ::1／未指定／ULA(fc00::/7)／リンクローカル(fe80::/10)／IPv4射影／NAT64(64:ff9b::/96)／マルチキャスト(ff00::/8)
+      return x === "::1" || x === "::" || x.startsWith("fc") || x.startsWith("fd") || /^fe[89ab]/.test(x) || x.startsWith("::ffff:") || x.startsWith("64:ff9b:") || x.startsWith("ff");
     }
     const [a, b] = ip.split(".").map(Number);
-    return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
+    return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127)
+      || (a === 198 && (b === 18 || b === 19)) // ベンチマーク用 198.18.0.0/15
+      || (a === 192 && b === 0)                // 192.0.0.0/24・192.0.2.0/24
+      || a >= 224;                              // マルチキャスト・予約（224.0.0.0 以上）
   };
   return addrs.length > 0 && addrs.every((x) => !priv(x.address, x.family));
 }
@@ -58,8 +62,19 @@ async function fetchUrlText(url: string) {
     if (!res || !res.ok) return "";
     const len = Number(res.headers.get("content-length") ?? 0);
     if (len > MAX_FETCH_BYTES) return "";
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length > MAX_FETCH_BYTES) return "";
+    // 長さの申告が無い応答も、少しずつ読んで上限を超えたら打ち切る（全部メモリに載せてから測らない）
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    if (!res.body) return "";
+    const reader = res.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_FETCH_BYTES) { ctrl.abort(); return ""; }
+      chunks.push(value);
+    }
+    const buf = Buffer.concat(chunks);
     const ct = res.headers.get("content-type") ?? "";
     if (ct.includes("pdf")) return (await pdfText(buf)).text;
     return htmlToText(buf.toString("utf8"));
