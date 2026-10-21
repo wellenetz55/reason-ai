@@ -9,7 +9,8 @@ const AI_LIMIT_10MIN = 30;
 export async function aiGuard<T>(supabase: SupabaseClient, companyId: string, userId: string, event: string, fn: () => Promise<T>): Promise<T | null> {
   const since = new Date(Date.now() - 10 * 60_000).toISOString();
   const { count } = await supabase.from("activity_log").select("id", { count: "exact", head: true }).eq("company_id", companyId).gte("created_at", since)
-    .in("event", [...AI_EVENTS, ...AI_EVENTS.map((e) => `${e}.error`), ...AI_EVENTS.map((e) => `${e}.start`)]);
+    // 実際にAIへ送った回数（.start）だけを数える。成功・失敗・止めた記録は数えない（止めている間の再試行で上限が延び続けないように）
+    .in("event", AI_EVENTS.map((e) => `${e}.start`));
   if ((count ?? 0) >= AI_LIMIT_10MIN) {
     await supabase.from("activity_log").insert({ company_id: companyId, user_id: userId, event: `${event}.error`, payload: { msg: "rate_limited" } });
     return null;
