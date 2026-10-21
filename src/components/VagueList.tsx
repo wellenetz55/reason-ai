@@ -37,7 +37,7 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
   const DECIDED_LABEL: Record<string, string> = { accepted: "AIの案で決定", kept: "初期案（自社入力）のまま" };
   const decidedBlock = decided.length > 0 && (
     <details className="mt-6 rounded-[var(--radius)] bg-paper-2 px-4 py-3">
-      <summary className="cursor-pointer text-sm text-ink-2">決めた組（{decided.length}）── シートには残っています。ここで見直せます</summary>
+      <summary className="cursor-pointer text-sm text-ink-2">決めた組（{decided.length}）── 御社が選択を済ませた組。シートには残っています。ここで見直せます</summary>
       <ul className="mt-3 divide-y divide-hair">
         {decided.map(({ r, d }) => (
           <li key={r.id} className="py-2.5 flex flex-wrap items-start gap-x-3 gap-y-1 text-sm">
@@ -55,7 +55,8 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
   if (flagged.length === 0) return <><p className="text-sm text-ink-2 mt-3">印のつく組はありません。</p>{decidedBlock}</>;
   return (
     <>
-    <ol className="mt-4 divide-y divide-hair">
+    <p className="mt-4 text-[12px] text-ink-3">まだ決めていない組（{flagged.length}）── 印がついた理由と、AIの言い直し案。どれかを選ぶと下の「決めた組」に移ります</p>
+    <ol className="mt-2 divide-y divide-hair">
       {flagged.map(({ r, d, dict, concrete, score }) => (
         <li key={r.id} className="py-4 pl-4 tag-line tag-hypo">
           <div className="flex items-start gap-4">
