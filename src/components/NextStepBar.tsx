@@ -7,7 +7,7 @@ import { fmtMeeting } from "@/lib/meetings";
  * 各ステップ画面の最下部に必ず置く「次へ」。
  * 進める：紺のボタン／自分で満たす条件が残っている：条件の文＋灰色ボタン／ベレネッツ側で開く：暖色で面談待ちと明記。
  */
-export function NextStepBar({ gate, meeting }: { gate: Gate; meeting?: { label: string; at: string | null; held: boolean } | null }) {
+export function NextStepBar({ gate, meeting }: { gate: Gate; meeting?: { label: string; at: string | null; held: boolean; candidates?: string[] } | null }) {
   const n = gate.next;
   const notReady = !!n && NOT_READY.has(n.key);
   // ベレネッツ側で開く段階で、間に面談が挟まるなら「次」はその面談
@@ -21,7 +21,7 @@ export function NextStepBar({ gate, meeting }: { gate: Gate; meeting?: { label: 
             <span className="serif text-[17px]">{meeting.label}</span>
           </p>
           <p className="text-[13px] mt-1 max-w-[40em] text-warm">
-            {meeting.at ? `${fmtMeeting(meeting.at)} に行います。` : "日程はベレネッツからご連絡します。お待ちください。"}
+            {meeting.at ? `${fmtMeeting(meeting.at)} に行います。` : (meeting.candidates?.length ?? 0) > 1 ? "候補日から1つ選んでください（上の欄）。" : "日程はベレネッツからご連絡します。お待ちください。"}
             {n && `面談のあと、${n.step} ${n.label} が開きます。`}
           </p>
         </div>

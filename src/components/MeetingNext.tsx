@@ -1,5 +1,7 @@
 import { fmtMeeting } from "@/lib/meetings";
 import type { MeetingNext as M } from "@/server/meetingNext";
+import { KickoffPicker } from "@/components/KickoffPicker";
+import { chooseMeeting } from "@/app/(app)/meetings/actions";
 
 /**
  * ステップの出口に置く「次はベレネッツとの面談」の案内。
@@ -16,7 +18,12 @@ export function MeetingNextBlock({ m, done, before }: { m: M; done: boolean; bef
         絞った言葉を、ベレネッツと画面を見ながら一緒に確認します。この面談のあと、ベレネッツが次のステップを開きます。
       </p>
       <div className="mt-4 rounded-md bg-paper border hairline px-4 py-3 text-[14px]">
-        {m.at ? (
+        {m.candidates.length > 1 ? (
+          <div>
+            <p><span className="text-[11px] text-ink-3 mr-3">日程</span>ベレネッツから候補日が <span className="num font-semibold">{m.candidates.length}</span> 件届いています。ご都合のよい日時を1つ選んでください。</p>
+            <KickoffPicker dates={m.candidates} action={chooseMeeting} label={m.label} kind={m.kind} />
+          </div>
+        ) : m.at ? (
           <p>
             <span className="text-[11px] text-ink-3 mr-3">日程</span>
             <span className="num font-semibold">{fmtMeeting(m.at)}</span>
