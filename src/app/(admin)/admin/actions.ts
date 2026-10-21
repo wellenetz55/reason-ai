@@ -173,6 +173,11 @@ export async function updateMeeting(formData: FormData) {
   if (formData.get("held") === "1") patch.held_at = new Date().toISOString();
   if (formData.get("unheld") === "1") patch.held_at = null; // 押し間違いを戻す（記録はそのまま残る）
   await supabase.from("company_meetings").update(patch).eq("id", id);
+  // URLを入れた／実施済みにしたら「日程が選ばれました」のアラートは済み
+  if (url || formData.get("held") === "1") {
+    const { data: mk } = await supabase.from("company_meetings").select("kind").eq("id", id).maybeSingle();
+    if (mk?.kind) await supabase.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("company_id", companyId).is("resolved_at", null).contains("payload", { type: "meeting_chosen", kind: mk.kind });
+  }
   if (formData.get("held") === "1") {
     const { data: m } = await supabase.from("company_meetings").select("kind").eq("id", id).maybeSingle();
     if (m?.kind === "kickoff" && (await advanceAfterKickoff(supabase, companyId))) {
