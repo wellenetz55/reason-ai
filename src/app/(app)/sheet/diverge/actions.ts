@@ -50,6 +50,11 @@ export async function reviewRow(formData: FormData) {
   // approving an AI draft converts it to a customer-owned row
   if (action !== "hold") update.created_by = "customer";
   await supabase.from("sheet_rows").update(update).eq("id", rowId);
+  // 保留・却下から STEP 1 で戻した組は、STEP 2 のレビューでも「未決」に戻す（決めたまま操作ボタンが出ない行を作らない）
+  if (update.status === "active" && (row.status === "held" || row.status === "dropped")) {
+    await supabase.from("row_diagnoses").update({ resolved: null }).eq("row_id", rowId).in("resolved", ["held", "dropped"]);
+    revalidatePath("/sheet/merge");
+  }
   const reviewAction = action === "confirm" ? "approve" : action === "unconfirm" ? "hold" : action;
   await supabase.from("sheet_row_reviews").insert({
     row_id: rowId, column_key: "value_raw", action: reviewAction, before_text: row.value_raw, after_text: action === "fix" ? after : row.value_raw, reviewer_id: user.id, dwell_ms: dwell || null,

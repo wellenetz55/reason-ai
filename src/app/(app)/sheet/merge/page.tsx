@@ -26,7 +26,9 @@ export default async function Page() {
   if (company.status === "week1_2") {
     const { data: pg } = await supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle();
     const n = pg?.pair_count ?? 0;
-    if (n < 20) return <ClosedStage stageKey="merge" status={company.status} note={`STEP 1 で、提供価値と体験価値の組があと${20 - n}組そろうと開きます（いま${n}組）。`} />;
+    // いったんレビューを始めた会社は、却下で20組を割っても画面を閉じない（「却下した組」から戻せるように）
+    const { count: started } = n < 20 ? await supabase.from("row_diagnoses").select("row_id, sheet_rows!inner(company_id)", { count: "exact", head: true }).eq("sheet_rows.company_id", company.id) : { count: 1 };
+    if (n < 20 && !started) return <ClosedStage stageKey="merge" status={company.status} note={`STEP 1 で、提供価値と体験価値の組があと${20 - n}組そろうと開きます（いま${n}組）。`} />;
   }
   const [{ data: rows }, { data: diags }, ctx, meeting] = await Promise.all([
     supabase.from("sheet_rows").select("id, seq, facet, target, value_raw, experience_value_v1, status").eq("company_id", company.id).in("status", ["active", "dropped"]).order("seq"),
