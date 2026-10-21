@@ -37,6 +37,7 @@ export async function applyStatus(supabase: SupabaseClient, id: string, status: 
   }
   // 状態が変わったら、解約後の一時再アクセスは閉じる（列が無い環境ではエラーを無視）
   await supabase.from("companies").update({ reaccess_until: null }).eq("id", id).not("reaccess_until", "is", null);
+  if (status !== "week1_2") await supabase.from("alerts").update({ resolved_at: nowD.toISOString() }).eq("company_id", id).is("resolved_at", null).contains("payload", { type: "step2_done" });
   // 契約前を抜けたら、契約前の要対応アラート（申込・診断閲覧・キックオフ選択）を済みにする
   if (status !== "diagnosed") {
     const now = new Date().toISOString();
@@ -155,6 +156,8 @@ export async function createMeeting(formData: FormData) {
     meeting_url: url || null,
     created_by: user.id,
   });
+  // 確認セッション①を登録したら「日程を決める番」のアラートは済み
+  if (kind === "session1") await supabase.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("company_id", companyId).is("resolved_at", null).contains("payload", { type: "step2_done" });
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/");
 }

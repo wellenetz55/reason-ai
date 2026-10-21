@@ -4,6 +4,29 @@ import { requireWritableCustomer } from "@/lib/session";
 import { diagnoseRows } from "@/server/diagnose";
 import { aiGuard } from "@/server/aiGuard";
 import { loadProfileContext } from "@/server/profile";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+/**
+ * 「まとめて絞る」が一通り終わった（レビュー済みで未対応の組が0）なら、ベレネッツに
+ * 「確認セッション①の日程を決める番」のアラートを1回だけ出す。顧客側からベレネッツにボールが渡る合図。
+ */
+async function notifyStep2Done(supabase: SupabaseClient, companyId: string, status: string, userId: string) {
+  if (status !== "week1_2") return;
+  const [{ data: rows }, { data: diags }] = await Promise.all([
+    supabase.from("sheet_rows").select("id").eq("company_id", companyId).eq("status", "active"),
+    supabase.from("row_diagnoses").select("row_id, vague_score, resolved, checked_at, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId),
+  ]);
+  const ids = new Set((rows ?? []).map((r) => r.id));
+  const list = (diags ?? []).filter((d) => ids.has(d.row_id));
+  if (list.length === 0) return;
+  const open = list.filter((d) => d.resolved == null && d.vague_score >= 1).length;
+  if (open > 0) return;
+  const admin = createAdminClient();
+  const { data: existing } = await admin.from("alerts").select("id").eq("company_id", companyId).is("resolved_at", null).contains("payload", { type: "step2_done" }).limit(1).maybeSingle();
+  if (existing) return;
+  await admin.from("alerts").insert({ company_id: companyId, kind: "escalation", payload: { type: "step2_done", by: userId } });
+}
 
 
 /** ふわっと診断を AI に頼む（active な行、最大30組） */
@@ -32,6 +55,7 @@ export async function runVagueCheck() {
   }));
   if (upserts.length) await supabase.from("row_diagnoses").upsert(upserts, { onConflict: "row_id" });
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.run", payload: { n: upserts.length } });
+  await notifyStep2Done(supabase, company.id, company.status, user.id);
   revalidatePath("/sheet/merge");
   revalidatePath("/sheet/diverge");
 }
@@ -69,6 +93,7 @@ export async function resolveDiagnosis(formData: FormData) {
   }
   revalidatePath("/sheet/merge");
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.resolve" });
+  await notifyStep2Done(supabase, company.id, company.status, user.id);
   revalidatePath("/sheet/diverge");
 }
 
