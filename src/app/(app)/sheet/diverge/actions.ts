@@ -108,7 +108,8 @@ export async function requestExperienceDrafts() {
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "row.draft", payload: { n: drafts.length, kind: "experience" } });
   for (const d of drafts) {
     if (!d.experience || !targets.some((t) => t.id === d.id)) continue;
-    await supabase.from("sheet_rows").update({ experience_value_v1: d.experience, target_tag: "仮説（体験価値はAI下書き）" }).eq("id", d.id).eq("company_id", company.id);
+    // AIを待つ間にお客様が体験価値を書いていたら上書きしない
+    await supabase.from("sheet_rows").update({ experience_value_v1: d.experience, target_tag: "仮説（体験価値はAI下書き）" }).eq("id", d.id).eq("company_id", company.id).or("experience_value_v1.is.null,experience_value_v1.eq.");
   }
   revalidatePath("/sheet/diverge");
 }

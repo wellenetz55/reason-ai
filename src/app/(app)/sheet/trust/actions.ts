@@ -24,7 +24,8 @@ export async function requestBecauseDrafts() {
     const patch: Record<string, unknown> = { because_phrase: d.because, because_tag: TAGS.includes(String(d.tag)) ? d.tag : "hypothesis", because_only_us: !!d.only_us, because_by: "ai", trust_axis: d.type ?? null };
     // お客様の体験価値は上書きしない（空のときだけAIの下書きを入れる）
     if (d.experience && !t.experience) patch.experience_value = d.experience;
-    await supabase.from("sheet_rows").update(patch).eq("id", d.id).eq("company_id", company.id);
+    // AIを待つ間にお客様が「なぜなら」を書いていたら上書きしない（空のままの行だけに入れる）
+    await supabase.from("sheet_rows").update(patch).eq("id", d.id).eq("company_id", company.id).or("because_phrase.is.null,because_phrase.eq.");
   }
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "because.draft", payload: { n: drafts.length } });
   revalidatePath("/sheet/trust");
