@@ -86,3 +86,14 @@ export async function redraftDiagnosis(formData: FormData) {
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.redraft", payload: { row_id: row.id } });
   revalidatePath("/sheet/merge");
 }
+
+/** 決めた組をもう一度ふわっと診断の一覧に戻す（決定した言葉はそのまま。保留にしていた行は戻さない） */
+export async function reopenDiagnosis(formData: FormData) {
+  const { supabase, company, user } = await requireWritableCustomer();
+  const rowId = String(formData.get("row_id"));
+  const { data: row } = await supabase.from("sheet_rows").select("id").eq("id", rowId).eq("company_id", company.id).maybeSingle();
+  if (!row) return;
+  await supabase.from("row_diagnoses").update({ resolved: null }).eq("row_id", rowId);
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.reopen", payload: { row_id: rowId } });
+  revalidatePath("/sheet/merge");
+}

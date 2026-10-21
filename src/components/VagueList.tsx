@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { findVague, hasConcrete } from "@/lib/vague";
-import { resolveDiagnosis, redraftDiagnosis } from "@/app/(app)/sheet/merge/actions";
+import { resolveDiagnosis, redraftDiagnosis, reopenDiagnosis } from "@/app/(app)/sheet/merge/actions";
 
 /** AIのふわっと度（1〜3）の言葉。0 は印なし */
 const VAGUE_LABEL: Record<number, string> = { 1: "少しふわっとしている", 2: "ふわっとしている", 3: "どの会社でも言える言葉" };
@@ -32,9 +32,29 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
     return { r, d, dict, concrete, score, show: (dict.length > 0 || score >= 1 || !concrete) && d?.resolved !== "kept" && d?.resolved !== "accepted" };
   }).filter((x) => x.show).sort((a, b) => b.score - a.score || b.dict.length - a.dict.length);
 
+  // 決めた組（この案で決定／初期案のまま）。一覧からは消えるが、行はシートに残っている。ここで見直せる
+  const decided = rows.map((r) => ({ r, d: dmap.get(r.id) })).filter((x) => x.d && (x.d.resolved === "accepted" || x.d.resolved === "kept"));
+  const DECIDED_LABEL: Record<string, string> = { accepted: "AIの案で決定", kept: "初期案（自社入力）のまま" };
+  const decidedBlock = decided.length > 0 && (
+    <details className="mt-6 rounded-[var(--radius)] bg-paper-2 px-4 py-3">
+      <summary className="cursor-pointer text-sm text-ink-2">決めた組（{decided.length}）── シートには残っています。ここで見直せます</summary>
+      <ul className="mt-3 divide-y divide-hair">
+        {decided.map(({ r, d }) => (
+          <li key={r.id} className="py-2.5 flex flex-wrap items-start gap-x-3 gap-y-1 text-sm">
+            <span className="num text-xs text-ink-3 w-6 pt-0.5">{r.seq}</span>
+            <span className="flex-1 min-w-[240px]"><span className="serif">{r.value_raw}</span>{r.experience_value_v1 && <span className="block text-ink-2 text-[13px]">だから、お客様は {r.experience_value_v1}</span>}</span>
+            <span className="text-[11px] text-ink-3 whitespace-nowrap">{DECIDED_LABEL[d!.resolved!] ?? d!.resolved}</span>
+            <form action={reopenDiagnosis}><input type="hidden" name="row_id" value={r.id} /><button className="btn-text text-xs" type="submit">もう一度見直す</button></form>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+
   if (rows.length === 0) return <p className="text-sm text-ink-2 mt-3">まだ組がありません。先に STEP 1 で提供価値・体験価値の組を出してください。</p>;
-  if (flagged.length === 0) return <p className="text-sm text-ink-2 mt-3">印のつく組はありません。</p>;
+  if (flagged.length === 0) return <><p className="text-sm text-ink-2 mt-3">印のつく組はありません。</p>{decidedBlock}</>;
   return (
+    <>
     <ol className="mt-4 divide-y divide-hair">
       {flagged.map(({ r, d, dict, concrete, score }) => (
         <li key={r.id} className="py-4 pl-4 tag-line tag-hypo">
@@ -91,5 +111,7 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
         </li>
       ))}
     </ol>
+    {decidedBlock}
+    </>
   );
 }
