@@ -42,8 +42,11 @@ export async function resolveDiagnosis(formData: FormData) {
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")); // accept | keep
   const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1").eq("id", rowId).eq("company_id", company.id).maybeSingle();
-  const { data: d } = await supabase.from("row_diagnoses").select("*").eq("row_id", rowId).maybeSingle();
-  if (!row || !d) return;
+  const { data: d0 } = await supabase.from("row_diagnoses").select("*").eq("row_id", rowId).maybeSingle();
+  if (!row) return;
+  // 辞書の印だけでAIのレビュー行が無い組でも決められるよう、無ければ作る
+  const d = d0 ?? (await supabase.from("row_diagnoses").upsert({ row_id: rowId, vague_score: 0, issues: [], suggestion_value: null, suggestion_experience: null, resolved: null, checked_at: new Date().toISOString() }, { onConflict: "row_id" }).select("*").single()).data;
+  if (!d) return;
   if (action === "accept") {
     const after = String(formData.get("after") || d.suggestion_value || "").trim();
     const afterExp = String(formData.get("after_experience") || d.suggestion_experience || row.experience_value_v1 || "").trim();

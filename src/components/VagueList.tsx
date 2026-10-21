@@ -64,10 +64,10 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
             <div className="flex-1 min-w-0">
               <p className="serif text-[16px] leading-snug"><span className="text-[11px] text-ink-3 font-normal mr-1.5">御社は</span><Mark text={r.value_raw} /></p>
               {r.experience_value_v1 && <p className="text-[15px] leading-snug mt-0.5"><span className="text-[11px] text-ink-3 mr-1.5">だから、お客様は</span><Mark text={r.experience_value_v1} /></p>}
-              <p className="text-[12px] text-ink-3 mt-1.5 flex flex-wrap gap-x-3">
-                {dict.length > 0 && <span>どの会社でも言える語：{[...new Set(dict)].join("・")}</span>}
-                {!concrete && <span>数字・固有名詞がない</span>}
-                {d && d.resolved !== "accepted" && d.issues.map((i, k) => <span key={k}>AI：{i}</span>)}
+              <p className="text-[12px] mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
+                {dict.length > 0 && <span className="text-warm font-semibold">どの会社でも言える語：{[...new Set(dict)].join("・")}</span>}
+                {!concrete && <span className="text-warm font-semibold">数字・固有名詞がない</span>}
+                {d && d.resolved !== "accepted" && d.issues.map((i, k) => <span key={k} className="text-warm font-semibold">AI：{i}</span>)}
                 {score > 0 && (
                   <span className="inline-flex items-center gap-1.5 text-hypo" title="AIの見立て：1＝少しふわっと／2＝ふわっと／3＝どの会社でも言える">
                     <span className="inline-flex gap-0.5" aria-hidden>{[1, 2, 3].map((k) => <span key={k} className={`inline-block w-2 h-2 rounded-full ${k <= score ? "bg-hypo" : "border border-hypo/60"}`} />)}</span>
@@ -75,32 +75,38 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
                   </span>
                 )}
               </p>
-              {d?.suggestion_value && d.resolved == null && (
+              {(!d || d.resolved == null) && (
                 editing === r.id ? (
                   <form action={async (fd) => { await resolveDiagnosis(fd); setEditing(null); }} className="mt-3 rounded-[var(--radius)] bg-navy-soft px-4 py-3">
                     <input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" />
-                    <label className="block text-[11px] text-navy">AIの案を元に、御社の言葉で直す（加筆・修正してから決定）</label>
+                    <label className="block text-[11px] text-navy">{d?.suggestion_value ? "AIの案を元に、御社の言葉で直す（加筆・修正してから決定）" : "御社の言葉で直す（数字・固有名詞・条件を足すと強くなります）"}</label>
                     <p className="text-[11px] text-ink-3 mt-1">御社は</p>
-                    <textarea name="after" defaultValue={d.suggestion_value} rows={2} className="w-full border-b hairline py-1 text-sm bg-transparent" />
+                    <textarea name="after" defaultValue={d?.suggestion_value ?? r.value_raw ?? ""} rows={2} className="w-full border-b hairline py-1 text-sm bg-transparent" />
                     <p className="text-[11px] text-ink-3 mt-2">だから、お客様は</p>
-                    <textarea name="after_experience" defaultValue={d.suggestion_experience ?? r.experience_value_v1 ?? ""} rows={2} className="w-full border-b hairline py-1 text-sm bg-transparent" placeholder="…と感じることができる" />
+                    <textarea name="after_experience" defaultValue={d?.suggestion_experience ?? r.experience_value_v1 ?? ""} rows={2} className="w-full border-b hairline py-1 text-sm bg-transparent" placeholder="…と感じることができる" />
                     <div className="mt-2 flex gap-2"><button className="btn-primary" type="submit">この内容で決定する</button><button type="button" className="btn-text" onClick={() => setEditing(null)}>やめる</button></div>
                   </form>
                 ) : (
-                  <div className="mt-3 rounded-[var(--radius)] bg-navy-soft px-4 py-3">
-                    <p className="text-[11px] text-navy">AIの言い直し案</p>
-                    <p className="text-sm mt-1">{d.suggestion_value}</p>
-                    {d.suggestion_experience && <p className="text-sm text-ink-2 mt-0.5">だから、お客様は {d.suggestion_experience}</p>}
-                    {(d.redraft_history?.length ?? 0) > 0 && (
+                  <div className={`mt-3 rounded-[var(--radius)] px-4 py-3 ${d?.suggestion_value ? "bg-navy-soft" : "bg-paper-2"}`}>
+                    {d?.suggestion_value ? (
+                      <>
+                        <p className="text-[11px] text-navy">AIの言い直し案</p>
+                        <p className="text-sm mt-1">{d.suggestion_value}</p>
+                        {d.suggestion_experience && <p className="text-sm text-ink-2 mt-0.5">だから、お客様は {d.suggestion_experience}</p>}
+                      </>
+                    ) : (
+                      <p className="text-[12px] text-ink-2">{d ? "AIは言い直し案を出していません（印の理由を見て、御社で直すか、AIに案を頼めます）" : "まだAIのレビュー前です（辞書の印だけ）。上の「レビューしてもらう」で案が出ます"}</p>
+                    )}
+                    {(d?.redraft_history?.length ?? 0) > 0 && (
                       <details className="mt-2 text-[12px]">
-                        <summary className="cursor-pointer text-ink-3">前に出た案（{d.redraft_history!.length}）</summary>
-                        <ul className="mt-1 space-y-0.5 text-ink-2">{d.redraft_history!.map((h, k) => <li key={k}>・{h}</li>)}</ul>
+                        <summary className="cursor-pointer text-ink-3">前に出た案（{d!.redraft_history!.length}）</summary>
+                        <ul className="mt-1 space-y-0.5 text-ink-2">{d!.redraft_history!.map((h, k) => <li key={k}>・{h}</li>)}</ul>
                       </details>
                     )}
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" /><button className={OPT + " border-navy bg-navy text-on-accent font-semibold hover:brightness-110"} type="submit">この案で決定する</button></form>
+                      {d?.suggestion_value && <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" /><button className={OPT + " border-navy bg-navy text-on-accent font-semibold hover:brightness-110"} type="submit">この案で決定する</button></form>}
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className={OPT + " border-ink-3 bg-paper text-ink hover:bg-paper-2"} type="submit">初期案（自社入力）のままにする</button></form>
-                      <form action={redraftDiagnosis} data-busy-timeout="90000"><input type="hidden" name="row_id" value={r.id} /><button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">この組だけAIで別案を出す</button></form>
+                      <form action={redraftDiagnosis} data-busy-timeout="90000"><input type="hidden" name="row_id" value={r.id} /><button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">{d?.suggestion_value ? "この組だけAIで別案を出す" : "この組だけAIに言い直し案を頼む"}</button></form>
                       <button type="button" className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} onClick={() => setEditing(r.id)}>一部自社で直す</button>
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className={OPT + " border-ink-3 bg-paper text-ink-2 hover:bg-paper-2"} type="submit">保留にする</button></form>
                     </div>
