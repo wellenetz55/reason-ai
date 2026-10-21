@@ -29,8 +29,13 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
     const dict = [...findVague(r.value_raw), ...findVague(r.experience_value_v1)];
     const concrete = hasConcrete(r.value_raw);
     const score = d && d.resolved !== "accepted" ? d.vague_score : 0;
-    return { r, d, dict, concrete, score, show: (dict.length > 0 || score >= 1 || !concrete) && d?.resolved !== "kept" && d?.resolved !== "accepted" };
-  }).filter((x) => x.show).sort((a, b) => b.score - a.score || b.dict.length - a.dict.length);
+    // AIがレビュー済みで「具体的（0）」かつ案なし → 辞書や簡易判定の印があっても、AIの判断を優先して一覧から外す（下の「AIは問題なし」に出す）
+    const aiOk = !!d && d.resolved == null && d.vague_score === 0 && !d.suggestion_value;
+    const undecided = d?.resolved !== "kept" && d?.resolved !== "accepted" && d?.resolved !== "held";
+    return { r, d, dict, concrete, score, aiOk, show: (dict.length > 0 || score >= 1 || !concrete) && undecided && !aiOk, okShow: aiOk && (dict.length > 0 || !concrete) };
+  });
+  const aiOkRows = flagged.filter((x) => x.okShow);
+  const flaggedList = flagged.filter((x) => x.show).sort((a, b) => b.score - a.score || b.dict.length - a.dict.length);
 
   // 決めた組（この案で決定／初期案のまま）。一覧からは消えるが、行はシートに残っている。ここで見直せる
   const decided = rows.map((r) => ({ r, d: dmap.get(r.id) })).filter((x) => x.d && (x.d.resolved === "accepted" || x.d.resolved === "kept"));
@@ -59,12 +64,30 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
   );
 
   if (rows.length === 0) return <p className="text-sm text-ink-2 mt-3">まだ組がありません。先に STEP 1 で提供価値・体験価値の組を出してください。</p>;
-  if (flagged.length === 0) return <><p className="text-sm text-ink-2 mt-3">印のつく組はありません。</p>{decidedBlock}</>;
+  const aiOkBlock = aiOkRows.length > 0 && (
+    <details className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3">
+      <summary className="cursor-pointer text-sm text-ink-2">AIがレビューして「このままで具体的」と判断した組（{aiOkRows.length}）── 辞書の印はついていますが、言い直しは不要です。開くと内容と、念のため直す・保留のボタン</summary>
+      <ul className="mt-3 divide-y divide-hair">
+        {aiOkRows.map(({ r, dict, concrete }) => (
+          <li key={r.id} className="py-2.5 flex flex-wrap items-start gap-x-3 gap-y-1 text-sm">
+            <span className="num text-xs text-ink-3 w-6 pt-0.5">{r.seq}</span>
+            <span className="flex-1 min-w-[240px]"><span className="serif">{r.value_raw}</span>{r.experience_value_v1 && <span className="block text-ink-2 text-[13px]">だから、お客様は {r.experience_value_v1}</span>}<span className="block text-[11px] text-ink-3 mt-0.5">{dict.length > 0 ? `辞書の印：${[...new Set(dict)].join("・")}` : ""}{!concrete ? "　数字・固有名詞なし（AIは文脈から具体的と判断）" : ""}</span></span>
+            <span className="flex gap-1">
+              <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className="btn-text text-xs" type="submit">このままでよい</button></form>
+              <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className="btn-text text-xs" type="submit">保留</button></form>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+
+  if (flaggedList.length === 0) return <><p className="text-sm text-ink-2 mt-3">言い直しが必要な組はありません。</p>{aiOkBlock}{decidedBlock}</>;
   return (
     <>
-    <p className="mt-4 text-[12px] text-ink-3">まだ決めていない組（{flagged.length}）── 印がついた理由と、AIの言い直し案。どれかを選ぶと下の「決めた組」に移ります</p>
+    <p className="mt-4 text-[12px] text-ink-3">まだ決めていない組（{flaggedList.length}）── 印がついた理由と、AIの言い直し案。どれかを選ぶと下の「決めた組」に移ります</p>
     <ol className="mt-2 divide-y divide-hair">
-      {flagged.map(({ r, d, dict, concrete, score }) => (
+      {flaggedList.map(({ r, d, dict, concrete, score }) => (
         <li key={r.id} className="py-4 pl-4 tag-line tag-hypo">
           <div className="flex items-start gap-4">
             <span className="num text-xs text-ink-3 w-6 pt-1">{r.seq}</span>
@@ -125,6 +148,7 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
         </li>
       ))}
     </ol>
+    {aiOkBlock}
     {decidedBlock}
     </>
   );
