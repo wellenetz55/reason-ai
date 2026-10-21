@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
+  // Word の本文取り出しは別スレッドで node_modules の mammoth を直接読み込む（src/server/docxWorker.ts）。
+  // バンドルに含めず、本番にもファイルとして配置されるようにする
+  serverExternalPackages: ["mammoth"],
   experimental: { serverActions: { bodySizeLimit: "25mb" } },
   partialPrefetching: true,
   // 他サイトへの埋め込み（クリックジャッキング）を防ぐなどの基本ヘッダ

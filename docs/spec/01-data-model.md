@@ -77,3 +77,4 @@
 - 質問・エラーレポート・行メモ・見直し履歴は、既読/対応済み/書いた人をお客様が偽れない（0032）
 - `method_*` は service role からだけ読む（0033）。TRUNCATE 等は anon/authenticated から外す（0034）
 - サーバ処理は `requireStage(stageKey)` で画面と同じ段階の開閉を確かめる。AIは1社10分30回まで（aiGuard）
+- Word(.docx) の本文取り出し：事前の安全確認（jszip と同じ読み方・展開量60MB・要素数30万まで）を通ったものだけ、別スレッド（worker_threads）で mammoth を動かし、3秒で打ち切る。打ち切り・失敗はその1件の本文を取り出さないだけで、ファイルは保管（src/server/docxWorker.ts）

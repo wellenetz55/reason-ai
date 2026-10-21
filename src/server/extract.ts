@@ -291,9 +291,15 @@ export async function fileToText(buf: Buffer, name: string, type: string): Promi
       // 展開しても安全かを先に確かめる。少しでも怪しければ読まない（fail closed）
       const safe = await docxSafeToOpen(buf);
       if (!safe.ok) return { text: null, error: `${safe.reason}（ファイルは保管しました）` };
-      const mammoth = await import("mammoth");
-      const { value } = await mammoth.extractRawText({ buffer: buf });
-      return { text: value.trim() || null };
+      // 本文の取り出しは別スレッドで、時間を区切って行う（重い文書でもサーバ本体は止まらない）
+      const { extractDocxText } = await import("@/server/docxWorker");
+      const r = await extractDocxText(buf);
+      if ("error" in r) {
+        return { text: null, error: r.error === "timeout"
+          ? "Wordファイルの読み取りに時間がかかりすぎたため、本文を取り出せませんでした（ファイルは保管しました。PDFにして上げ直すと読めることがあります）"
+          : "Wordファイルを読めませんでした（ファイルは保管しました）" };
+      }
+      return { text: r.text.trim() || null };
     } catch (e) {
       return { text: null, error: "Wordファイルを読めませんでした：" + (e instanceof Error ? e.message : String(e)) };
     }
