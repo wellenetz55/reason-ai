@@ -24,11 +24,14 @@ export async function requestBrakeDrafts() {
   if (!targets.length) { revalidatePath("/sheet/brakes"); return; }
   const drafts = await aiGuard(supabase, company.id, user.id, "brakes.draft", () => draftBrakes({ companyName: company.name, profile, rows: targets }));
   if (!drafts) { revalidatePath("/sheet/brakes"); return; }
-  const ids = new Set(targets.map((t) => t.id));
+  // AIを待つ間に、二度押し等で同じ組へ先に下書きが入っていたら、その組には重ねて入れない
+  const { data: after } = await supabase.from("brakes").select("row_id").in("row_id", targets.map((t) => t.id)).eq("status", "active");
+  const taken = new Set((after ?? []).map((b) => b.row_id));
+  const ids = new Set(targets.map((t) => t.id).filter((id) => !taken.has(id)));
   const inserts = drafts.filter((d) => ids.has(d.id)).map((d) => ({ row_id: d.id, kind: d.kind, customer_words: d.words, source_tag: d.source, evidence_tag: d.tag, created_by: "ai", status: "active" }));
   if (inserts.length) await supabase.from("brakes").insert(inserts);
   // AIが1枚も返さなかった組は「ブレーキなし（AIが材料から見つけられなかった）」として残り続けるので、その旨を記録して画面で伝える
-  if (inserts.length === 0) {
+  if (inserts.length === 0 && ids.size > 0) {
     await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "brakes.draft.error", payload: { msg: "AIが下書きを1枚も返しませんでした" } });
     revalidatePath("/sheet/brakes");
     return;
