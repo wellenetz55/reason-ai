@@ -32,7 +32,8 @@ export default async function Page() {
   const loadErr = bErr ? `ブレーキを読み込めませんでした${/approved_at/.test(bErr.message) ? "（SQL 0029 が未実行の可能性があります）" : ""}：${bErr.message}` : null;
   const list = (rows ?? []).map((r) => ({ id: r.id, seq: r.seq, value_raw: r.value_raw, experience: r.experience_value ?? r.experience_value_v1 }));
   const blist: Brake[] = (brakes ?? []).map((b) => ({ id: b.id, row_id: b.row_id, kind: b.kind, customer_words: b.customer_words, source_tag: b.source_tag, evidence_tag: b.evidence_tag, status: b.status, created_by: b.created_by, approved_at: b.approved_at }));
-  const activeB = blist.filter((b) => b.status === "active");
+  const liveRows = new Set(list.map((r) => r.id)); // 表示中（active）の組だけ
+  const activeB = blist.filter((b) => b.status === "active" && liveRows.has(b.row_id));
   const rowsWith = new Set(activeB.map((b) => b.row_id));
   // AIに頼める組（提供価値が入っている組）で数える。ボタンの件数と実際に下書きされる組を合わせる
   const missing = list.filter((r) => r.value_raw && !rowsWith.has(r.id)).length;
