@@ -31,11 +31,17 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   ]);
   // 左メニューの面談の印：種類ごとに「済」があれば済、無ければ一番近い予定
   const meetingMarks: Record<string, { at: string | null; held: boolean; candidates?: number }> = {};
+  const recentCut = Date.now() - 3 * 3600_000;
   for (const m of allMeetings ?? []) {
+    // 契約前は、キックオフ以外の面談を見せない（上の「次の面談」と同じ）
+    if (company.status === "diagnosed" && m.kind !== "kickoff") continue;
     const cur = meetingMarks[m.kind];
     if (m.held_at) { meetingMarks[m.kind] = { at: m.held_at, held: true }; continue; }
     if (cur?.held) continue;
-    if (!cur || (cur.at && new Date(m.scheduled_at) < new Date(cur.at) && new Date(m.scheduled_at) > new Date(Date.now() - 3 * 3600_000))) meetingMarks[m.kind] = { at: m.scheduled_at, held: false };
+    const t = new Date(m.scheduled_at).getTime();
+    const curT = cur?.at ? new Date(cur.at).getTime() : null;
+    // これからの予定のうち一番近いもの。これからの予定が無ければ、過ぎた予定を出す（並びは古い順）
+    if (!cur || (curT !== null && curT < recentCut && t >= recentCut)) meetingMarks[m.kind] = { at: m.scheduled_at, held: false };
   }
   for (const k in meetingMarks) {
     const n = (allMeetings ?? []).filter((m) => m.kind === k && !m.held_at && new Date(m.scheduled_at) > new Date(Date.now() - 3 * 3600_000)).length;
