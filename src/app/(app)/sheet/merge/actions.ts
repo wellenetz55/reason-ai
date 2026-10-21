@@ -41,11 +41,15 @@ export async function runVagueCheck() {
   const [summary, { data: rows }, { data: prevDiags }] = await Promise.all([
     loadProfileContext(supabase, company.id),
     supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, target").eq("company_id", company.id).eq("status", "active").order("seq"),
-    supabase.from("row_diagnoses").select("row_id, suggestion_value, resolved, redraft_history, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
+    supabase.from("row_diagnoses").select("row_id, vague_score, suggestion_value, resolved, redraft_history, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
   ]);
-  // すでに決めた組（決定・初期案のまま・保留）はもう一度レビューしない。未決の組だけ、前の案を履歴に残して新しい案を出す
+  // すでに決めた組（決定・初期案のまま・保留）と、AIが「このままで通用する」と判断済みの組はもう一度レビューしない。
+  // まだ一度もレビューしていない組を先に回す（組が30を超えても、全組が必ず一度はレビューされる）
   const prevBy = new Map((prevDiags ?? []).map((d) => [d.row_id as string, d]));
-  const targets = (rows ?? []).filter((r) => r.value_raw && !["accepted", "kept", "held"].includes(String(prevBy.get(r.id)?.resolved ?? ""))).map((r) => {
+  const aiOk = (id: string) => { const p = prevBy.get(id); return !!p && p.resolved == null && Number(p.vague_score) === 0 && !p.suggestion_value; };
+  const pending = (rows ?? []).filter((r) => r.value_raw && !["accepted", "kept", "held", "dropped"].includes(String(prevBy.get(r.id)?.resolved ?? "")) && !aiOk(r.id));
+  const ordered = [...pending.filter((r) => !prevBy.has(r.id)), ...pending.filter((r) => prevBy.has(r.id))];
+  const targets = ordered.map((r) => {
     const p = prevBy.get(r.id);
     const avoid = [...(((p?.redraft_history as string[] | null) ?? [])), ...(p?.suggestion_value ? [p.suggestion_value as string] : [])].slice(-5);
     return { id: r.id, value: r.value_raw as string, experience: r.experience_value_v1, target: r.target, avoid };
