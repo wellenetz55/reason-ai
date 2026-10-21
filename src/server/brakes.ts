@@ -36,8 +36,11 @@ ${BRAKE_KINDS.map((k) => `- ${k.key}（${k.label}）: ${k.ask}`).join("\n")}
 ${opts.rows.map((r) => `- id:${r.id}\n  御社は: ${r.value}\n  だから、お客様は: ${r.experience ?? "（空）"}`).join("\n")}
 
 JSONのみで返す: [{"id":"...","kind":"distrust","words":"...","source":"meeting","tag":"verify"}]`;
-  const text = await complete({ promptKey: "brakes_draft", user, maxTokens: 6000 });
-  return (parseJson<BrakeDraft[]>(text) ?? [])
+  const text = await complete({ promptKey: "brakes_draft", user, maxTokens: 8000 });
+  const parsed = parseJson<BrakeDraft[]>(text);
+  // 読めない（途中で切れた等）ときは失敗として扱う。空のまま成功にすると、同じ組を何度も頼み続けてしまう
+  if (!Array.isArray(parsed)) throw new Error("brakes_draft: AIの返答を読み取れませんでした");
+  return parsed
     .filter((d) => d && typeof d.id === "string" && KINDS.has(d.kind) && typeof d.words === "string" && d.words.trim())
     .map((d) => ({ ...d, words: d.words.trim().slice(0, 400), source: SOURCES.has(d.source) ? d.source : "ai", tag: TAGS.has(d.tag) ? d.tag : "hypothesis" }))
     .map((d) => (d.source === "ai" ? { ...d, tag: "hypothesis" as const } : d));

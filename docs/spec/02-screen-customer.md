@@ -67,7 +67,7 @@
 - 開く条件: week3_5 以上（確認セッション①を実施済みにすると自動で進む）＋ STEP 0 に資料か説明がある
 - 材料: STEP 2 で残した組（`sheet_rows.status=active`。却下・保留は出ない）
 - 組ごとに 不信／不要／不適／不急 の4枠。各枠に複数枚可。1枚＝お客様の心の声（買い手の一人称）＋出所（お客様の声／面談記録／公式サイト／公開の声／自社の実感／AIの推測）＋根拠タグ（事実・要確認・仮説）
-- 「AIの下書きを付ける」: ブレーキが無い組を最大10組ずつ。材料は `loadProfileContext`（STEP 0・適合診断・面談記録・資料・競合）。prompt key `brakes_draft`（DB）。source=ai は必ず hypothesis
+- 「AIの下書きを付ける」: ブレーキが無い組を最大6組ずつ（返答が途中で切れない量）。AIの返答が読めない・1枚も返らないときはエラーとして画面に出す。材料は `loadProfileContext`（STEP 0・適合診断・面談記録・資料・競合）。prompt key `brakes_draft`（DB）。source=ai は必ず hypothesis
 - 顧客の操作: 直す（words/出所/タグ。created_by=customer, approved_at）／承認（approved_at）／外す（status=dropped、「外したブレーキ」から戻せる）／＋自分で書く（枠ごと）
 - 仮説タグは承認しても黄のまま。出所が公開の声なら転載不可の注意
 - 見出し数字＝そろった種類数/4。4種類そろうと STEP 4 へ（`brakeKinds>=4`）

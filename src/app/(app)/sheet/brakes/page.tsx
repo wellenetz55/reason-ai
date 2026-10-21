@@ -34,7 +34,8 @@ export default async function Page() {
   const blist: Brake[] = (brakes ?? []).map((b) => ({ id: b.id, row_id: b.row_id, kind: b.kind, customer_words: b.customer_words, source_tag: b.source_tag, evidence_tag: b.evidence_tag, status: b.status, created_by: b.created_by, approved_at: b.approved_at }));
   const activeB = blist.filter((b) => b.status === "active");
   const rowsWith = new Set(activeB.map((b) => b.row_id));
-  const missing = list.filter((r) => !rowsWith.has(r.id)).length;
+  // AIに頼める組（提供価値が入っている組）で数える。ボタンの件数と実際に下書きされる組を合わせる
+  const missing = list.filter((r) => r.value_raw && !rowsWith.has(r.id)).length;
   const kinds = new Set(activeB.map((b) => b.kind));
   const hasPublic = activeB.some((b) => b.source_tag === "public_voice");
 
@@ -76,8 +77,8 @@ export default async function Page() {
         <AiNotice message={loadErr ?? aiErr} />
         {missing > 0 && (
           <form action={requestBrakeDrafts} className="mt-4" data-busy-timeout="120000">
-            <button className="btn-primary" type="submit">{missing > 10 ? `ブレーキが無い${missing}組のうち、まず10組にAIの下書きを付ける` : `ブレーキが無い${missing}組に、AIの下書きを付ける`}</button>
-            <p className="text-[12px] text-ink-3 mt-2">{missing > 10 ? "AIは一度に10組ずつ進めます。押すたびに次の10組に下書きが付きます。" : ""}御社の説明・適合診断の聞き取り・面談記録・資料から、お客様の言葉を拾います。材料に無いものは「仮説」として出します。直すかどうかは御社が決めます。</p>
+            <button className="btn-primary" type="submit">{missing > 6 ? `ブレーキが無い${missing}組のうち、まず6組にAIの下書きを付ける` : `ブレーキが無い${missing}組に、AIの下書きを付ける`}</button>
+            <p className="text-[12px] text-ink-3 mt-2">{missing > 6 ? "AIは一度に6組ずつ進めます（1組に4種類×数枚を書くため）。押すたびに次の6組に下書きが付きます。" : ""}御社の説明・適合診断の聞き取り・面談記録・資料から、お客様の言葉を拾います。材料に無いものは「仮説」として出します。直すかどうかは御社が決めます。</p>
           </form>
         )}
       </section>

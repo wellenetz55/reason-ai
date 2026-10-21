@@ -9,6 +9,7 @@ import { BRAKE_KINDS, BRAKE_SOURCES } from "@/lib/brakes";
 const KINDS = new Set<string>(BRAKE_KINDS.map((k) => k.key));
 const SOURCES = new Set<string>(BRAKE_SOURCES.map((s) => s.key));
 const TAGS = ["fact", "verify", "hypothesis"];
+const BRAKE_BATCH = 6; // 1回のAI呼び出しで扱う組数（6組×4種類≒24枚。返答が途中で切れない量）
 
 /** ブレーキがまだ無い組（最大10組）に、AIの下書きを付ける */
 export async function requestBrakeDrafts() {
@@ -19,13 +20,19 @@ export async function requestBrakeDrafts() {
     loadProfileContext(supabase, company.id),
   ]);
   const has = new Set((existing ?? []).map((b) => b.row_id));
-  const targets = (rows ?? []).filter((r) => r.value_raw && !has.has(r.id)).slice(0, 10).map((r) => ({ id: r.id, value: r.value_raw as string, experience: r.experience_value ?? r.experience_value_v1 }));
+  const targets = (rows ?? []).filter((r) => r.value_raw && !has.has(r.id)).slice(0, BRAKE_BATCH).map((r) => ({ id: r.id, value: r.value_raw as string, experience: r.experience_value ?? r.experience_value_v1 }));
   if (!targets.length) { revalidatePath("/sheet/brakes"); return; }
   const drafts = await aiGuard(supabase, company.id, user.id, "brakes.draft", () => draftBrakes({ companyName: company.name, profile, rows: targets }));
   if (!drafts) { revalidatePath("/sheet/brakes"); return; }
   const ids = new Set(targets.map((t) => t.id));
   const inserts = drafts.filter((d) => ids.has(d.id)).map((d) => ({ row_id: d.id, kind: d.kind, customer_words: d.words, source_tag: d.source, evidence_tag: d.tag, created_by: "ai", status: "active" }));
   if (inserts.length) await supabase.from("brakes").insert(inserts);
+  // AIが1枚も返さなかった組は「ブレーキなし（AIが材料から見つけられなかった）」として残り続けるので、その旨を記録して画面で伝える
+  if (inserts.length === 0) {
+    await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "brakes.draft.error", payload: { msg: "AIが下書きを1枚も返しませんでした" } });
+    revalidatePath("/sheet/brakes");
+    return;
+  }
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "brakes.draft", payload: { rows: targets.length, n: inserts.length } });
   revalidatePath("/sheet/brakes");
 }
