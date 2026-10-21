@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { changeStatus } from "@/server/statusChange";
 
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization");
@@ -7,10 +8,12 @@ export async function GET(request: Request) {
   const admin = createAdminClient();
   const now = new Date();
   const iso = now.toISOString();
-  // grace -> locked
-  await admin.from("companies").update({ status: "locked", status_changed_at: iso }).eq("status", "grace").lt("grace_until", iso);
+  // grace -> locked（ベレネッツの操作と同じ本体を通し、アラート整理などの後処理も行う）
+  const { data: graceEnd } = await admin.from("companies").select("id").eq("status", "grace").lt("grace_until", iso);
+  for (const c of graceEnd ?? []) await changeStatus(admin, c.id, "locked");
   // extended -> advisor
-  await admin.from("companies").update({ status: "advisor", status_changed_at: iso, advisor_since: iso }).eq("status", "extended").lt("extension_until", iso);
+  const { data: extEnd } = await admin.from("companies").select("id").eq("status", "extended").lt("extension_until", iso);
+  for (const c of extEnd ?? []) await changeStatus(admin, c.id, "advisor", { advisor_since: iso });
   // stale7 alerts
   const { data: companies } = await admin.from("companies").select("id, status").in("status", ["onboarding", "week1_2", "week3_5", "week6_8", "extended"]);
   for (const c of companies ?? []) {
