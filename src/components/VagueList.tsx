@@ -3,6 +3,9 @@ import { useState } from "react";
 import { findVague, hasConcrete } from "@/lib/vague";
 import { resolveDiagnosis, redraftDiagnosis } from "@/app/(app)/sheet/merge/actions";
 
+/** AIのふわっと度（1〜3）の言葉。0 は印なし */
+const VAGUE_LABEL: Record<number, string> = { 1: "少しふわっとしている", 2: "ふわっとしている", 3: "どの会社でも言える言葉" };
+
 /** 言い直し案の下の選択肢ボタン（罫線で囲って目立たせる） */
 const OPT = "rounded-[var(--radius)] border px-3 py-1.5 text-[13px] font-medium transition-colors";
 
@@ -44,7 +47,12 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
                 {dict.length > 0 && <span>どの会社でも言える語：{[...new Set(dict)].join("・")}</span>}
                 {!concrete && <span>数字・固有名詞がない</span>}
                 {d && d.resolved !== "accepted" && d.issues.map((i, k) => <span key={k}>AI：{i}</span>)}
-                {score > 0 && <span className="text-hypo">ふわっと度 {score}/3</span>}
+                {score > 0 && (
+                  <span className="inline-flex items-center gap-1.5 text-hypo" title="AIの見立て：1＝少しふわっと／2＝ふわっと／3＝どの会社でも言える">
+                    <span className="inline-flex gap-0.5" aria-hidden>{[1, 2, 3].map((k) => <span key={k} className={`inline-block w-2 h-2 rounded-full ${k <= score ? "bg-hypo" : "border border-hypo/60"}`} />)}</span>
+                    {VAGUE_LABEL[score] ?? ""}
+                  </span>
+                )}
               </p>
               {d?.suggestion_value && d.resolved == null && (
                 editing === r.id ? (
