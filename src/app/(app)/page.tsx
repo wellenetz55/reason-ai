@@ -5,6 +5,9 @@ import { STAGES, currentStep, NOT_READY } from "@/lib/stages";
 import { ProgramStart } from "@/components/ProgramStart";
 import { loadKickoff } from "@/server/kickoff";
 import { isStep0Ready } from "@/server/gates";
+import { loadPendingCandidates } from "@/server/meetingNext";
+import { KickoffPicker } from "@/components/KickoffPicker";
+import { chooseMeeting, requestOtherDates } from "@/app/(app)/meetings/actions";
 
 function greeting() {
   const h = Number(new Intl.DateTimeFormat("ja-JP", { hour: "numeric", hour12: false, timeZone: "Asia/Tokyo" }).format(new Date()));
@@ -47,9 +50,10 @@ export default async function Home() {
       </div>
     );
   }
-  const [{ data: progress }, { data: hw }] = await Promise.all([
+  const [{ data: progress }, { data: hw }, pick] = await Promise.all([
     supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle(),
     supabase.from("homeworks").select("id, title, why, due_at, priority").eq("company_id", company.id).eq("status", "open").order("priority", { ascending: false }).order("due_at").limit(3),
+    ["locked", "cancelled"].includes(company.status) ? Promise.resolve(null) : loadPendingCandidates(supabase, company.id),
   ]);
   const openHomework = hw?.length ?? 0;
   const rows = progress?.pair_count ?? 0;
@@ -63,6 +67,14 @@ export default async function Home() {
   return (
     <div>
       <h1 className="serif text-[30px] leading-tight">{company.name}様、{greeting()}。</h1>
+
+      {pick && (
+        <section id="meeting-pick" className="mt-8 rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-6 py-5 max-w-[44em]">
+          <p className="text-[11px] font-semibold tracking-wide text-warm">ベレネッツとの面談 · {pick.label}</p>
+          <p className="text-[15px] mt-1">候補日が <span className="num font-semibold">{pick.candidates.length}</span> 件届いています。ご都合のよい日時を1つ選んでください。</p>
+          <KickoffPicker dates={pick.candidates} action={chooseMeeting} label={pick.label} kind={pick.kind} declineAction={requestOtherDates} />
+        </section>
+      )}
 
       <section className="mt-12">
         <p className="text-[13px] text-ink-3">いま進めること</p>

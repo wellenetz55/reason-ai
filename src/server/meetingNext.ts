@@ -26,3 +26,17 @@ export async function loadMeetingAfter(supabase: SupabaseClient, companyId: stri
   }
   return { kind: def.kind, label: def.label, at: upcoming[0]?.scheduled_at ?? null, held: false, url: upcoming[0]?.meeting_url ?? null, candidates: [] };
 }
+
+/** ホーム用：ベレネッツが候補日を複数入れている面談（確認セッション・中間チェック）を1つ返す。無ければ null */
+export async function loadPendingCandidates(supabase: SupabaseClient, companyId: string): Promise<MeetingNext | null> {
+  const KINDS = ["session1", "midcheck", "session2", "session3"];
+  const { data } = await supabase.from("company_meetings").select("kind, scheduled_at").eq("company_id", companyId).in("kind", KINDS).is("held_at", null).gt("scheduled_at", new Date().toISOString()).order("scheduled_at");
+  for (const kind of KINDS) {
+    const list = (data ?? []).filter((m) => m.kind === kind);
+    if (list.length > 1) {
+      const label = Object.values(MEETING_AFTER_STEP).find((d) => d.kind === kind)?.label ?? kind;
+      return { kind, label, at: null, held: false, url: null, candidates: [...new Set(list.map((m) => new Date(m.scheduled_at).toISOString()))].slice(0, 5) };
+    }
+  }
+  return null;
+}
