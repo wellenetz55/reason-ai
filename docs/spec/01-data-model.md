@@ -70,3 +70,10 @@
 - 顧客ロール: `company_id = auth.jwt().company_id` の行のみ。`deployments.techniques_json`、`company_meetings.notes`、`litmus_market.scored_by='operator'` の点数（確認②まで）、`alerts`、`disclosure_requests`、`method_*` は顧客に返さない（ビューで列を落とす）
 - operator: 全行 read/write
 - `sheet_rows.status='dropped'` は顧客にも見せる（グレー表示）。物理削除なし
+
+## 権限の補足（2026-10-21 全体チェック後）
+- お客様の書き込みは RLS でも `company_writable()`（状態が diagnosed/locked/cancelled 以外）を条件にする（0031）
+- `activity_log` はお客様自身の操作だけ読める（0030）。ベレネッツ側の記録は見えない
+- 質問・エラーレポート・行メモ・見直し履歴は、既読/対応済み/書いた人をお客様が偽れない（0032）
+- `method_*` は service role からだけ読む（0033）。TRUNCATE 等は anon/authenticated から外す（0034）
+- サーバ処理は `requireStage(stageKey)` で画面と同じ段階の開閉を確かめる。AIは1社10分30回まで（aiGuard）
