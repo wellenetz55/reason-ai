@@ -109,7 +109,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
         <section id="backup" className="mt-16 border-t hairline pt-8 max-w-[880px] scroll-mt-6">
           <h2 className="text-sm text-ink-2">全データのバックアップ（スーパー管理者のみ）</h2>
           <p className="text-[13px] text-ink-2 mt-2 max-w-[44em]">全社のデータ（会社・シート・宿題・質問・面談・診断結果・メソッド資産など）と、お客様がアップロードした資料を、1つのZIPファイルにまとめてダウンロードします。中に復元用のデータ（JSON）と、見るためのExcelが入っています。</p>
-          <DownloadButton href="/api/admin/backup" className="btn-primary inline-block mt-4">全データをダウンロード</DownloadButton>
+          <DownloadButton href="/api/admin/backup" method="post" className="btn-primary inline-block mt-4">全データをダウンロード</DownloadButton>
           <p className="text-xs text-ink-3 mt-2">作るのに数十秒かかることがあります。メソッド資産を含むため、社外に出さないでください。</p>
 
           <h3 className="mt-8 text-[13px] font-semibold">Dropbox への自動バックアップ</h3>
