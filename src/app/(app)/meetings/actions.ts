@@ -52,6 +52,8 @@ export async function requestOtherDates(formData: FormData) {
   const { company, user } = await requireCustomer();
   const kind = String(formData.get("kind") || "");
   if (!DECLINABLE.includes(kind) || !canTouch(company.status, kind)) return;
+  // キックオフの日程は入金確認後に選ぶもの（chooseKickoff と同じ条件）。入金前は取り下げもできない
+  if (kind === "kickoff" && !company.paid_at) return;
   const admin = createAdminClient();
   const { data: ms } = await admin.from("company_meetings").select("id, scheduled_at").eq("company_id", company.id).eq("kind", kind).is("held_at", null);
   const future = (ms ?? []).filter((m) => new Date(m.scheduled_at as string).getTime() > Date.now());
