@@ -348,15 +348,25 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
             </li>
           ))}
         </ul>
+        {(() => {
+          // プログラムの順（キックオフ→確認①→中間→確認②→確認③）。終わった面談は選択肢から外し、まだ登録のない次の面談を最初から選んでおく
+          const SEQ = ["kickoff", "session1", "midcheck", "session2", "session3"];
+          const heldKinds = new Set((meetings ?? []).filter((m) => m.held_at).map((m) => m.kind));
+          const anyKinds = new Set((meetings ?? []).map((m) => m.kind));
+          const kinds = [...SEQ.filter((k) => !heldKinds.has(k)), "advisor_monthly", "internal"];
+          const defaultKind = SEQ.find((k) => !anyKinds.has(k)) ?? (c.status === "advisor" ? "advisor_monthly" : "internal");
+          return (
         <form action={createMeeting} className="mt-4 flex flex-wrap gap-3 items-center text-sm">
           <input type="hidden" name="company_id" value={c.id} />
-          <select name="kind" className="border-b hairline py-1">
-            {Object.entries(MEETING_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          <select name="kind" className="border-b hairline py-1" defaultValue={defaultKind}>
+            {kinds.map((k) => <option key={k} value={k}>{MEETING_LABEL[k]}</option>)}
           </select>
           <input type="datetime-local" name="scheduled_at" required className="border-b hairline py-1 num" />
           <input type="url" name="meeting_url" placeholder="会議URL（任意・後から追加可）" className="border-b hairline py-1 flex-1 min-w-[260px]" />
           <button className="btn-primary" type="submit">面談を追加</button>
         </form>
+          );
+        })()}
         <p className="text-xs text-ink-3 mt-2">日時は日本時間。URLが空のままだと顧客側に「会議URL未設定」と出ます。面談が終わったら「記録を書く」で聞いたこと・書き起こし・メモを残してください（AIの下書きの材料になります）。</p>
       </section>
 
