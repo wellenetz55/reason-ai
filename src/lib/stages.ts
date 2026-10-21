@@ -58,7 +58,7 @@ export function currentStep(status: string, rows: number) {
         ? { key: "diverge", title: "提供価値・体験価値を出す", body: `「御社は〜できる。だから、お客様は〜と感じられる」を対で書き出す段階です。あと${20 - rows}組で次に進めます（目標30組）。` }
         : { key: "merge", title: "まとめて絞る", body: `提供価値・体験価値が${rows}組そろいました。似たものをまとめ、残す言葉を選ぶ段階です。` };
     case "week3_5":
-      return { key: "trust", title: "体験価値を磨く", body: "STEP 1 の組に「なぜなら」（根拠）を足して、約束が浮つかない言葉にする段階です。お客様のブレーキの書き出しは、次の面談で一緒に進めます。" };
+      return { key: "brakes", title: "お客様のブレーキ", body: "お客様が御社を選ぶのをためらう理由（不信・不要・不適・不急）を、残した組ごとに書き出す段階です。" };
     // 証拠集め・展開の画面は準備中のため、使える「体験価値を磨く」へ案内する（NOT_READY が外れたら戻す）
     case "week6_8":
     case "extended":

@@ -27,12 +27,9 @@ const atLeast = (status: string, s: string) => order.indexOf(status) >= order.in
  */
 export function stepGate(key: string, c: GateCtx): Gate {
   const i = STAGES.findIndex((s) => s.key === key);
-  // 画面が準備中の段階は飛ばして、次に開ける段階へ案内する
-  const n = STAGES.slice(i + 1).find((s) => !NOT_READY.has(s.key));
+  // 次は常に「順番どおりの次の段階」。画面が準備中でも飛ばさない（NextStepBar が「準備中」と出す）
+  const n = STAGES[i + 1];
   const next = n ? { key: n.key, step: n.step, label: n.label, href: n.href } : undefined;
-  if (!n && i < STAGES.length - 1) {
-    return { ready: false, laterNotReady: true, note: "ここまでが、いま画面で進められる段階です。この先の進め方は、次の面談でご案内します。あとから戻って磨き直せます。" };
-  }
   switch (key) {
     case "step0":
       if (!c.step0Ready) return { next, ready: false, note: "会社案内やWebサイトを1つ以上登録するか、御社の説明を1項目以上入れると、提供価値の書き出しに進めます。AIの下書きはここが土台になります。" };
