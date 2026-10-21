@@ -134,31 +134,41 @@ const MAX_DOCX_UNZIPPED = 60 * 1024 * 1024;
  * jszip は読み込みの時点では展開しない（必要になったときに展開する）ので、この確認自体は安全。
  * 未知の圧縮方式・展開エラー・上限超えは、すべて「読まない」（fail closed）。
  */
-const CD_SIG = Buffer.from([0x50, 0x4b, 0x01, 0x02]);
-const LH_SIG = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
+const EOCD_SIG = Buffer.from([0x50, 0x4b, 0x05, 0x06]);
 
 async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; reason: string }> {
   const bad = (reason: string) => ({ ok: false as const, reason });
   const BIG = "Wordファイルの中身が大きすぎるため、読み取りませんでした";
-  // jszip に読ませる前に、目次の項目（PK\x01\x02）の数を数える。jszip は申告の件数を無視して全部を読み込むので、
-  // 大量の項目で読み込み自体にメモリと時間を使わせる細工を、ここで止める（正常なWordは数百件まで）
+  // jszip に読ませる前に、jszip と同じ順番で目次をたどり、jszip が読み込みに使う量に上限をかける。
+  // （jszip は申告の件数を無視し、署名が続くかぎり目次を読み込む。読み込みの時点でメモリと時間を使うので、ここで止める）
   {
-    let n = 0;
-    let extra = 0;
-    for (let i = buf.indexOf(CD_SIG); i >= 0; i = buf.indexOf(CD_SIG, i + 4)) {
-      if (++n > 2000) return bad("Wordファイルの形式を確かめられませんでした");
-      // 目次の各項目の「補助情報（extra field）」の合計にも上限：jszip は補助情報を1つずつ読み込むため、
-      // 極端に多い補助情報で読み込み自体にメモリを使わせる細工を止める（正常なWordは数KB程度）
-      if (i + 46 <= buf.length) {
-        extra += buf.readUInt16LE(i + 30);
-        if (extra > 256 * 1024) return bad("Wordファイルの形式を確かめられませんでした");
-      }
+    const FORMAT = "Wordファイルの形式を確かめられませんでした";
+    const eocd = buf.lastIndexOf(EOCD_SIG); // jszip と同じく、最後に現れた終端（EOCD）を使う
+    if (eocd < 0 || eocd + 22 > buf.length) return bad(FORMAT);
+    const cdSize = buf.readUInt32LE(eocd + 12), cdOffset = buf.readUInt32LE(eocd + 16);
+    // ZIP64 の印がある zip は扱わない（Word ファイルは使わない）
+    if (buf.readUInt16LE(eocd + 4) === 0xffff || buf.readUInt16LE(eocd + 6) === 0xffff || buf.readUInt16LE(eocd + 8) === 0xffff
+      || buf.readUInt16LE(eocd + 10) === 0xffff || cdSize === 0xffffffff || cdOffset === 0xffffffff) return bad(FORMAT);
+    const extraBytes = eocd - (cdOffset + cdSize);
+    if (extraBytes < 0) return bad(FORMAT);
+    const zero = extraBytes; // jszip は先頭に余分なデータがあると、そのぶん読み始めの位置をずらす（reader.zero）
+    let p = zero + cdOffset;
+    let n = 0, extraSum = 0;
+    while (p + 46 <= buf.length && buf.readUInt32LE(p) === 0x02014b50) {
+      if (++n > 2000) return bad(FORMAT);
+      const nameLen = buf.readUInt16LE(p + 28), extraLen = buf.readUInt16LE(p + 30), commentLen = buf.readUInt16LE(p + 32);
+      const local = buf.readUInt32LE(p + 42);
+      if (local === 0xffffffff) return bad(FORMAT);
+      // 目次の補助情報（extra field）の合計：jszip は1つずつ読み込むので、極端に多いと読み込みにメモリを使う
+      extraSum += extraLen;
+      if (extraSum > 256 * 1024) return bad(FORMAT);
+      // jszip が実際に読む各部品の先頭（ローカルヘッダ）の名前の長さ：長い名前を何度も読ませる細工を止める
+      const lp = zero + local;
+      if (lp + 30 > buf.length) return bad(FORMAT);
+      if (buf.readUInt16LE(lp + 26) > 1024) return bad(FORMAT);
+      p += 46 + nameLen + extraLen + commentLen;
     }
-  }
-  // 各部品の先頭（ローカルヘッダ PK\x03\x04）のファイル名の長さにも上限：jszip はここの名前を使うため、
-  // 長い名前の1つの部品を目次から何度も指させて、名前の読み込みにメモリを使わせる細工を止める（正常な名前は数十文字）
-  for (let i = buf.indexOf(LH_SIG); i >= 0; i = buf.indexOf(LH_SIG, i + 4)) {
-    if (i + 30 <= buf.length && buf.readUInt16LE(i + 26) > 1024) return bad("Wordファイルの形式を確かめられませんでした");
+    if (n === 0) return bad(FORMAT);
   }
   const JSZip = (await import("jszip")).default;
   const pakoMod = (await import("pako")) as unknown as { Inflate?: typeof import("pako").Inflate; default?: { Inflate: typeof import("pako").Inflate } };
