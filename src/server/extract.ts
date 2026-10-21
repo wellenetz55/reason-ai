@@ -130,18 +130,21 @@ const MAX_DOCX_UNZIPPED = 60 * 1024 * 1024;
  * 普通の文書は数百ページでも十数万要素までなので、30万要素（mammoth で約400MB・約2秒）で止める。超えたら本文の取り出しだけを見送る（ファイルは保管）。
  */
 const MAX_DOCX_XML_ELEMENTS = 300_000;
-const countLt = (u: Uint8Array) => { let n = 0; for (let i = 0; i < u.length; i++) if (u[i] === 0x3c) n++; return n; };
 /**
- * 中身がXMLか（名前ではなく中身の先頭で判断する）。mammoth は部品を名前ではなく目次の参照でたどり、
- * どんな名前でもXMLとして読むため、拡張子を変えて要素数の数え漏れを狙う細工を防ぐ。
- * 先頭の BOM・空白を飛ばして最初の文字が「<」ならXMLとみなす。画像など（JPEG・PNG）は数えない。
+ * XMLの要素の始まり（「<」の直後が英字・「/」・「?」・「!」）の数を数える。
+ * mammoth は部品を名前でなく目次の参照でたどり、先頭に余計な文字があってもXMLとして読むため、
+ * 部品の名前や先頭の文字では判断せず、すべての部品で数える。画像などのバイト列から数えられるのは約1/350で、
+ * 40MBの画像でも約12万にとどまる。
  */
-function looksLikeXml(u: Uint8Array): boolean {
-  let i = 0;
-  if (u[0] === 0xef && u[1] === 0xbb && u[2] === 0xbf) i = 3; // UTF-8 BOM
-  else if ((u[0] === 0xff && u[1] === 0xfe) || (u[0] === 0xfe && u[1] === 0xff)) return true; // UTF-16 は念のためXML扱い（数える）
-  while (i < u.length && (u[i] === 0x20 || u[i] === 0x09 || u[i] === 0x0a || u[i] === 0x0d)) i++;
-  return i < u.length ? u[i] === 0x3c : false;
+function countElements(u: Uint8Array): number {
+  let n = 0;
+  for (let i = 0; i < u.length - 1; i++) {
+    if (u[i] !== 0x3c) continue;
+    const c = u[i + 1];
+    // 英字・「_」・「:」・日本語など（UTF-8 の 0x80 以上）で始まる名前、閉じタグ「/」、宣言「?」「!」
+    if ((c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) || c >= 0x80 || c === 0x5f || c === 0x3a || c === 0x2f || c === 0x3f || c === 0x21) n++;
+  }
+  return n;
 }
 
 
@@ -210,8 +213,6 @@ async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; 
   let elements = 0;
   const TOO_COMPLEX = "Wordファイルの構造が細かすぎるため、本文を読み取りませんでした";
   for (const f of entries) {
-    // XMLかどうかは中身の先頭で判断する（名前で判断すると、拡張子を変えた本文を数え漏らす）
-    let isXml: boolean | null = /\.(xml|rels)$/i.test(f.name) ? true : null;
     // jszip の内部（3.x の CompressedObject）：compression.magic と compressedContent（この範囲を mammoth も展開する）
     let raw = (f as unknown as { _data?: unknown })._data;
     // 中身が0バイトの部品は、jszip が「空の値（を返す Promise）」にしておき展開しない
@@ -229,8 +230,7 @@ async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; 
     if (magic === "\x00\x00") { // 無圧縮
       total += content.length;
       if (total > MAX_DOCX_UNZIPPED) return bad(BIG);
-      if (isXml === null) isXml = looksLikeXml(content);
-      if (isXml && (elements += countLt(content)) > MAX_DOCX_XML_ELEMENTS) return bad(TOO_COMPLEX);
+      if ((elements += countElements(content)) > MAX_DOCX_XML_ELEMENTS) return bad(TOO_COMPLEX);
       continue;
     }
     if (magic !== "\x08\x00") return bad("対応していない圧縮方式のWordファイルです");
@@ -241,8 +241,7 @@ async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; 
     inf.onData = (chunk) => {
       total += chunk.length;
       if (total > MAX_DOCX_UNZIPPED) over = true;
-      if (isXml === null && chunk.length > 0) isXml = looksLikeXml(chunk); // 最初に出てきた中身で判断
-      if (isXml && (elements += countLt(chunk)) > MAX_DOCX_XML_ELEMENTS) complex = true;
+      if ((elements += countElements(chunk)) > MAX_DOCX_XML_ELEMENTS) complex = true;
     };
     try {
       for (let i = 0; i < content.length && !over && !complex; i += 4096) inf.push(content.subarray(i, Math.min(i + 4096, content.length)), false);
