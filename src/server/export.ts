@@ -109,7 +109,7 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
       cc.map((c) => ({ seq: byId.get(c.row_id)?.seq, raw: byId.get(c.row_id)?.value_final ?? byId.get(c.row_id)?.value_raw, comp: (c.competitors as { name: string } | null)?.name, verdict: VERDICT[c.verdict] ?? c.verdict, reason: c.reason, verify: c.to_verify })));
   }
 
-  // STEP 6 リトマス試験紙
+  // STEP 6 選ばれる理由の見極め
   if (has("litmus")) {
     const [{ data: ln }, { data: lm }] = await Promise.all([
       supabase.from("litmus_niche").select("*, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId),
@@ -117,7 +117,7 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
     ]);
     const m = new Map((lm ?? []).map((x) => [x.row_id, x]));
     const ids = new Set([...(ln ?? []).map((x) => x.row_id), ...(lm ?? []).map((x) => x.row_id)]);
-    if (ids.size) addSheet("6 リトマス試験紙", [
+    if (ids.size) addSheet("6 選ばれる理由の見極め", [
       { header: "行No", key: "seq", width: 6 }, { header: "提供価値", key: "raw", width: 36 },
       { header: "痛みは切実か", key: "q1", width: 12 }, { header: "探しているか", key: "q2", width: 12 },
       { header: "投資", key: "a", width: 6 }, { header: "強み", key: "b", width: 6 }, { header: "実現", key: "c", width: 6 }, { header: "競合に勝つ", key: "d", width: 8 }, { header: "社内の熱", key: "e", width: 8 }, { header: "目的合致", key: "f", width: 8 },

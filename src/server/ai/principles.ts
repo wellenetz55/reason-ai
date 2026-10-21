@@ -10,6 +10,7 @@ const AREAS_BY_PROMPT: Record<string, string[]> = {
   diag_draft: ["判定", "面談"],
   brakes_draft: ["判定", "面談"],
   counter_draft: ["裏づけ", "判定"],
+  litmus_draft: ["判定"],
 };
 
 /**

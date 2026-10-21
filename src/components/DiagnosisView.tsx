@@ -266,7 +266,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
         <div className="mt-5 rounded-[var(--radius)] bg-warm-soft px-5 py-4">
           <p className="text-[11px] font-semibold tracking-wide text-warm">完成品</p>
           <p className="serif text-[20px] sm:text-[22px] leading-snug mt-1">選ばれる理由の脚本（提供価値シート）</p>
-          <p className="text-[14px] leading-relaxed mt-2 max-w-[42em]">「御社は〜できる。だから、お客様は〜と感じられる。なぜなら〜」の三連で書かれた、御社の「選ばれる理由」。まず<span className="num font-semibold">30</span>組を目標に広く出し、リトマス試験紙やマグニチュード（強さの採点）で、本当に強いものだけに絞り込みます。残る数は会社によって違います。数ではなく、「比べられても、これで選ばれる」と言い切れる言葉が残ります。ベレネッツとの面談で一つずつ確定（封）した、御社の言葉だけで書かれたものです。</p>
+          <p className="text-[14px] leading-relaxed mt-2 max-w-[42em]">「御社は〜できる。だから、お客様は〜と感じられる。なぜなら〜」の三連で書かれた、御社の「選ばれる理由」。まず<span className="num font-semibold">30</span>組を目標に広く出し、「選ばれる理由の見極め」（見込み客の切実さと、市場で通用するかの採点）で、本当に強いものだけに絞り込みます。残る数は会社によって違います。数ではなく、「比べられても、これで選ばれる」と言い切れる言葉が残ります。ベレネッツとの面談で一つずつ確定（封）した、御社の言葉だけで書かれたものです。</p>
         </div>
 
         <p className="text-[11px] text-ink-3 mt-5">8週間の終わりに、すべてダウンロードできます</p>
