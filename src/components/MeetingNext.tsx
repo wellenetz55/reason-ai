@@ -1,4 +1,4 @@
-import { fmtMeeting } from "@/lib/meetings";
+import { fmtMeeting, safeMeetingUrl } from "@/lib/meetings";
 import type { MeetingNext as M } from "@/server/meetingNext";
 import { KickoffPicker } from "@/components/KickoffPicker";
 import { chooseMeeting, requestOtherDates } from "@/app/(app)/meetings/actions";
@@ -27,7 +27,7 @@ export function MeetingNextBlock({ m, done, before }: { m: M; done: boolean; bef
           <p>
             <span className="text-[11px] text-ink-3 mr-3">日程</span>
             <span className="num font-semibold">{fmtMeeting(m.at)}</span>
-            {m.url && <a href={m.url} target="_blank" rel="noreferrer" className="ml-4 underline text-navy">会議に参加する</a>}
+            {safeMeetingUrl(m.url) && <a href={safeMeetingUrl(m.url)!} target="_blank" rel="noreferrer" className="ml-4 underline text-navy">会議に参加する</a>}
           </p>
         ) : (
           <p><span className="text-[11px] text-ink-3 mr-3">日程</span>ベレネッツから日程のご連絡をしますので、お待ちください。</p>

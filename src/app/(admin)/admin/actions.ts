@@ -1,5 +1,5 @@
 "use server";
-import { MEETING_LABEL, ADVANCE_AFTER_MEETING } from "@/lib/meetings";
+import { MEETING_LABEL, ADVANCE_AFTER_MEETING, safeMeetingUrl } from "@/lib/meetings";
 import { STATUS_LABEL } from "@/lib/stages";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
@@ -158,7 +158,7 @@ export async function createMeeting(formData: FormData) {
   const companyId = String(formData.get("company_id"));
   const kind = String(formData.get("kind"));
   const local = String(formData.get("scheduled_at") || ""); // "2026-10-13T14:00"（JST）
-  const url = String(formData.get("meeting_url") || "").trim();
+  const url = safeMeetingUrl(String(formData.get("meeting_url") || "")) ?? "";
   if (!companyId || !local || !(MEETING_KINDS as readonly string[]).includes(kind)) return;
   const scheduledAt = new Date(`${local}:00+09:00`).toISOString();
   await supabase.from("company_meetings").insert({
@@ -181,7 +181,7 @@ export async function updateMeeting(formData: FormData) {
   const id = String(formData.get("id"));
   const companyId = String(formData.get("company_id"));
   const local = String(formData.get("scheduled_at") || "");
-  const url = String(formData.get("meeting_url") || "").trim();
+  const url = safeMeetingUrl(String(formData.get("meeting_url") || "")) ?? "";
   const patch: Record<string, unknown> = { meeting_url: url || null };
   if (local) patch.scheduled_at = new Date(`${local}:00+09:00`).toISOString();
   if (formData.get("held") === "1") patch.held_at = new Date().toISOString();

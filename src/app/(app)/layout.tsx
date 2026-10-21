@@ -10,7 +10,7 @@ import { ReasonLogo, OperatedBy } from "@/components/Brand";
 import { APP_VERSION } from "@/lib/version";
 import { PendingBar } from "@/components/PendingBar";
 import { Bug } from "lucide-react";
-import { MEETING_LABEL, fmtMeeting } from "@/lib/meetings";
+import { MEETING_LABEL, fmtMeeting, safeMeetingUrl } from "@/lib/meetings";
 import { SideNav } from "@/components/SideNav";
 import { RouteTracker } from "@/components/RouteTracker";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -126,8 +126,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <div className="rounded-[var(--radius)] bg-warm-soft px-4 py-3 -mx-1">
               <p className="text-[11px] font-semibold tracking-wide text-warm">次の面談 · {MEETING_LABEL[shownMeeting.kind] ?? shownMeeting.kind}</p>
               <p className="num text-[17px] font-semibold text-ink mt-1 leading-tight">{fmtMeeting(shownMeeting.scheduled_at)}</p>
-              {shownMeeting.meeting_url ? (
-                <a href={shownMeeting.meeting_url} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[13px] font-medium text-warm underline underline-offset-4 hover:opacity-80">
+              {safeMeetingUrl(shownMeeting.meeting_url) ? (
+                <a href={safeMeetingUrl(shownMeeting.meeting_url)!} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[13px] font-medium text-warm underline underline-offset-4 hover:opacity-80">
                   会議に参加する ↗
                 </a>
               ) : (

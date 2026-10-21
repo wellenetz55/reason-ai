@@ -38,3 +38,9 @@ export const ADVANCE_AFTER_MEETING: Record<string, { from: string[]; to: string 
   session1: { from: ["week1_2"], to: "week3_5" },
   session2: { from: ["week3_5"], to: "week6_8" },
 };
+
+/** 会議URLとして安全なものだけ通す（http/https のみ。javascript: などは捨てる） */
+export function safeMeetingUrl(u: string | null | undefined): string | null {
+  const v = (u ?? "").trim();
+  return /^https?:\/\//i.test(v) ? v : null;
+}
