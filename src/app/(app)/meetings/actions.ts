@@ -25,7 +25,7 @@ export async function chooseMeeting(formData: FormData) {
   if (!canTouch(company.status, kind)) return;
   if (!PICKABLE.includes(kind) || !iso || Number.isNaN(Date.parse(iso)) || new Date(iso) <= new Date()) return;
   const admin = createAdminClient();
-  const { data: ms } = await admin.from("company_meetings").select("id, scheduled_at").eq("company_id", company.id).eq("kind", kind).is("held_at", null);
+  const { data: ms } = await admin.from("company_meetings").select("id, scheduled_at, meeting_url").eq("company_id", company.id).eq("kind", kind).is("held_at", null);
   const t = new Date(iso).getTime();
   const same = (ms ?? []).find((m) => new Date(m.scheduled_at as string).getTime() === t);
   if (!same) return; // 候補に無い日時は選べない
@@ -35,7 +35,8 @@ export async function chooseMeeting(formData: FormData) {
   if (others.length === 0) { revalidatePath("/", "layout"); return; }
   await admin.from("company_meetings").delete().in("id", others.map((m) => m.id));
   const label = MEETING_LABEL[kind] ?? kind;
-  await admin.from("alerts").insert({ company_id: company.id, kind: "escalation", payload: { type: "meeting_chosen", kind, date: iso, by: user.id } });
+  // 会議URLがまだ無いときだけ「URLを入れる」番としてベレネッツに残す（メールは常に送る）
+  if (!same.meeting_url) await admin.from("alerts").insert({ company_id: company.id, kind: "escalation", payload: { type: "meeting_chosen", kind, date: iso, by: user.id } });
   await admin.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "meeting.choose", payload: { kind, date: iso } });
   await notifyOperators({ subject: `${company.name} が${label}の日程を選びました（${fmtMeeting(iso)}）`, lines: [`${company.name} の担当者が、${label}の日程を ${fmtMeeting(iso)} に決めました。`, "面談に会議URLを入れてください。ほかの候補日は自動で外しました。"], path: `/admin/${company.id}` });
   revalidatePath("/", "layout");

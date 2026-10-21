@@ -36,6 +36,8 @@ export async function saveMeetingRecord(formData: FormData) {
   let advanced = false;
   if (formData.get("held") === "1") {
     await admin.from("company_meetings").update({ held_at: new Date().toISOString() }).eq("id", meetingId);
+    // 実施済みにしたら、この種類の「日程が選ばれました（URLを入れる）」は済み
+    await admin.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("company_id", companyId).is("resolved_at", null).contains("payload", { type: "meeting_chosen", kind: m!.kind });
     advanced = !!(await advanceAfterMeeting(admin, companyId, m!.kind));
   }
   await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "meeting.record", payload: { meeting_id: meetingId, kind: m!.kind, transcript: !!(tr && "text" in tr) } });
