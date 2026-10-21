@@ -46,6 +46,7 @@ export async function saveDiagnosis(formData: FormData) {
     created_by: user.id,
     updated_at: new Date().toISOString(),
   });
+  if (!se && dates.length) await supabase.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("company_id", companyId).is("resolved_at", null).contains("payload", { type: "dates_declined", kind: "kickoff" });
   if (se) redirect(`/admin/${companyId}/diagnosis?error=${encodeURIComponent("保存できませんでした" + (/summary/.test(se.message) ? "（SQL 0025 が未実行の可能性があります）" : "") + "：" + se.message)}`);
   // 面談で聞いた「一言」は Q1 before としても固定（空にしたら消す）
   await supabase.from("company_profile_summary").upsert({ company_id: companyId, q1_before: strip(s(formData, "one_liner_before"), []) || null, updated_at: new Date().toISOString() });

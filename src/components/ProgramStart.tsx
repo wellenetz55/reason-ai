@@ -1,6 +1,7 @@
 import { fmtMeeting } from "@/lib/meetings";
 import { chooseKickoff, applyProgram } from "@/app/(app)/diagnosis/actions";
 import { KickoffPicker } from "@/components/KickoffPicker";
+import { requestOtherDates } from "@/app/(app)/meetings/actions";
 
 export type StartCompany = { name: string; applied_at: string | null; contracted_at: string | null; paid_at: string | null };
 
@@ -46,8 +47,7 @@ export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = 
           ) : dates.length > 0 ? (
             <>
               <p className="text-sm">入金を確認しました。キックオフ（3時間・オンライン）の日を選んでください。</p>
-              <KickoffPicker dates={dates} action={chooseKickoff} preview={preview} />
-              <p className="text-[12px] text-ink-3 mt-3">どれも合わない場合は「ベレネッツに質問を残す」からご希望日をお知らせください。</p>
+              <KickoffPicker dates={dates} action={chooseKickoff} preview={preview} kind="kickoff" declineAction={requestOtherDates} />
             </>
           ) : (
             <p className="text-sm">入金を確認しました。キックオフの候補日は、ベレネッツからご連絡します。</p>

@@ -41,8 +41,8 @@ export default async function AdminHome() {
     // 「7日操作なし」は、その後に操作があれば表示しない（毎朝の処理が済みにするまでの間のずれを消す）
     if (a.kind === "stale7" && lastBy[a.company_id] && Date.now() - new Date(lastBy[a.company_id]).getTime() < 7 * 86400000) continue;
     const p = (a.payload ?? {}) as { type?: string; date?: string; kind?: string };
-    const label = p.type === "kickoff_chosen" && p.date ? `キックオフ日が選ばれました ${fmtD(p.date)}` : p.type === "meeting_chosen" && p.date ? `${MEETING_LABEL[p.kind ?? ""] ?? "面談"}の日程が選ばれました ${fmtD(p.date)}（会議URLを入れる）` : p.type === "program_applied" ? "申込がありました（契約書・請求書を送付）" : p.type === "step2_done" ? "まとめて絞るが終わりました（確認セッション①の日程を決める）" : p.type === "diagnosis_viewed" ? "診断結果を開きました" : ALERT[a.kind] ?? a.kind;
-    const urgent = p.type === "program_applied" || p.type === "kickoff_chosen" || p.type === "step2_done" || p.type === "meeting_chosen" || a.kind === "disclosure_request" || a.kind === "quota_reached";
+    const label = p.type === "kickoff_chosen" && p.date ? `キックオフ日が選ばれました ${fmtD(p.date)}` : p.type === "meeting_chosen" && p.date ? `${MEETING_LABEL[p.kind ?? ""] ?? "面談"}の日程が選ばれました ${fmtD(p.date)}（会議URLを入れる）` : p.type === "dates_declined" ? `${MEETING_LABEL[p.kind ?? ""] ?? "面談"}の候補日がすべて合わず、別日を希望（新しい候補を3つ登録）` : p.type === "program_applied" ? "申込がありました（契約書・請求書を送付）" : p.type === "step2_done" ? "まとめて絞るが終わりました（確認セッション①の日程を決める）" : p.type === "diagnosis_viewed" ? "診断結果を開きました" : ALERT[a.kind] ?? a.kind;
+    const urgent = p.type === "program_applied" || p.type === "kickoff_chosen" || p.type === "step2_done" || p.type === "meeting_chosen" || p.type === "dates_declined" || a.kind === "disclosure_request" || a.kind === "quota_reached";
     const list = (alBy[a.company_id] ??= []);
     const hit = list.find((x) => x.label === label);
     if (hit) hit.count += 1; else list.push({ label, count: 1, at: a.created_at, urgent });

@@ -158,6 +158,8 @@ export async function createMeeting(formData: FormData) {
   });
   // 確認セッション①を登録したら「日程を決める番」のアラートは済み
   if (kind === "session1") await supabase.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("company_id", companyId).is("resolved_at", null).contains("payload", { type: "step2_done" });
+  // 同じ種類の「別日を希望」は、新しい候補を登録した時点で済み
+  await supabase.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("company_id", companyId).is("resolved_at", null).contains("payload", { type: "dates_declined", kind });
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/");
 }

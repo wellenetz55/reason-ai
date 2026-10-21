@@ -1,7 +1,7 @@
 import { fmtMeeting } from "@/lib/meetings";
 import type { MeetingNext as M } from "@/server/meetingNext";
 import { KickoffPicker } from "@/components/KickoffPicker";
-import { chooseMeeting } from "@/app/(app)/meetings/actions";
+import { chooseMeeting, requestOtherDates } from "@/app/(app)/meetings/actions";
 
 /**
  * ステップの出口に置く「次はベレネッツとの面談」の案内。
@@ -21,7 +21,7 @@ export function MeetingNextBlock({ m, done, before }: { m: M; done: boolean; bef
         {m.candidates.length > 1 ? (
           <div>
             <p><span className="text-[11px] text-ink-3 mr-3">日程</span>ベレネッツから候補日が <span className="num font-semibold">{m.candidates.length}</span> 件届いています。ご都合のよい日時を1つ選んでください。</p>
-            <KickoffPicker dates={m.candidates} action={chooseMeeting} label={m.label} kind={m.kind} />
+            <KickoffPicker dates={m.candidates} action={chooseMeeting} label={m.label} kind={m.kind} declineAction={requestOtherDates} />
           </div>
         ) : m.at ? (
           <p>
