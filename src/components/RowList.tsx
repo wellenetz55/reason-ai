@@ -74,7 +74,7 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
             {row.target && <span>{row.target}向け</span>}
             {isDraft && <span className="text-verify">AIの下書き</span>}
             {row.target_tag?.includes("仮説") && <span className="text-hypo">仮説</span>}
-            {held && <span>保留</span>}
+            {held && <span>{row.status === "dropped" ? "却下" : "保留"}</span>}
             {confirmed && <span className="text-navy font-medium">確定</span>}
           </p>
           {row.one_liner && <p className="text-sm text-ink-2 mt-1">一言で：{row.one_liner}</p>}

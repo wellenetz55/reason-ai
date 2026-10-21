@@ -29,14 +29,15 @@ export default async function Page() {
     if (n < 20) return <ClosedStage stageKey="merge" status={company.status} note={`STEP 1 で、提供価値と体験価値の組があと${20 - n}組そろうと開きます（いま${n}組）。`} />;
   }
   const [{ data: rows }, { data: diags }, ctx, meeting] = await Promise.all([
-    supabase.from("sheet_rows").select("id, seq, facet, target, value_raw, experience_value_v1, status").eq("company_id", company.id).eq("status", "active").order("seq"),
+    supabase.from("sheet_rows").select("id, seq, facet, target, value_raw, experience_value_v1, status").eq("company_id", company.id).in("status", ["active", "dropped"]).order("seq"),
     supabase.from("row_diagnoses").select("row_id, vague_score, issues, suggestion_value, suggestion_experience, resolved, checked_at, redraft_history, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
     loadGateCtx(supabase, company.id, company.status),
     loadMeetingAfter(supabase, company.id, "merge"),
   ]);
   const gate = stepGate("merge", ctx);
   const aiErr = await lastAiError(supabase, company.id, "vague_check.run");
-  const active = rows ?? [];
+  const active = (rows ?? []).filter((r) => r.status === "active");
+  const dropped = (rows ?? []).filter((r) => r.status === "dropped");
   const shownIds = new Set(active.map((r) => r.id));
   const dlist = (diags ?? []).filter((d) => shownIds.has(d.row_id)).map((d) => ({ ...d, issues: (d.issues ?? []) as string[] }));
   const lastChecked = dlist.map((d) => d.checked_at).sort().at(-1);
@@ -65,7 +66,7 @@ export default async function Page() {
           </div>
           <AiNotice message={aiErr} />
           {lastChecked && <p className="text-[12px] text-ink-3 mt-2 num">最終レビュー {fmtMeeting(lastChecked)}　未対応 {open} 組</p>}
-          <VagueList rows={active} diags={dlist} />
+          <VagueList rows={active} diags={dlist} dropped={dropped} />
         </section>
 
         <section>

@@ -40,7 +40,7 @@ export async function runVagueCheck() {
 export async function resolveDiagnosis(formData: FormData) {
   const { supabase, company, user } = await requireWritableCustomer();
   const rowId = String(formData.get("row_id"));
-  const action = String(formData.get("action")); // accept | keep
+  const action = String(formData.get("action")); // accept | keep | hold | drop
   const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   const { data: d0 } = await supabase.from("row_diagnoses").select("*").eq("row_id", rowId).maybeSingle();
   if (!row) return;
@@ -55,6 +55,11 @@ export async function resolveDiagnosis(formData: FormData) {
     await supabase.from("sheet_rows").update({ value_raw: after, experience_value_v1: afterExp || null, ...(expChanged ? { experience_value: afterExp || null } : {}), created_by: "customer" }).eq("id", rowId);
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "value_raw", action: "fix", before_text: row.value_raw, after_text: after, reviewer_id: user.id });
     await supabase.from("row_diagnoses").update({ resolved: "accepted", vague_score: 0 }).eq("row_id", rowId);
+  } else if (action === "drop") {
+    // 却下：行は消さず status=dropped（組数からも外れる）。「却下した組」から戻せる
+    await supabase.from("sheet_rows").update({ status: "dropped", confirmed_at: null }).eq("id", rowId);
+    await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "value_raw", action: "hold", before_text: row.value_raw, after_text: "", reviewer_id: user.id });
+    await supabase.from("row_diagnoses").update({ resolved: "dropped" }).eq("row_id", rowId);
   } else if (action === "hold") {
     await supabase.from("sheet_rows").update({ status: "held", confirmed_at: null }).eq("id", rowId);
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "value_raw", action: "hold", before_text: row.value_raw, after_text: row.value_raw, reviewer_id: user.id });
@@ -94,8 +99,10 @@ export async function redraftDiagnosis(formData: FormData) {
 export async function reopenDiagnosis(formData: FormData) {
   const { supabase, company, user } = await requireWritableCustomer();
   const rowId = String(formData.get("row_id"));
-  const { data: row } = await supabase.from("sheet_rows").select("id").eq("id", rowId).eq("company_id", company.id).maybeSingle();
+  const { data: row } = await supabase.from("sheet_rows").select("id, status").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   if (!row) return;
+  // 却下・保留から戻すときは行を active に戻す
+  if (row.status === "dropped" || row.status === "held") await supabase.from("sheet_rows").update({ status: "active" }).eq("id", rowId);
   await supabase.from("row_diagnoses").update({ resolved: null }).eq("row_id", rowId);
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.reopen", payload: { row_id: rowId } });
   revalidatePath("/sheet/merge");

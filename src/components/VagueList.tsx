@@ -21,7 +21,7 @@ function Mark({ text }: { text: string | null }) {
 }
 
 /** ふわっと診断の一覧。辞書の印は即時、AIの点検は checked があるときだけ */
-export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
+export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: Diag[]; dropped?: Row[] }) {
   const [editing, setEditing] = useState<string | null>(null);
   const dmap = new Map(diags.map((d) => [d.row_id, d]));
   const flagged = rows.map((r) => {
@@ -63,7 +63,29 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
     </details>
   );
 
-  if (rows.length === 0) return <p className="text-sm text-ink-2 mt-3">まだ組がありません。先に STEP 1 で提供価値・体験価値の組を出してください。</p>;
+  const droppedBlock = dropped.length > 0 && (
+    <details className="mt-6 rounded-[var(--radius)] border hairline overflow-hidden">
+      <summary className="cursor-pointer list-none bg-paper-2 text-ink-2 px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-1 [&::-webkit-details-marker]:hidden">
+        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-paper border hairline text-ink-3 num font-bold text-[14px] shrink-0">{dropped.length}</span>
+        <span className="flex-1 min-w-[200px]">
+          <span className="serif block text-[16px] leading-tight">却下した組</span>
+          <span className="block text-[12px] text-ink-3 mt-0.5">使わないと決めた組。組数には数えません。シートには残っていて、ここから戻せます</span>
+        </span>
+        <span className="text-[12px] text-ink-3 shrink-0">▼ 開く／閉じる</span>
+      </summary>
+      <ul className="px-5 py-2 divide-y divide-hair bg-paper">
+        {dropped.map((r) => (
+          <li key={r.id} className="py-2.5 flex flex-wrap items-start gap-x-3 gap-y-1 text-sm text-ink-3">
+            <span className="num text-xs w-6 pt-0.5">{r.seq}</span>
+            <span className="flex-1 min-w-[240px] line-through"><span className="serif">{r.value_raw}</span>{r.experience_value_v1 && <span className="block text-[13px]">だから、お客様は {r.experience_value_v1}</span>}</span>
+            <form action={reopenDiagnosis}><input type="hidden" name="row_id" value={r.id} /><button className="btn-text text-xs" type="submit">戻す</button></form>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+
+  if (rows.length === 0 && dropped.length === 0) return <p className="text-sm text-ink-2 mt-3">まだ組がありません。先に STEP 1 で提供価値・体験価値の組を出してください。</p>;
   const aiOkBlock = aiOkRows.length > 0 && (
     <details className="mt-8 rounded-[var(--radius)] border-2 border-fact overflow-hidden">
       <summary className="cursor-pointer list-none bg-fact text-on-accent px-5 py-4 flex flex-wrap items-center gap-x-4 gap-y-1 [&::-webkit-details-marker]:hidden">
@@ -146,6 +168,7 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
                       <form action={redraftDiagnosis} data-busy-timeout="90000"><input type="hidden" name="row_id" value={r.id} /><button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">{d?.suggestion_value ? "この組だけAIで別案を出す" : "この組だけAIに言い直し案を頼む"}</button></form>
                       <button type="button" className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} onClick={() => setEditing(r.id)}>一部自社で直す</button>
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className={OPT + " border-ink-3 bg-paper text-ink-2 hover:bg-paper-2"} type="submit">保留にする</button></form>
+                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="drop" /><button className={OPT + " border-ink-3 bg-paper text-ink-3 hover:bg-paper-2 hover:text-ink"} type="submit" title="インパクトに欠ける・使わない組を外します。シートには残り、あとで戻せます">却下する</button></form>
                     </div>
                   </div>
                 )
@@ -157,6 +180,7 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
     </ol>
     {aiOkBlock}
     {decidedBlock}
+    {droppedBlock}
     </>
   );
 }
