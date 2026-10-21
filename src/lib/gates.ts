@@ -55,7 +55,7 @@ export function stepGate(key: string, c: GateCtx): Gate {
     case "counter":
       return c.brakesOpen === 0
         ? { next, ready: true, note: "すべてのブレーキに先回りの答えがつきました。" }
-        : { next, ready: false, note: `答えがまだないブレーキが${c.brakesOpen}件あります。全部につけると進めます。` };
+        : { next, ready: false, note: `答えがまだ無い、または ○ の穴が残っているブレーキが${c.brakesOpen}件あります。全部に答えがそろうと進めます。` };
     case "trust":
       return { next, ready: true, note: "三連（御社は／だから、お客様は／なぜなら）を一通り見終えたら、リトマス試験紙に進んでください。あとから戻って磨き直せます。" };
     case "litmus":

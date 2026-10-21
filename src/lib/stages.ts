@@ -42,7 +42,7 @@ export const STATUS_LABEL: Record<string, string> = {
 };
 
 /** 画面がまだ準備中の段階（ホームの「いま進めること」からボタンで案内しない） */
-export const NOT_READY = new Set(["counter", "litmus", "evidence", "deploy"]);
+export const NOT_READY = new Set(["litmus", "evidence", "deploy"]);
 
 export function isStageOpen(stage: Stage, status: string) {
   return stage.statuses.includes(status);

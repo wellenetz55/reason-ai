@@ -98,7 +98,7 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
     if (has("counter")) cols.push({ header: "先回りの答え", key: "counter", width: 44 }, { header: "なぜなら", key: "because", width: 36 }, { header: "根拠", key: "tag", width: 8 });
     if (brakes?.length) addSheet(has("counter") ? "3-4 ブレーキ" : "3 ブレーキ", cols, (brakes ?? []).map((b) => ({
       seq: byId.get(b.row_id)?.seq, raw: byId.get(b.row_id)?.value_final ?? byId.get(b.row_id)?.value_raw,
-      kind: KIND[b.kind] ?? b.kind, words: b.customer_words, counter: b.counter_message, because: b.because, tag: TAG[b.evidence_tag] ?? b.evidence_tag,
+      kind: KIND[b.kind] ?? b.kind, words: b.customer_words, counter: b.counter_message, because: b.because, tag: TAG[b.because_tag ?? b.evidence_tag] ?? b.because_tag ?? b.evidence_tag,
     })));
   }
 

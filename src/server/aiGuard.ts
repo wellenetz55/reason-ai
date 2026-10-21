@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 /** AI呼び出しを包み、失敗を activity_log に残す（画面は落とさない）。戻り値 null = 失敗 */
 /** 1社あたりのAI呼び出しの上限（直近10分・全機能合計）。連打やスクリプトで費用が膨らむのを防ぐ */
-const AI_EVENTS = ["profile.draft", "row.draft", "vague_check.run", "vague_check.redraft", "because.draft", "brakes.draft"];
+const AI_EVENTS = ["profile.draft", "row.draft", "vague_check.run", "vague_check.redraft", "because.draft", "brakes.draft", "counter.draft"];
 const AI_LIMIT_10MIN = 30;
 
 export async function aiGuard<T>(supabase: SupabaseClient, companyId: string, userId: string, event: string, fn: () => Promise<T>): Promise<T | null> {
