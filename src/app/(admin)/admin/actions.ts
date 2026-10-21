@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOperator } from "@/lib/session";
+import { changeStatus } from "@/server/statusChange";
 
 export async function createCompany(formData: FormData) {
   const { supabase } = await requireOperator();
@@ -23,32 +24,11 @@ export async function setStatus(formData: FormData) {
   revalidatePath("/admin");
 }
 
-/** 状態を変える本体（会社ページの「変更」と、キックオフ実施済→自動で「骨格をつくる」から使う）。同じ状態なら何もしない */
+/** 状態を変える（会社ページの「変更」と、面談実施済→自動前進から使う）。本体は server/statusChange.ts（毎朝の自動処理と共用） */
 export async function applyStatus(supabase: SupabaseClient, id: string, status: string): Promise<boolean> {
-  const { data: before } = await supabase.from("companies").select("status").eq("id", id).single();
-  if (before?.status === status) return false;
-  const nowD = new Date();
-  const patch: Record<string, string> = { status, status_changed_at: nowD.toISOString() };
-  // 猶予・延長は終わりの日を決める（毎朝の自動処理がこの日を過ぎたら次の状態に移す）。期限は会社ページで変えられる
-  if (status === "grace") { const d = new Date(nowD); d.setMonth(d.getMonth() + 1); patch.grace_until = d.toISOString(); }
-  if (status === "extended") patch.extension_until = new Date(nowD.getTime() + 28 * 86_400_000).toISOString();
-  await supabase.from("companies").update(patch).eq("id", id);
-  // 進行中の状態を抜けたら「7日操作なし」は済みにする（毎朝の処理は進行中の会社しか見ないため）
-  if (!["onboarding", "week1_2", "week3_5", "week6_8", "extended"].includes(status)) {
-    await supabase.from("alerts").update({ resolved_at: nowD.toISOString() }).eq("company_id", id).eq("kind", "stale7").is("resolved_at", null);
-  }
-  // 状態が変わったら、解約後の一時再アクセスは閉じる（列が無い環境ではエラーを無視）
-  await supabase.from("companies").update({ reaccess_until: null }).eq("id", id).not("reaccess_until", "is", null);
-  if (status !== "week1_2") await supabase.from("alerts").update({ resolved_at: nowD.toISOString() }).eq("company_id", id).is("resolved_at", null).contains("payload", { type: "step2_done" });
-  // 契約前を抜けたら、契約前の要対応アラート（申込・診断閲覧・キックオフ選択）を済みにする
-  if (status !== "diagnosed") {
-    const now = new Date().toISOString();
-    for (const type of ["program_applied", "diagnosis_viewed", "kickoff_chosen"]) {
-      await supabase.from("alerts").update({ resolved_at: now }).eq("company_id", id).is("resolved_at", null).contains("payload", { type });
-    }
-  }
-  revalidatePath("/", "layout");
-  return true;
+  const ok = await changeStatus(supabase, id, status);
+  if (ok) revalidatePath("/", "layout");
+  return ok;
 }
 
 /** キックオフを実施済にしたら、契約前／キックオフ前の会社は「骨格をつくる（1〜2週目）」に進める（お客様側に STEP 1 が開く） */
