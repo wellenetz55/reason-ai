@@ -46,6 +46,8 @@ export async function applyProgram() {
 export async function chooseKickoff(formData: FormData) {
   const { company, user } = await requireCustomer();
   const iso = String(formData.get("date") || "");
+  // キックオフ日を選ぶのは契約前（diagnosed）の会社だけ
+  if (company.status !== "diagnosed") return;
   const admin = createAdminClient();
   const { data: c } = await admin.from("companies").select("paid_at").eq("id", company.id).single();
   if (!c?.paid_at) return;
@@ -56,7 +58,14 @@ export async function chooseKickoff(formData: FormData) {
     revalidatePath("/diagnosis");
     return;
   }
-  await admin.from("diagnosis_results").upsert({ company_id: company.id, chosen_date: iso, chosen_at: new Date().toISOString() }, { onConflict: "company_id" });
+  // 二度押しでも1回だけ：まだ選ばれていないときだけ書き込み、書き込めた側だけが先へ進む
+  const chosenAt = new Date().toISOString();
+  const { data: won } = await admin.from("diagnosis_results").update({ chosen_date: iso, chosen_at: chosenAt }).eq("company_id", company.id).is("chosen_date", null).select("company_id");
+  if (!won?.length) {
+    // 結果の行がまだ無い（候補が面談にだけある）ときは作る。同時に2回来ても、会社ごとに1行なので片方は失敗して止まる
+    const { error } = await admin.from("diagnosis_results").insert({ company_id: company.id, chosen_date: iso, chosen_at: chosenAt });
+    if (error) { revalidatePath("/diagnosis"); return; }
+  }
   // 面談のキックオフ：選んだ日時のものがあればそれを残し（会議URLは残る）、ほかの未実施の候補は外す。無ければ1件作る
   const { data: kms } = await admin.from("company_meetings").select("id, scheduled_at").eq("company_id", company.id).eq("kind", "kickoff").is("held_at", null);
   const same = (kms ?? []).find((m) => new Date(m.scheduled_at as string).getTime() === new Date(iso).getTime());
