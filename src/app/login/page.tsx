@@ -26,6 +26,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
             <div className="rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-[13px] text-ink-2 leading-relaxed space-y-2">
               <p>届かないときは、まず<strong className="text-ink">迷惑メールフォルダ</strong>をご確認ください（送信元：noreply@reason-ai.wellenetz.co.jp）。</p>
               <p>1〜2分待ってもサインイン用のリンクが来ない場合は、<Link href="/login" className="text-navy underline underline-offset-4">もう一度メールアドレスを入力して下さい</Link>。</p>
+              <p>招待を受けたメールアドレスと違うアドレスを入れた場合も、メールは届きません。入力したアドレスをご確認ください。</p>
               <p>それでも届かない場合は、ベレネッツにご連絡ください。</p>
             </div>
           </div>
