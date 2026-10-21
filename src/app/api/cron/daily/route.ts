@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
+import { cronAuthorized } from "@/server/cronAuth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { changeStatus } from "@/server/statusChange";
 
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) return NextResponse.json({ ok: false }, { status: 401 });
+  if (!cronAuthorized(auth)) return NextResponse.json({ ok: false }, { status: 401 });
   const admin = createAdminClient();
   const now = new Date();
   const iso = now.toISOString();

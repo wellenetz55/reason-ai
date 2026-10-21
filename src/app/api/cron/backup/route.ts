@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cronAuthorized } from "@/server/cronAuth";
 import { backupToDropbox, getSetting } from "@/server/dropbox";
 import { notifyOperators } from "@/server/notify";
 
@@ -7,7 +8,7 @@ export const maxDuration = 300;
 /** 毎週の自動バックアップ（Vercel Cron）。Dropbox と未接続なら何もしない */
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization");
-  if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) return NextResponse.json({ ok: false }, { status: 401 });
+  if (!cronAuthorized(auth)) return NextResponse.json({ ok: false }, { status: 401 });
   if (!(await getSetting("dropbox"))) return NextResponse.json({ ok: true, skipped: "not connected" });
   const r = await backupToDropbox("schedule");
   if (!r.ok || r.error) {
