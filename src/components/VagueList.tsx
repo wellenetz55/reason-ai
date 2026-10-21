@@ -3,6 +3,9 @@ import { useState } from "react";
 import { findVague, hasConcrete } from "@/lib/vague";
 import { resolveDiagnosis, redraftDiagnosis } from "@/app/(app)/sheet/merge/actions";
 
+/** 言い直し案の下の選択肢ボタン（罫線で囲って目立たせる） */
+const OPT = "rounded-[var(--radius)] border px-3 py-1.5 text-[13px] font-medium bg-paper transition-colors";
+
 type Row = { id: string; seq: number; value_raw: string | null; experience_value_v1: string | null };
 type Diag = { row_id: string; vague_score: number; issues: string[]; suggestion_value: string | null; suggestion_experience: string | null; resolved: string | null; checked_at: string };
 
@@ -59,12 +62,12 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
                     <p className="text-[11px] text-navy">AIの言い直し案</p>
                     <p className="text-sm mt-1">{d.suggestion_value}</p>
                     {d.suggestion_experience && <p className="text-sm text-ink-2 mt-0.5">だから、お客様は {d.suggestion_experience}</p>}
-                    <div className="mt-3 flex flex-wrap gap-x-1 gap-y-1">
-                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" /><button className="btn-text text-navy font-semibold" type="submit">この案で決定する</button></form>
-                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className="btn-text" type="submit">初期案（自社入力）のままにする</button></form>
-                      <form action={redraftDiagnosis} data-busy-timeout="90000"><input type="hidden" name="row_id" value={r.id} /><button className="btn-text" type="submit">この組だけAIで別案を出す</button></form>
-                      <button type="button" className="btn-text" onClick={() => setEditing(r.id)}>一部自社で直す</button>
-                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className="btn-text" type="submit">保留にする</button></form>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" /><button className={OPT + " border-navy bg-navy text-on-accent hover:brightness-110"} type="submit">この案で決定する</button></form>
+                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className={OPT + " border-ink-3 text-ink hover:bg-paper-2"} type="submit">初期案（自社入力）のままにする</button></form>
+                      <form action={redraftDiagnosis} data-busy-timeout="90000"><input type="hidden" name="row_id" value={r.id} /><button className={OPT + " border-navy text-navy hover:bg-paper"} type="submit">この組だけAIで別案を出す</button></form>
+                      <button type="button" className={OPT + " border-navy text-navy hover:bg-paper"} onClick={() => setEditing(r.id)}>一部自社で直す</button>
+                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className={OPT + " border-ink-3 text-ink-2 hover:bg-paper-2"} type="submit">保留にする</button></form>
                     </div>
                   </div>
                 )
