@@ -65,9 +65,16 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
 
   if (rows.length === 0) return <p className="text-sm text-ink-2 mt-3">まだ組がありません。先に STEP 1 で提供価値・体験価値の組を出してください。</p>;
   const aiOkBlock = aiOkRows.length > 0 && (
-    <details className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3">
-      <summary className="cursor-pointer text-sm text-ink-2">AIがレビューして「このままで具体的」と判断した組（{aiOkRows.length}）── 辞書の印はついていますが、言い直しは不要です。開くと内容と、念のため直す・保留のボタン</summary>
-      <ul className="mt-3 divide-y divide-hair">
+    <details className="mt-8 rounded-[var(--radius)] border-2 border-fact overflow-hidden">
+      <summary className="cursor-pointer list-none bg-fact text-on-accent px-5 py-4 flex flex-wrap items-center gap-x-4 gap-y-1 [&::-webkit-details-marker]:hidden">
+        <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-paper text-fact num font-bold text-[16px] shrink-0">{aiOkRows.length}</span>
+        <span className="flex-1 min-w-[200px]">
+          <span className="serif block text-[18px] leading-tight">このままで通用する言葉 ✓</span>
+          <span className="block text-[12px] text-on-accent/85 mt-0.5">AIがレビューして「具体的で、どの会社でも言える言葉ではない」と判断した組。言い直しは不要です。開くと内容が見られます</span>
+        </span>
+        <span className="text-[12px] text-on-accent/85 shrink-0">▼ 開く／閉じる</span>
+      </summary>
+      <ul className="px-5 py-2 divide-y divide-hair bg-paper">
         {aiOkRows.map(({ r, dict, concrete }) => (
           <li key={r.id} className="py-2.5 flex flex-wrap items-start gap-x-3 gap-y-1 text-sm">
             <span className="num text-xs text-ink-3 w-6 pt-0.5">{r.seq}</span>
