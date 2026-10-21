@@ -6,9 +6,24 @@ import { draftRows, draftExperiences, FACETS, type FacetKey } from "@/server/she
 import { aiGuard } from "@/server/aiGuard";
 import { loadProfileContext } from "@/server/profile";
 
-async function nextSeq(supabase: Awaited<ReturnType<typeof requireStage>>["supabase"], companyId: string) {
+type Sb = Awaited<ReturnType<typeof requireStage>>["supabase"];
+async function nextSeq(supabase: Sb, companyId: string) {
   const { data } = await supabase.from("sheet_rows").select("seq").eq("company_id", companyId).order("seq", { ascending: false }).limit(1).maybeSingle();
   return (data?.seq ?? 0) + 1;
+}
+
+/**
+ * 番号（seq）をつけて1行追加する。同時に追加されて番号がぶつかったら（unique違反 23505）、番号を取り直して入れ直す。
+ * 黙って1行消える、を起こさない。
+ */
+async function insertRow(supabase: Sb, companyId: string, row: Record<string, unknown>): Promise<number | null> {
+  for (let i = 0; i < 5; i++) {
+    const seq = await nextSeq(supabase, companyId);
+    const { error } = await supabase.from("sheet_rows").insert({ ...row, company_id: companyId, seq });
+    if (!error) return seq;
+    if (error.code !== "23505") return null;
+  }
+  return null;
 }
 
 export async function addRow(formData: FormData) {
@@ -16,12 +31,11 @@ export async function addRow(formData: FormData) {
   const value = cut(String(formData.get("value") || "").trim(), MAX.value);
   const facetIn = String(formData.get("facet") || "functional");
   const facet = (FACETS.some((f) => f.key === facetIn) ? facetIn : "functional") as FacetKey;
-  const round = Number(formData.get("round") || 1);
+  const r0 = Math.trunc(Number(formData.get("round"))); const round = r0 >= 1 && r0 <= 20 ? r0 : 1;
   const target = cut(String(formData.get("target") || "").trim(), MAX.target) || null;
   const experience = cut(String(formData.get("experience") || "").trim(), MAX.value) || null;
   if (!value) return;
-  const seq = await nextSeq(supabase, company.id);
-  await supabase.from("sheet_rows").insert({ company_id: company.id, seq, value_raw: value, experience_value_v1: experience, facet, round, target, created_by: "customer" });
+  const seq = await insertRow(supabase, company.id, { value_raw: value, experience_value_v1: experience, facet, round, target, created_by: "customer" });
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "row.add", payload: { seq, facet } });
   revalidatePath("/sheet/diverge");
 }
@@ -71,7 +85,7 @@ export async function requestDraft(formData: FormData) {
   const { supabase, company, user } = await requireStage("diverge");
   const facetIn = String(formData.get("facet") || "functional");
   const facet = (FACETS.some((f) => f.key === facetIn) ? facetIn : "functional") as FacetKey;
-  const round = Number(formData.get("round") || 1);
+  const r0 = Math.trunc(Number(formData.get("round"))); const round = r0 >= 1 && r0 <= 20 ? r0 : 1;
   if (!FACETS.some((f) => f.key === facet)) return;
   const [summary, { data: rows }] = await Promise.all([
     loadProfileContext(supabase, company.id),
@@ -86,11 +100,10 @@ export async function requestDraft(formData: FormData) {
   }));
   if (!drafts) { revalidatePath("/sheet/diverge"); return; }
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "row.draft", payload: { n: drafts.length } });
-  let seq = await nextSeq(supabase, company.id);
   for (const d of drafts.slice(0, 5)) {
     if (!d.value) continue;
-    await supabase.from("sheet_rows").insert({
-      company_id: company.id, seq: seq++, value_raw: d.value, experience_value_v1: d.experience ?? null, target: d.target ?? null, one_liner: d.one_liner ?? null, target_tag: d.source ?? null, facet, round, created_by: "ai",
+    await insertRow(supabase, company.id, {
+      value_raw: d.value, experience_value_v1: d.experience ?? null, target: d.target ?? null, one_liner: d.one_liner ?? null, target_tag: d.source ?? null, facet, round, created_by: "ai",
     });
   }
   revalidatePath("/sheet/diverge");
