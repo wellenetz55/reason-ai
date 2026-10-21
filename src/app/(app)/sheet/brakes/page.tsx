@@ -21,7 +21,7 @@ export default async function Page() {
   const { supabase, company } = await requireCustomer();
   if (!isStageOpen(STAGES.find((x) => x.key === "brakes")!, company.status)) return <ClosedStage stageKey="brakes" status={company.status} />;
   if (!(await isStep0Ready(supabase, company.id))) return <Step0Required stageKey="brakes" />;
-  const [{ data: rows }, { data: brakes }, ctx, fixed] = await Promise.all([
+  const [{ data: rows }, { data: brakes, error: bErr }, ctx, fixed] = await Promise.all([
     supabase.from("sheet_rows").select("id, seq, value_raw, experience_value, experience_value_v1").eq("company_id", company.id).eq("status", "active").order("seq"),
     supabase.from("brakes").select("id, row_id, kind, customer_words, source_tag, evidence_tag, status, created_by, approved_at, created_at, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id).order("created_at"),
     loadGateCtx(supabase, company.id, company.status),
@@ -29,6 +29,7 @@ export default async function Page() {
   ]);
   const gate = stepGate("brakes", ctx);
   const aiErr = await lastAiError(supabase, company.id, "brakes.draft");
+  const loadErr = bErr ? `ブレーキを読み込めませんでした${/approved_at/.test(bErr.message) ? "（SQL 0029 が未実行の可能性があります）" : ""}：${bErr.message}` : null;
   const list = (rows ?? []).map((r) => ({ id: r.id, seq: r.seq, value_raw: r.value_raw, experience: r.experience_value ?? r.experience_value_v1 }));
   const blist: Brake[] = (brakes ?? []).map((b) => ({ id: b.id, row_id: b.row_id, kind: b.kind, customer_words: b.customer_words, source_tag: b.source_tag, evidence_tag: b.evidence_tag, status: b.status, created_by: b.created_by, approved_at: b.approved_at }));
   const activeB = blist.filter((b) => b.status === "active");
@@ -72,7 +73,7 @@ export default async function Page() {
           根拠タグ：<span className="text-fact">事実</span>＝実際に言われた言葉がある／<span className="text-verify">要確認</span>＝ありそうだが確かめていない／<span className="text-hypo">仮説</span>＝推測。仮説は承認しても黄色のままで、STEP 7 で証拠がつくと事実に変わります。
         </p>
         {hasPublic && <p className="mt-3 rounded-[var(--radius)] bg-warm-soft px-4 py-3 text-[13px] max-w-[44em]">出所が「公開の声（レビュー・コメント）」のブレーキがあります。原文はこのシートの中だけで使い、営業資料・Webなどの販促物に転載しないでください。</p>}
-        <AiNotice message={aiErr} />
+        <AiNotice message={loadErr ?? aiErr} />
         {missing > 0 && (
           <form action={requestBrakeDrafts} className="mt-4" data-busy-timeout="120000">
             <button className="btn-primary" type="submit">{missing > 10 ? `ブレーキが無い${missing}組のうち、まず10組にAIの下書きを付ける` : `ブレーキが無い${missing}組に、AIの下書きを付ける`}</button>
