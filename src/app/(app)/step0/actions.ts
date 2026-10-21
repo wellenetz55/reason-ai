@@ -9,6 +9,7 @@ import { requireCustomer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LIMITS, MAX, cut } from "@/lib/limits";
 import { normalizeWebUrl } from "@/lib/url";
+import { PROFILE_ITEMS } from "@/lib/profileItems";
 import { draftProfile } from "@/server/profile";
 import { aiGuard } from "@/server/aiGuard";
 
@@ -168,6 +169,9 @@ export async function reviewProfileItem(formData: FormData) {
   const key = String(formData.get("key"));
   const action = String(formData.get("action")); // approve | fix | hold | answer | reopen
   const after = cut(String(formData.get("after") || "").trim(), MAX.profile);
+  // 決まった項目だけ受け付ける。「一言で言うと」など固定の項目はここでは変えない
+  const def = PROFILE_ITEMS.find((d) => d.key === key);
+  if (!def || def.fixed) return;
   const { data: cur } = await supabase.from("profile_items").select("*").eq("company_id", company.id).eq("key", key).maybeSingle();
   const patch: Record<string, unknown> = { company_id: company.id, key, updated_at: new Date().toISOString() };
   if (action === "approve") { patch.value = cur?.draft ?? null; patch.status = "approved"; }

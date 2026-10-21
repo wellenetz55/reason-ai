@@ -29,7 +29,8 @@ export async function answerHomework(formData: FormData) {
       answered_at: new Date().toISOString(),
     })
     .eq("id", id)
-    .eq("company_id", company.id);
+    .eq("company_id", company.id)
+    .eq("status", "open"); // 答えた・パスした宿題は上書きしない（古いタブ・二度押し）
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "homework.answer" });
   revalidatePath("/homework");
 }
