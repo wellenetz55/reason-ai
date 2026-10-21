@@ -7,7 +7,7 @@ const fail = (msg: string): never => redirect(`/step0?error=${encodeURIComponent
 import { randomUUID } from "node:crypto";
 import { requireCustomer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { LIMITS } from "@/lib/limits";
+import { LIMITS, MAX, cut } from "@/lib/limits";
 import { normalizeWebUrl } from "@/lib/url";
 import { draftProfile } from "@/server/profile";
 import { aiGuard } from "@/server/aiGuard";
@@ -81,7 +81,7 @@ export async function finishUpload(formData: FormData): Promise<{ ok: boolean; e
   const { error: insErr } = await supabase.from("company_documents").insert({
     company_id: company.id,
     kind: kindOf(formData.get("kind")),
-    title: String(formData.get("title") || fileName).trim() || fileName,
+    title: cut(String(formData.get("title") || fileName).trim() || fileName, MAX.title),
     storage_path: path,
     mime_type: meta.mimetype ?? String(formData.get("file_type") || ""),
     size_bytes: meta.size ?? Number(formData.get("file_size") || 0),
@@ -107,7 +107,7 @@ export async function addUrl(formData: FormData) {
   await supabase.from("company_documents").insert({
     company_id: company.id,
     kind: kindOf(formData.get("kind")),
-    title: String(formData.get("title") || url).trim() || url,
+    title: cut(String(formData.get("title") || url).trim() || url!, MAX.title),
     url,
     uploaded_by: user.id,
   });
@@ -118,13 +118,13 @@ export async function addUrl(formData: FormData) {
 /** テキストを貼り付けて登録（議事録・営業トーク・メモなど） */
 export async function addText(formData: FormData) {
   const { company, user, supabase } = await requireStage("step0");
-  const text = String(formData.get("text") || "").trim();
+  const text = cut(String(formData.get("text") || "").trim(), MAX.pasted);
   if (!text) return;
   if ((await usage(supabase, company.id)).texts >= LIMITS.texts) fail("登録できるテキストの数の上限に達しています。");
   await supabase.from("company_documents").insert({
     company_id: company.id,
     kind: kindOf(formData.get("kind")),
-    title: String(formData.get("title") || text.slice(0, 30)).trim() || "テキスト",
+    title: cut(String(formData.get("title") || text.slice(0, 30)).trim() || "テキスト", MAX.title),
     text_content: text.slice(0, 200_000),
     uploaded_by: user.id,
   });
@@ -167,7 +167,7 @@ export async function reviewProfileItem(formData: FormData) {
   const { supabase, company } = await requireStage("step0");
   const key = String(formData.get("key"));
   const action = String(formData.get("action")); // approve | fix | hold | answer | reopen
-  const after = String(formData.get("after") || "").trim();
+  const after = cut(String(formData.get("after") || "").trim(), MAX.profile);
   const { data: cur } = await supabase.from("profile_items").select("*").eq("company_id", company.id).eq("key", key).maybeSingle();
   const patch: Record<string, unknown> = { company_id: company.id, key, updated_at: new Date().toISOString() };
   if (action === "approve") { patch.value = cur?.draft ?? null; patch.status = "approved"; }
@@ -184,8 +184,8 @@ export async function reviewProfileItem(formData: FormData) {
 /** 競合他社を登録（最大3社＋参考1社）。会社名は必須、商品・サービス名とURLは任意 */
 export async function addCompetitor(formData: FormData) {
   const { company, user, supabase } = await requireStage("step0");
-  const name = String(formData.get("name") || "").trim();
-  const product = String(formData.get("product") || "").trim();
+  const name = cut(String(formData.get("name") || "").trim(), MAX.title);
+  const product = cut(String(formData.get("product") || "").trim(), MAX.title);
   const raw = String(formData.get("website") || "").trim();
   const isReference = formData.get("is_reference") === "1";
   if (!name) fail("競合の会社名を入れてください。");

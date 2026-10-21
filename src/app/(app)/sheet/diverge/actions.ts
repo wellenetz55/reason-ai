@@ -1,4 +1,5 @@
 "use server";
+import { MAX, cut } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
 import { draftRows, draftExperiences, FACETS, type FacetKey } from "@/server/sheet";
@@ -12,12 +13,12 @@ async function nextSeq(supabase: Awaited<ReturnType<typeof requireStage>>["supab
 
 export async function addRow(formData: FormData) {
   const { supabase, company, user } = await requireStage("diverge");
-  const value = String(formData.get("value") || "").trim();
+  const value = cut(String(formData.get("value") || "").trim(), MAX.value);
   const facetIn = String(formData.get("facet") || "functional");
   const facet = (FACETS.some((f) => f.key === facetIn) ? facetIn : "functional") as FacetKey;
   const round = Number(formData.get("round") || 1);
-  const target = String(formData.get("target") || "").trim() || null;
-  const experience = String(formData.get("experience") || "").trim() || null;
+  const target = cut(String(formData.get("target") || "").trim(), MAX.target) || null;
+  const experience = cut(String(formData.get("experience") || "").trim(), MAX.value) || null;
   if (!value) return;
   const seq = await nextSeq(supabase, company.id);
   await supabase.from("sheet_rows").insert({ company_id: company.id, seq, value_raw: value, experience_value_v1: experience, facet, round, target, created_by: "customer" });
@@ -29,8 +30,8 @@ export async function reviewRow(formData: FormData) {
   const { supabase, company, user } = await requireStage("diverge");
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")) as "approve" | "fix" | "hold" | "confirm" | "unconfirm";
-  const after = String(formData.get("after") || "").trim();
-  const afterExp = formData.has("after_experience") ? String(formData.get("after_experience") || "").trim() : null;
+  const after = cut(String(formData.get("after") || "").trim(), MAX.value);
+  const afterExp = formData.has("after_experience") ? cut(String(formData.get("after_experience") || "").trim(), MAX.value) : null;
   const dwell = Number(formData.get("dwell_ms") || 0);
   const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, status").eq("id", rowId).eq("company_id", company.id).single();
   if (!row) return;

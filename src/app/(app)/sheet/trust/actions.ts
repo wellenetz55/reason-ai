@@ -1,4 +1,5 @@
 "use server";
+import { MAX, cut } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
 import { draftBecause } from "@/server/because";
@@ -40,8 +41,8 @@ export async function saveTriple(formData: FormData) {
   if (!row) return;
   const patch: Record<string, unknown> = { because_by: "customer" };
   if (action === "fix") {
-    const exp = String(formData.get("experience") || "").trim();
-    const because = String(formData.get("because") || "").trim();
+    const exp = cut(String(formData.get("experience") || "").trim(), MAX.value);
+    const because = cut(String(formData.get("because") || "").trim(), MAX.value);
     const tag = String(formData.get("tag") || "hypothesis");
     patch.experience_value = exp || null;
     patch.because_phrase = because || null;

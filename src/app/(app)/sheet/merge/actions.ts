@@ -1,4 +1,5 @@
 "use server";
+import { MAX, cut } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
 import { diagnoseRows } from "@/server/diagnose";
@@ -82,8 +83,8 @@ export async function resolveDiagnosis(formData: FormData) {
   const d = d0 ?? (await supabase.from("row_diagnoses").upsert({ row_id: rowId, vague_score: 0, issues: [], suggestion_value: null, suggestion_experience: null, resolved: null, checked_at: new Date().toISOString() }, { onConflict: "row_id" }).select("*").single()).data;
   if (!d) return;
   if (action === "accept") {
-    const after = String(formData.get("after") || d.suggestion_value || "").trim();
-    const afterExp = String(formData.get("after_experience") || d.suggestion_experience || row.experience_value_v1 || "").trim();
+    const after = cut(String(formData.get("after") || d.suggestion_value || "").trim(), MAX.value);
+    const afterExp = cut(String(formData.get("after_experience") || d.suggestion_experience || row.experience_value_v1 || "").trim(), MAX.value);
     if (!after) return;
     const expChanged = afterExp !== (row.experience_value_v1 ?? "");
     await supabase.from("sheet_rows").update({ value_raw: after, experience_value_v1: afterExp || null, ...(expChanged ? { experience_value: afterExp || null } : {}), created_by: "customer" }).eq("id", rowId);

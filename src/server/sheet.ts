@@ -53,7 +53,7 @@ export async function draftRows(opts: {
 ${tpl?.prompt_template ? "問いの指針: " + tpl.prompt_template : ""}
 
 既に出ている提供価値（重複しないこと）:
-${opts.existing.map((e, i) => `${i + 1}. ${e}`).join("\n") || "（まだ無い）"}
+${opts.existing.slice(-60).map((e, i) => `${i + 1}. ${e.slice(0, 300)}`).join("\n").slice(0, 15000) || "（まだ無い）"}
 
 この面で、まだ出ていない提供価値・体験価値を3〜5組。御社の説明や資料にある事実・言葉を使う。どの会社でも言える一般論（丁寧なヒアリング、迅速な対応、分かりやすい説明 など）は出さない。
 value（提供価値）: 主語は自社、「〜できる」で終える。特徴・事実。

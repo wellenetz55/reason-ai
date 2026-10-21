@@ -1,4 +1,5 @@
 "use server";
+import { MAX, cut } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
 import { requireCustomer } from "@/lib/session";
 
@@ -6,8 +7,8 @@ export async function answerHomework(formData: FormData) {
   const { supabase, company, user } = await requireCustomer();
   const id = String(formData.get("id"));
   const mode = String(formData.get("mode"));
-  const answer = String(formData.get("answer") || "").trim();
-  const askedWhom = String(formData.get("asked_whom") || "").trim();
+  const answer = cut(String(formData.get("answer") || "").trim(), MAX.answer);
+  const askedWhom = cut(String(formData.get("asked_whom") || "").trim(), MAX.title);
   // 早く戻るときも画面を描き直す（送信中表示が残らないように）
   if (["diagnosed", "locked", "cancelled"].includes(company.status)) {
     revalidatePath("/homework");
