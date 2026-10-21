@@ -159,7 +159,10 @@ export async function createMeeting(formData: FormData) {
 export async function updateMeeting(formData: FormData) {
   const { supabase } = await requireOperator();
   const id = String(formData.get("id"));
-  const companyId = String(formData.get("company_id"));
+  // 会社はフォームの値ではなく、面談そのものの会社を使う（食い違ったフォームで別の会社の状態を進めない）
+  const { data: own } = await supabase.from("company_meetings").select("company_id").eq("id", id).maybeSingle();
+  if (!own) return;
+  const companyId = own.company_id as string;
   const local = String(formData.get("scheduled_at") || "");
   const url = safeMeetingUrl(String(formData.get("meeting_url") || "")) ?? "";
   const patch: Record<string, unknown> = { meeting_url: url || null };
