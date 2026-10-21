@@ -48,9 +48,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const openHomework = openHw?.length ?? 0;
   // 次の面談：一番近い予定。同じ種類の未実施が2件以上あるときは「候補日」なので、確定として見せず、選ぶ画面へ案内する
   const nextMeeting = (upcomingMeetings ?? [])[0] ?? null;
-  const candidateCount = nextMeeting ? (upcomingMeetings ?? []).filter((m) => m.kind === nextMeeting.kind).length : 0;
-  const shownMeeting = candidateCount > 1 ? null : nextMeeting;
   const PICK_HREF: Record<string, string> = { kickoff: "/", session1: "/sheet/merge", midcheck: "/sheet/counter", session2: "/sheet/litmus", session3: "/deploy" };
+  // 候補日として扱うのはベレネッツとの面談だけ（社内打合せ・顧問月次は、何件あっても候補ではない）
+  const candidateCount = nextMeeting && PICK_HREF[nextMeeting.kind] ? (upcomingMeetings ?? []).filter((m) => m.kind === nextMeeting.kind).length : 0;
+  const shownMeeting = candidateCount > 1 ? null : nextMeeting;
   const candidateMeeting = candidateCount > 1 && nextMeeting ? { kind: nextMeeting.kind, count: candidateCount, href: PICK_HREF[nextMeeting.kind] ?? "/" } : null;
   const overdue = (openHw ?? []).filter((h) => h.due_at && new Date(h.due_at) < new Date()).length;
   const nearest = (openHw ?? []).find((h) => h.due_at);
