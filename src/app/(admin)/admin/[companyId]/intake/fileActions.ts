@@ -20,8 +20,10 @@ export async function prepareIntakeFile(meta: { companyId: string; name: string;
   await requireOperator();
   if (!OK_EXT.test(meta.name)) return { ok: false, error: `${meta.name}：この形式は登録できません（テキスト・PDF・Word(.docx)・画像）` };
   if (meta.size > MAX_BYTES) return { ok: false, error: `${meta.name}：大きすぎます（25MBまで）` };
+  if (!UUID.test(meta.companyId) || (meta.meetingId && !UUID.test(meta.meetingId))) return { ok: false, error: "不正な指定です" };
   const { data: c } = await createAdminClient().from("companies").select("id").eq("id", meta.companyId).maybeSingle();
   if (!c) return { ok: false, error: "会社が見つかりません" };
+  if (!(await meetingBelongs(meta.companyId, meta.meetingId))) return { ok: false, error: "面談が見つかりません" };
   const ext = (meta.name.match(/\.([a-z0-9]+)$/i)?.[1] ?? "bin").toLowerCase();
   const path = `${where(meta.meetingId).prefix}/${meta.companyId}/${randomUUID()}.${ext}`;
   const { data, error } = await createAdminClient().storage.from("company-docs").createSignedUploadUrl(path);
@@ -29,10 +31,20 @@ export async function prepareIntakeFile(meta: { companyId: string; name: string;
   return { ok: true, path, token: data.token };
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+async function meetingBelongs(companyId: string, meetingId?: string) {
+  if (!meetingId) return true;
+  const { data } = await createAdminClient().from("company_meetings").select("id").eq("id", meetingId).eq("company_id", companyId).maybeSingle();
+  return !!data;
+}
+
 /** ② 送り終わったファイルを記録し、文字を取り出す */
 export async function finishIntakeFile(meta: { companyId: string; path: string; name: string; type: string; meetingId?: string }): Promise<{ ok: true; file: IntakeFile; note?: string } | { ok: false; error: string }> {
   const { user } = await requireOperator();
   const admin = createAdminClient();
+  if (!UUID.test(meta.companyId) || (meta.meetingId && !UUID.test(meta.meetingId))) return { ok: false, error: "不正な指定です" };
+  // 面談の資料は、その会社の面談にだけ紐づける
+  if (!(await meetingBelongs(meta.companyId, meta.meetingId))) return { ok: false, error: "面談が見つかりません" };
   const w = where(meta.meetingId);
   const re = new RegExp(`^${w.prefix}/${meta.companyId}/[0-9a-f-]{36}\\.[a-z0-9]+$`);
   if (!re.test(meta.path)) return { ok: false, error: "不正なファイルです" };
