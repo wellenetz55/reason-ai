@@ -74,8 +74,9 @@ export default async function Page() {
         <p className="text-[12px] text-ink-3 mt-3 max-w-[44em]">いちばん強いのは「〜するのは、当社しかありません」と言える根拠です。言えそうな組には印をつけてください。無い場合は、お客様が避けたいと感じていることを御社が引き受ける約束を新しく作る（生み出された根拠）ことも検討します。</p>
         <AiNotice message={aiErr} />
         {missing > 0 && (
-          <form action={requestBecauseDrafts} className="mt-4">
-            <button className="btn-text -ml-1.5" type="submit">「なぜなら」が空の{Math.min(missing, 10)}組に、AIの下書きを付ける（御社の説明から根拠を拾います）</button>
+          <form action={requestBecauseDrafts} className="mt-5" data-busy-timeout="120000">
+            <button className="btn-primary" type="submit">{missing > 10 ? `「なぜなら」が空の${missing}組のうち、まず10組にAIの下書きを付ける` : `「なぜなら」が空の${missing}組に、AIの下書きを付ける`}</button>
+            <p className="text-[12px] text-ink-3 mt-2">{missing > 10 ? "AIは一度に10組ずつ進めます。押すたびに次の10組に下書きが付きます。" : ""}御社の説明（STEP 0）から根拠を拾います。材料に無い数字は【要：実数】の印で出します。直すかどうかは御社が決めます。</p>
           </form>
         )}
       </section>
