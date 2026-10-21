@@ -125,6 +125,57 @@ async function fetchUrlText(url: string) {
 const MAX_PDF_PAGES = 200;
 const MAX_DOCX_UNZIPPED = 60 * 1024 * 1024;
 
+
+/**
+ * Word(.docx) を mammoth に渡す前の安全確認（zip爆弾対策）。
+ * mammoth（jszip）は zip の「目次（central directory）」を見て展開する。ここでは
+ * ① 目次の一覧（名前・圧縮方式・圧縮後サイズ）を読み、② 先頭から実際に少しずつ展開して数え、
+ * ③ 両方が一致し、すべての項目を最後まで展開でき、合計が上限以内のときだけ安全とする。
+ * 展開中のエラー・未知の圧縮方式・一覧の食い違いは、すべて「読まない」にする。
+ */
+async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const { Unzip, UnzipInflate, unzipSync } = await import("fflate");
+  const u8 = new Uint8Array(buf);
+  const bad = (reason: string) => ({ ok: false as const, reason });
+  // ① 目次（展開はしない）
+  const central: { name: string; compression: number; size: number }[] = [];
+  try {
+    unzipSync(u8, { filter: (f) => { central.push({ name: f.name, compression: f.compression, size: f.size }); return false; } });
+  } catch { return bad("Wordファイルの形式を確かめられませんでした"); }
+  if (central.length === 0 || central.length > 2000) return bad("Wordファイルの形式を確かめられませんでした");
+  if (central.some((f) => f.compression !== 0 && f.compression !== 8)) return bad("対応していない圧縮方式のWordファイルです");
+  // ② 先頭から実際に展開して数える
+  const seen: { name: string; compression: number; done: boolean }[] = [];
+  let total = 0;
+  let fail: string | null = null;
+  const uz = new Unzip((file) => {
+    const rec = { name: file.name, compression: file.compression, done: false };
+    seen.push(rec);
+    file.ondata = (err, chunk, final) => {
+      if (fail) return;
+      if (err) { fail = "Wordファイルを展開できませんでした"; return; }
+      total += chunk?.length ?? 0;
+      if (total > MAX_DOCX_UNZIPPED) { fail = "Wordファイルの中身が大きすぎるため、読み取りませんでした"; file.terminate(); return; }
+      if (final) rec.done = true;
+    };
+    try { file.start(); } catch { fail = "対応していない圧縮方式のWordファイルです"; }
+  });
+  uz.register(UnzipInflate);
+  try {
+    for (let i = 0; i < u8.length && !fail; i += 4096) uz.push(u8.subarray(i, i + 4096), i + 4096 >= u8.length);
+  } catch { return bad("Wordファイルを展開できませんでした"); }
+  if (fail) return bad(fail);
+  // ③ 目次と実際の中身が一致するか（名前・圧縮方式・すべて最後まで展開できたか）
+  const c = central.filter((x) => !x.name.endsWith("/"));
+  const sn = seen.filter((x) => !x.name.endsWith("/"));
+  if (c.length !== sn.length) return bad("Wordファイルの中身が目次と一致しません");
+  for (let i = 0; i < c.length; i++) {
+    const a = c[i], b = sn.find((x) => x.name === a.name);
+    if (!b || b.compression !== a.compression || !b.done) return bad("Wordファイルの中身が目次と一致しません");
+  }
+  return { ok: true };
+}
+
 export async function pdfText(buf: Buffer): Promise<{ text: string; error?: string }> {
   try {
     const { extractText, getDocumentProxy } = await import("unpdf");
@@ -159,25 +210,9 @@ export async function fileToText(buf: Buffer, name: string, type: string): Promi
   if (lower.endsWith(".docx") || type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
     try {
       // 展開すると巨大になるファイル（zip爆弾）を読まない：中身の展開後サイズを先に確かめる
-      // 実際に少しずつ展開して数え、上限を超えたら止める（ファイル内の申告サイズは偽れるので使わない）
-      const { Unzip, UnzipInflate } = await import("fflate");
-      let unzipped = 0;
-      let over = false;
-      const uz = new Unzip((file) => {
-        file.ondata = (err, chunk) => {
-          if (err || over) return;
-          unzipped += chunk?.length ?? 0;
-          if (unzipped > MAX_DOCX_UNZIPPED) { over = true; file.terminate(); }
-        };
-        file.start();
-      });
-      uz.register(UnzipInflate);
-      try {
-        // 小分けに流し込み、上限を超えた時点で止める（一度に全部を展開しない）
-        const u8 = new Uint8Array(buf);
-        for (let i = 0; i < u8.length && !over; i += 4096) uz.push(u8.subarray(i, i + 4096), i + 4096 >= u8.length);
-      } catch { /* 壊れたzipは mammoth 側でエラーにする */ }
-      if (over) return { text: null, error: "Wordファイルの中身が大きすぎるため、読み取りませんでした（ファイルは保管しました）" };
+      // 展開しても安全かを先に確かめる。少しでも怪しければ読まない（fail closed）
+      const safe = await docxSafeToOpen(buf);
+      if (!safe.ok) return { text: null, error: `${safe.reason}（ファイルは保管しました）` };
       const mammoth = await import("mammoth");
       const { value } = await mammoth.extractRawText({ buffer: buf });
       return { text: value.trim() || null };
