@@ -51,7 +51,7 @@ export async function saveBrake(formData: FormData) {
   const { supabase, company, user } = await requireStage("brakes");
   const id = String(formData.get("id"));
   const action = String(formData.get("action")); // fix | approve | drop | restore
-  const { data: b } = await supabase.from("brakes").select("id, row_id, customer_words, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
+  const { data: b } = await supabase.from("brakes").select("id, row_id, customer_words, counter_message, counter_history, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!b) return;
   const patch: Record<string, unknown> = {};
   if (action === "fix") {
@@ -64,6 +64,15 @@ export async function saveBrake(formData: FormData) {
     patch.evidence_tag = TAGS.includes(tag) ? tag : "hypothesis";
     patch.created_by = "customer";
     patch.approved_at = new Date().toISOString();
+    // ブレーキの言葉が変わったら、STEP 4 の答えは別の言葉に向けて書いたものなので外す（前の答えは履歴に残す）
+    if (words !== (b.customer_words ?? "") && b.counter_message?.trim()) {
+      patch.counter_history = [...((b.counter_history as string[] | null) ?? []), b.counter_message].slice(-5);
+      patch.counter_message = null;
+      patch.because = null;
+      patch.because_tag = "hypothesis";
+      patch.counter_by = null;
+      patch.counter_approved_at = null;
+    }
     await supabase.from("sheet_row_reviews").insert({ row_id: b.row_id, column_key: "brake_words", action: "fix", before_text: b.customer_words, after_text: words, reviewer_id: user.id });
   } else if (action === "approve") {
     patch.approved_at = new Date().toISOString();
@@ -78,6 +87,7 @@ export async function saveBrake(formData: FormData) {
   await supabase.from("brakes").update(patch).eq("id", id);
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "brakes.save", payload: { action } });
   revalidatePath("/sheet/brakes");
+  revalidatePath("/sheet/counter");
 }
 
 /** 御社がブレーキを自分で1枚追加する */
