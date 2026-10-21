@@ -29,7 +29,8 @@ export async function chooseMeeting(formData: FormData) {
   const t = new Date(iso).getTime();
   const same = (ms ?? []).find((m) => new Date(m.scheduled_at as string).getTime() === t);
   if (!same) return; // 候補に無い日時は選べない
-  const others = (ms ?? []).filter((m) => m.id !== same.id);
+  // 外すのは未来の候補だけ。過去の未実施の面談（実施済みの押し忘れ・記録あり）は残す
+  const others = (ms ?? []).filter((m) => m.id !== same.id && new Date(m.scheduled_at as string).getTime() > Date.now());
   // 候補が1件しか無い（すでに確定）・二度押し → 何もしない（通知も重ねない）
   if (others.length === 0) { revalidatePath("/", "layout"); return; }
   await admin.from("company_meetings").delete().in("id", others.map((m) => m.id));
