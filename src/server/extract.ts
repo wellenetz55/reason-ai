@@ -85,12 +85,25 @@ async function fetchUrlText(url: string) {
   }
 }
 
+const MAX_PDF_PAGES = 200;
+const MAX_DOCX_UNZIPPED = 60 * 1024 * 1024;
+
 export async function pdfText(buf: Buffer): Promise<{ text: string; error?: string }> {
   try {
     const { extractText, getDocumentProxy } = await import("unpdf");
     const pdf = await getDocumentProxy(new Uint8Array(buf));
-    const { text } = await extractText(pdf, { mergePages: true });
-    return { text: (text ?? "").trim() };
+    // 何千ページもあるPDFで処理が止まらないよう、先頭 MAX_PDF_PAGES ページまで読む
+    if (pdf.numPages <= MAX_PDF_PAGES) {
+      const { text } = await extractText(pdf, { mergePages: true });
+      return { text: (text ?? "").trim() };
+    }
+    const parts: string[] = [];
+    for (let i = 1; i <= MAX_PDF_PAGES; i++) {
+      const page = await pdf.getPage(i);
+      const tc = await page.getTextContent();
+      parts.push(tc.items.map((it) => ("str" in it ? it.str : "")).join(" "));
+    }
+    return { text: parts.join("\n").trim(), error: `先頭${MAX_PDF_PAGES}ページまで読みました（全${pdf.numPages}ページ）` };
   } catch (e) {
     return { text: "", error: e instanceof Error ? e.message : String(e) };
   }
@@ -108,6 +121,12 @@ export async function fileToText(buf: Buffer, name: string, type: string): Promi
   }
   if (lower.endsWith(".docx") || type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
     try {
+      // 展開すると巨大になるファイル（zip爆弾）を読まない：中身の展開後サイズを先に確かめる
+      const { unzipSync } = await import("fflate");
+      let unzipped = 0;
+      // filter が false を返すと展開はしない（目次の申告サイズだけ数える）
+      unzipSync(new Uint8Array(buf), { filter: (f) => { unzipped += f.originalSize; return false; } });
+      if (unzipped > MAX_DOCX_UNZIPPED) return { text: null, error: "Wordファイルの中身が大きすぎるため、読み取りませんでした（ファイルは保管しました）" };
       const mammoth = await import("mammoth");
       const { value } = await mammoth.extractRawText({ buffer: buf });
       return { text: value.trim() || null };
