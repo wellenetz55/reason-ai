@@ -59,7 +59,10 @@ export async function snapshotCompany(admin: SupabaseClient, companyId: string, 
 /** 消した資料・スクリーンショットのファイルを、お客様から見えない控えの場所（_reset/）へ移す */
 export async function moveFilesAside(admin: SupabaseClient, companyId: string, stamp: string, paths: string[]): Promise<number> {
   let failed = 0;
+  // その会社のフォルダにあるファイルだけを動かす（行に書かれたパスが他社のファイルを指していても触らない）
+  const own = [`${companyId}/`, `_intake/${companyId}/`, `_meeting/${companyId}/`];
   for (const p of paths) {
+    if (p.includes("..") || !own.some((pre) => p.startsWith(pre))) continue;
     const { error } = await admin.storage.from("company-docs").move(p, `_reset/${companyId}/${stamp}/${p}`);
     if (error) failed++;
   }
