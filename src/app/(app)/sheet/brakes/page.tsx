@@ -75,8 +75,8 @@ export default async function Page() {
         <AiNotice message={aiErr} />
         {missing > 0 && (
           <form action={requestBrakeDrafts} className="mt-4" data-busy-timeout="120000">
-            <button className="btn-primary" type="submit">ブレーキが無い{Math.min(missing, 10)}組に、AIの下書きを付ける</button>
-            <p className="text-[12px] text-ink-3 mt-2">御社の説明・適合診断の聞き取り・面談記録・資料から、お客様の言葉を拾います。材料に無いものは「仮説」として出します。直すかどうかは御社が決めます。</p>
+            <button className="btn-primary" type="submit">{missing > 10 ? `ブレーキが無い${missing}組のうち、まず10組にAIの下書きを付ける` : `ブレーキが無い${missing}組に、AIの下書きを付ける`}</button>
+            <p className="text-[12px] text-ink-3 mt-2">{missing > 10 ? "AIは一度に10組ずつ進めます。押すたびに次の10組に下書きが付きます。" : ""}御社の説明・適合診断の聞き取り・面談記録・資料から、お客様の言葉を拾います。材料に無いものは「仮説」として出します。直すかどうかは御社が決めます。</p>
           </form>
         )}
       </section>
