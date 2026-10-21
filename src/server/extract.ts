@@ -157,7 +157,15 @@ async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; 
   let total = 0;
   for (const f of entries) {
     // jszip の内部（3.x の CompressedObject）：compression.magic と compressedContent（この範囲を mammoth も展開する）
-    const raw = (f as unknown as { _data?: unknown })._data;
+    let raw = (f as unknown as { _data?: unknown })._data;
+    // 中身が0バイトの部品は、jszip が「空の値（を返す Promise）」にしておき展開しない
+    if (raw && typeof (raw as { then?: unknown }).then === "function") {
+      const v = await (raw as Promise<unknown>);
+      if (v === "" || (v instanceof Uint8Array && v.length === 0)) continue;
+      return bad("Wordファイルの形式を確かめられませんでした");
+    }
+    if (raw === "") continue;
+    raw = raw as unknown;
     const data = raw as { compression?: { magic?: string }; compressedContent?: unknown } | undefined;
     const magic = data?.compression?.magic;
     const content = data?.compressedContent;
