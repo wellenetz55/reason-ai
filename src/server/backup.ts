@@ -1,3 +1,4 @@
+import { listAllUsers } from "@/server/users";
 import "server-only";
 import { zipSync, strToU8 } from "fflate";
 import ExcelJS from "exceljs";
@@ -50,7 +51,7 @@ export async function buildBackup(admin: SupabaseClient) {
   }
 
   // サインイン用アカウント（パスワード等は含めない）
-  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const { data: list } = await listAllUsers(admin);
   files["users.json"] = strToU8(JSON.stringify((list?.users ?? []).map((u) => ({ id: u.id, email: u.email, created_at: u.created_at, last_sign_in_at: u.last_sign_in_at })), null, 1));
 
   // アップロードされた資料（company-docs バケット。フォルダをたどる）

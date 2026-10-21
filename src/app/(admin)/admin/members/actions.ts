@@ -1,4 +1,5 @@
 "use server";
+import { listAllUsers } from "@/server/users";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOperator, requireSuperAdmin } from "@/lib/session";
@@ -15,7 +16,7 @@ export async function inviteOperator(formData: FormData) {
   const isSuper = formData.get("role") === "super";
   if (!email || !name) back(`error=${encodeURIComponent("お名前とメールアドレスを入れてください")}`);
   const admin = createAdminClient();
-  const { data: list0 } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const { data: list0 } = await listAllUsers(admin);
   const ex = list0?.users.find((u) => u.email?.toLowerCase() === email);
   if (ex) {
     const { data: p } = await admin.from("profiles").select("*").eq("id", ex.id).maybeSingle();

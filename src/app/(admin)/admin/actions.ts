@@ -1,4 +1,5 @@
 "use server";
+import { listAllUsers } from "@/server/users";
 import { MEETING_LABEL, ADVANCE_AFTER_MEETING, safeMeetingUrl } from "@/lib/meetings";
 import { STATUS_LABEL } from "@/lib/stages";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -63,7 +64,7 @@ export async function inviteCustomer(formData: FormData) {
   if (!gate.ok) redirect(`/admin/${companyId}?member_error=${encodeURIComponent(gate.reason)}`);
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const admin = createAdminClient();
-  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const { data: list } = await listAllUsers(admin);
   const existing = list?.users.find((u) => u.email?.toLowerCase() === email);
   if (existing) {
     const { data: prof } = await admin.from("profiles").select("role, company_id, display_name").eq("id", existing.id).maybeSingle();
@@ -219,7 +220,7 @@ export async function issueSignInLink(formData: FormData) {
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const admin = createAdminClient();
   const { data: prof } = await admin.from("profiles").select("id").eq("company_id", companyId);
-  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const { data: list } = await listAllUsers(admin);
   const u = list?.users.find((x) => x.email?.toLowerCase() === email);
   if (!u || !(prof ?? []).some((p) => p.id === u.id)) {
     const { redirect } = await import("next/navigation");

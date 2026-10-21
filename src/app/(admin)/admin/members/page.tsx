@@ -1,3 +1,4 @@
+import { listAllUsers } from "@/server/users";
 import { requireOperator } from "@/lib/session";
 import { ClearQuery } from "@/components/ClearQuery";
 import { DownloadButton } from "@/components/DownloadButton";
@@ -20,7 +21,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
   const admin = createAdminClient();
   const [{ data: ops }, { data: users }] = await Promise.all([
     admin.from("profiles").select("*").eq("role", "operator").order("created_at"),
-    admin.auth.admin.listUsers({ perPage: 1000 }),
+    listAllUsers(admin),
   ]);
   const [dbx, last] = isSuper ? await Promise.all([getSetting<{ account_email?: string; connected_at: string }>("dropbox").catch(() => null), getSetting<BackupLast>("backup_last").catch(() => null)]) : [null, null];
   const byId = new Map((users?.users ?? []).map((u) => [u.id, u]));

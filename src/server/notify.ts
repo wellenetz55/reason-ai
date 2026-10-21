@@ -1,3 +1,4 @@
+import { listAllUsers } from "@/server/users";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fmtMeeting } from "@/lib/meetings";
 
@@ -9,7 +10,7 @@ async function operatorEmails(onlySuper = false): Promise<string[]> {
   const { data: ops } = await admin.from("profiles").select("*").eq("role", "operator");
   const ids = new Set((ops ?? []).filter((p) => !p.disabled_at && (!onlySuper || p.is_super_admin)).map((p) => p.id));
   if (ids.size === 0) return [];
-  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const { data: list } = await listAllUsers(admin);
   return (list?.users ?? []).filter((u) => ids.has(u.id) && u.email).map((u) => u.email!);
 }
 
@@ -75,6 +76,6 @@ export async function customerEmails(companyId: string): Promise<string[]> {
   const { data: ps } = await admin.from("profiles").select("id, disabled_at").eq("company_id", companyId).neq("role", "operator");
   const ids = new Set((ps ?? []).filter((p) => !p.disabled_at).map((p) => p.id));
   if (ids.size === 0) return [];
-  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const { data: list } = await listAllUsers(admin);
   return (list?.users ?? []).filter((u) => ids.has(u.id) && u.email).map((u) => u.email!);
 }

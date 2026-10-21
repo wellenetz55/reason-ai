@@ -1,4 +1,5 @@
 "use server";
+import { listAllUsers } from "@/server/users";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOperator } from "@/lib/session";
@@ -70,7 +71,7 @@ export async function publishDiagnosis(formData: FormData) {
   const { count: memberCount } = await admin.from("profiles").select("id", { count: "exact", head: true }).eq("company_id", companyId);
   if (!email && !memberCount) back("お客様の担当者がまだいません。担当者のメールアドレスを入れてください");
   if (email) {
-    const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const { data: list } = await listAllUsers(admin);
     const existing = list?.users.find((u) => u.email?.toLowerCase() === email);
     if (existing) {
       // 既存ユーザー：運営者・他社の担当者は登録しない。役割と名前は変えない（名前は入力があるときだけ）
