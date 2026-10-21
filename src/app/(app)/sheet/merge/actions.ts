@@ -20,10 +20,14 @@ async function notifyStep2Done(supabase: SupabaseClient, companyId: string, comp
   ]);
   const ids = new Set((rows ?? []).map((r) => r.id));
   const list = (diags ?? []).filter((d) => ids.has(d.row_id));
-  if (list.length === 0) return;
+  // 残っている組がすべてレビュー済みで、未対応が0のときだけ（31組目以降が未レビューのまま通知しない）
+  if (list.length === 0 || list.length < ids.size) return;
   const open = list.filter((d) => d.resolved == null && d.vague_score >= 1).length;
   if (open > 0) return;
   const admin = createAdminClient();
+  // 確認セッション①がもう登録されていれば、ボールはすでにベレネッツが受け取っている（見直しのたびに通知し直さない）
+  const { count: s1 } = await admin.from("company_meetings").select("id", { count: "exact", head: true }).eq("company_id", companyId).eq("kind", "session1");
+  if ((s1 ?? 0) > 0) return;
   const { data: existing } = await admin.from("alerts").select("id").eq("company_id", companyId).is("resolved_at", null).contains("payload", { type: "step2_done" }).limit(1).maybeSingle();
   if (existing) return;
   await admin.from("alerts").insert({ company_id: companyId, kind: "escalation", payload: { type: "step2_done", by: userId } });
@@ -36,7 +40,7 @@ export async function runVagueCheck() {
   const { supabase, company, user } = await requireWritableCustomer();
   const [summary, { data: rows }, { data: prevDiags }] = await Promise.all([
     loadProfileContext(supabase, company.id),
-    supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, target").eq("company_id", company.id).eq("status", "active").order("seq").limit(30),
+    supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, target").eq("company_id", company.id).eq("status", "active").order("seq"),
     supabase.from("row_diagnoses").select("row_id, suggestion_value, resolved, redraft_history, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
   ]);
   // すでに決めた組（決定・初期案のまま・保留）はもう一度レビューしない。未決の組だけ、前の案を履歴に残して新しい案を出す
@@ -45,7 +49,7 @@ export async function runVagueCheck() {
     const p = prevBy.get(r.id);
     const avoid = [...(((p?.redraft_history as string[] | null) ?? [])), ...(p?.suggestion_value ? [p.suggestion_value as string] : [])].slice(-5);
     return { id: r.id, value: r.value_raw as string, experience: r.experience_value_v1, target: r.target, avoid };
-  });
+  }).slice(0, 30); // 未決の組から30組ずつ（先に絞ってから30件。31組目以降も次の実行でレビューされる）
   if (!targets.length) { revalidatePath("/sheet/merge"); return; }
   const results = await aiGuard(supabase, company.id, user.id, "vague_check.run", () => diagnoseRows({ companyName: company.name, summary, rows: targets }));
   if (!results) { revalidatePath("/sheet/merge"); return; }

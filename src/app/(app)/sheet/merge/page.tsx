@@ -43,7 +43,8 @@ export default async function Page() {
   const lastChecked = dlist.map((d) => d.checked_at).sort().at(-1);
   const open = dlist.filter((d) => d.resolved == null && d.vague_score >= 1).length;
   // レビューを一度行い、未対応の組が残っていなければ「まとめて絞る」は一通り終わり
-  const done = !!lastChecked && open === 0;
+  const reviewedAll = active.filter((r) => r.value_raw).every((r) => dlist.some((d) => d.row_id === r.id));
+  const done = !!lastChecked && open === 0 && reviewedAll;
 
   return (
     <div>
