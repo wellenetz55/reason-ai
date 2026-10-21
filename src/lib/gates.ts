@@ -6,6 +6,7 @@ export type GateCtx = {
   rowsAll: number;       // 行数（体験価値が空の行も含む）
   brakeKinds: number;    // 書き出したブレーキの種類数（最大4）
   brakesOpen: number;    // 先回りの答えがまだないブレーキ数
+  brakesTotal?: number;  // 使っている組のブレーキの総数
   evidences: number;     // 集めた証拠の数
   step0Ready: boolean;   // STEP 0 に資料・URL・会社の説明のどれかが入っているか（空のまま先へ進めない）
 };
@@ -53,6 +54,7 @@ export function stepGate(key: string, c: GateCtx): Gate {
         ? { next, ready: true, note: "4種類のブレーキがそろいました。" }
         : { next, ready: false, note: `4種類のブレーキを1つ以上ずつ書き出すと進めます（いま${c.brakeKinds}種類）。` };
     case "counter":
+      if ((c.brakesTotal ?? 1) === 0) return { next, ready: false, note: "外すブレーキがまだありません。先に STEP 3 でお客様のブレーキを書き出してください。" };
       return c.brakesOpen === 0
         ? { next, ready: true, note: "すべてのブレーキに先回りの答えがつきました。" }
         : { next, ready: false, note: `答えがまだ無い、または ○ の穴が残っているブレーキが${c.brakesOpen}件あります。全部に答えがそろうと進めます。` };

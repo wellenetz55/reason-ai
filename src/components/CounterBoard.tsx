@@ -31,7 +31,8 @@ export function CounterBoard({ rows, brakes }: { rows: CounterRow[]; brakes: Cou
     <ol className="space-y-8">
       {shown.map((r) => {
         const list = byRow.get(r.id)!;
-        const facts = list.filter((b) => b.counter_message && b.because_tag === "fact").length;
+        // 穴の残っていない答えだけを数える（見出しの数字と同じ判定）
+        const facts = list.filter((b) => b.counter_message?.trim() && !hasHole(b.counter_message) && !hasHole(b.because) && b.because_tag === "fact").length;
         return (
           <li key={r.id} className="rounded-[var(--radius)] border hairline overflow-hidden">
             <div className="bg-paper-2 px-5 py-3 flex items-start gap-3">

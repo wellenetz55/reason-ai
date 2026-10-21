@@ -18,6 +18,7 @@ export async function loadGateCtx(supabase: SupabaseClient, companyId: string, s
     rowsAll: progress?.row_count ?? 0,
     brakeKinds: kinds.size,
     // 答えが無い、または ○ の穴が残っている答えは「まだ外れていない」
+    brakesTotal: (brakes ?? []).length,
     brakesOpen: (brakes ?? []).filter((b) => !b.counter_message?.trim() || hasHole(b.counter_message) || hasHole(b.because)).length,
     evidences: (ev ?? []).length,
     step0Ready,
