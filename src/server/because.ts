@@ -1,4 +1,5 @@
 import "server-only";
+import { q } from "@/lib/limits";
 import { complete, parseJson } from "@/server/ai/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -25,7 +26,7 @@ ${techniques ? "根拠の作り方（参考）:\n" + techniques + "\n" : ""}
 - experience: 体験価値が機能の言い換えになっていれば、お客様の気持ちの変化に言い直す。問題なければ省略。
 
 組:
-${opts.rows.map((r) => `- id:${r.id}\n  御社は: ${r.value}\n  だから、お客様は: ${r.experience ?? "（空）"}`).join("\n")}
+${opts.rows.map((r) => `- id:${r.id}\n  御社は: ${q(r.value)}\n  だから、お客様は: ${q(r.experience) || "（空）"}`).join("\n")}
 
 JSONのみで返す: [{"id":"...","because":"...","type":"perceived","tag":"fact","only_us":false,"experience":"..."}]`;
   const text = await complete({ promptKey: "because_draft", user, maxTokens: 5000 });

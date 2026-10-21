@@ -11,3 +11,6 @@ export const MAX = {
   pasted: 50000,   // 貼り付けテキスト（議事録など）。AIへ送るときはさらに切る
 } as const;
 export const cut = (s: string, n: number) => s.slice(0, n);
+
+/** AIへ送る1項目を切る（DBに長い文が直接書かれていても、指示文が膨らみすぎないように） */
+export const q = (s: string | null | undefined, n: number = 500) => (s ?? "").slice(0, n);

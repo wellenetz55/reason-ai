@@ -1,4 +1,5 @@
 import "server-only";
+import { q } from "@/lib/limits";
 import { complete, parseJson } from "@/server/ai/client";
 
 export type RowForCheck = { id: string; value: string; experience: string | null; target: string | null; avoid?: string[] };
@@ -23,7 +24,7 @@ issues: 問題点を短い日本語で（最大3つ、無ければ空配列）
 suggestion_value / suggestion_experience: vague_score が 1 以上のときだけ、言い直し案。サマリーに根拠が無い数字は書かず【要：実数】と置く。根拠が無い固有名詞は作らない。0 のときは省略。
 
 組:
-${opts.rows.map((r) => `- id:${r.id}\n  提供価値: ${r.value}\n  体験価値: ${r.experience ?? "（空）"}${r.target ? "\n  誰向け: " + r.target : ""}${r.avoid?.length ? "\n  前に出した言い直し案（これとは別の角度で、別の案を出す。同じ文を繰り返さない）: " + r.avoid.join(" ／ ") : ""}`).join("\n")}
+${opts.rows.map((r) => `- id:${r.id}\n  提供価値: ${q(r.value)}\n  体験価値: ${q(r.experience) || "（空）"}${r.target ? "\n  誰向け: " + q(r.target, 200) : ""}${r.avoid?.length ? "\n  前に出した言い直し案（これとは別の角度で、別の案を出す。同じ文を繰り返さない）: " + r.avoid.map((a) => q(a)).join(" ／ ") : ""}`).join("\n")}
 
 JSONのみで返す: [{"id":"...","vague_score":2,"issues":["数字が無い"],"suggestion_value":"...","suggestion_experience":"..."}]`;
   const text = await complete({ promptKey: "vague_check", user, maxTokens: 6000 });

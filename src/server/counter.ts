@@ -1,4 +1,5 @@
 import "server-only";
+import { q } from "@/lib/limits";
 import { complete, parseJson } from "@/server/ai/client";
 import { BRAKE_KINDS } from "@/lib/brakes";
 
@@ -25,7 +26,7 @@ ${Object.entries(opts.profile).map(([k, v]) => `[${k}] ${v}`).join("\n").slice(0
 - avoid に挙げた案と同じ答えは出さない。
 
 ブレーキ:
-${opts.items.map((b) => `- id:${b.id}\n  種類: ${label(b.kind)}\n  お客様の心の声: 「${b.words}」\n  対応する組: 御社は ${b.value}${b.experience ? ` ／ だから、お客様は ${b.experience}` : ""}${b.avoid.length ? `\n  avoid: ${b.avoid.map((a) => `「${a}」`).join(" ")}` : ""}`).join("\n")}
+${opts.items.map((b) => `- id:${b.id}\n  種類: ${label(b.kind)}\n  お客様の心の声: 「${q(b.words)}」\n  対応する組: 御社は ${q(b.value)}${b.experience ? ` ／ だから、お客様は ${q(b.experience)}` : ""}${b.avoid.length ? `\n  avoid: ${b.avoid.map((a) => `「${q(a)}」`).join(" ")}` : ""}`).join("\n")}
 
 JSONのみで返す: [{"id":"...","counter":"...","because":"...","tag":"verify"}]`;
   const text = await complete({ promptKey: "counter_draft", user, maxTokens: 6000 });

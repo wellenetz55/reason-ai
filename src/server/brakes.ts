@@ -1,4 +1,5 @@
 import "server-only";
+import { q } from "@/lib/limits";
 import { complete, parseJson } from "@/server/ai/client";
 import { BRAKE_KINDS, BRAKE_SOURCES } from "@/lib/brakes";
 
@@ -33,7 +34,7 @@ ${BRAKE_KINDS.map((k) => `- ${k.key}（${k.label}）: ${k.ask}`).join("\n")}
 - その組に当てはまらない種類は無理に作らず省略してよい。
 
 組:
-${opts.rows.map((r) => `- id:${r.id}\n  御社は: ${r.value}\n  だから、お客様は: ${r.experience ?? "（空）"}`).join("\n")}
+${opts.rows.map((r) => `- id:${r.id}\n  御社は: ${q(r.value)}\n  だから、お客様は: ${q(r.experience) || "（空）"}`).join("\n")}
 
 JSONのみで返す: [{"id":"...","kind":"distrust","words":"...","source":"meeting","tag":"verify"}]`;
   const text = await complete({ promptKey: "brakes_draft", user, maxTokens: 8000 });
