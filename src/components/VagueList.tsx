@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { findVague, hasConcrete } from "@/lib/vague";
-import { resolveDiagnosis } from "@/app/(app)/sheet/merge/actions";
+import { resolveDiagnosis, redraftDiagnosis } from "@/app/(app)/sheet/merge/actions";
 
 type Row = { id: string; seq: number; value_raw: string | null; experience_value_v1: string | null };
 type Diag = { row_id: string; vague_score: number; issues: string[]; suggestion_value: string | null; suggestion_experience: string | null; resolved: string | null; checked_at: string };
@@ -47,19 +47,23 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
                 editing === r.id ? (
                   <form action={async (fd) => { await resolveDiagnosis(fd); setEditing(null); }} className="mt-3 rounded-[var(--radius)] bg-navy-soft px-4 py-3">
                     <input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" />
-                    <label className="block text-[11px] text-navy">言い直し案（直してから採用できます）</label>
+                    <label className="block text-[11px] text-navy">AIの案を元に、御社の言葉で直す（加筆・修正してから決定）</label>
+                    <p className="text-[11px] text-ink-3 mt-1">御社は</p>
                     <textarea name="after" defaultValue={d.suggestion_value} rows={2} className="w-full border-b hairline py-1 text-sm bg-transparent" />
-                    <textarea name="after_experience" defaultValue={d.suggestion_experience ?? r.experience_value_v1 ?? ""} rows={2} className="w-full border-b hairline py-1 text-sm mt-2 bg-transparent" placeholder="だから、お客様は…" />
-                    <div className="mt-2 flex gap-2"><button className="btn-primary" type="submit">この内容で直す</button><button type="button" className="btn-text" onClick={() => setEditing(null)}>やめる</button></div>
+                    <p className="text-[11px] text-ink-3 mt-2">だから、お客様は</p>
+                    <textarea name="after_experience" defaultValue={d.suggestion_experience ?? r.experience_value_v1 ?? ""} rows={2} className="w-full border-b hairline py-1 text-sm bg-transparent" placeholder="…と感じることができる" />
+                    <div className="mt-2 flex gap-2"><button className="btn-primary" type="submit">この内容で決定する</button><button type="button" className="btn-text" onClick={() => setEditing(null)}>やめる</button></div>
                   </form>
                 ) : (
                   <div className="mt-3 rounded-[var(--radius)] bg-navy-soft px-4 py-3">
                     <p className="text-[11px] text-navy">AIの言い直し案</p>
                     <p className="text-sm mt-1">{d.suggestion_value}</p>
                     {d.suggestion_experience && <p className="text-sm text-ink-2 mt-0.5">だから、お客様は {d.suggestion_experience}</p>}
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      <button type="button" className="btn-text text-navy" onClick={() => setEditing(r.id)}>この案で直す</button>
-                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className="btn-text" type="submit">そのままでよい</button></form>
+                    <div className="mt-3 flex flex-wrap gap-x-1 gap-y-1">
+                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" /><button className="btn-text text-navy font-semibold" type="submit">この案で決定する</button></form>
+                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className="btn-text" type="submit">初期案（自社入力）のままにする</button></form>
+                      <form action={redraftDiagnosis} data-busy-timeout="90000"><input type="hidden" name="row_id" value={r.id} /><button className="btn-text" type="submit">この組だけAIで別案を出す</button></form>
+                      <button type="button" className="btn-text" onClick={() => setEditing(r.id)}>一部自社で直す</button>
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className="btn-text" type="submit">保留にする</button></form>
                     </div>
                   </div>

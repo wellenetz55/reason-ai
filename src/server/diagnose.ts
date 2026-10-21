@@ -1,7 +1,7 @@
 import "server-only";
 import { complete, parseJson } from "@/server/ai/client";
 
-export type RowForCheck = { id: string; value: string; experience: string | null; target: string | null };
+export type RowForCheck = { id: string; value: string; experience: string | null; target: string | null; avoid?: string[] };
 export type Diagnosis = { id: string; vague_score: number; issues: string[]; suggestion_value?: string; suggestion_experience?: string };
 
 /** 提供価値・体験価値の「ふわっと度」を点検し、言い直し案を出す（1回に最大30組） */
@@ -23,7 +23,7 @@ issues: 問題点を短い日本語で（最大3つ、無ければ空配列）
 suggestion_value / suggestion_experience: vague_score が 1 以上のときだけ、言い直し案。サマリーに根拠が無い数字は書かず【要：実数】と置く。根拠が無い固有名詞は作らない。0 のときは省略。
 
 組:
-${opts.rows.map((r) => `- id:${r.id}\n  提供価値: ${r.value}\n  体験価値: ${r.experience ?? "（空）"}${r.target ? "\n  誰向け: " + r.target : ""}`).join("\n")}
+${opts.rows.map((r) => `- id:${r.id}\n  提供価値: ${r.value}\n  体験価値: ${r.experience ?? "（空）"}${r.target ? "\n  誰向け: " + r.target : ""}${r.avoid?.length ? "\n  前に出した言い直し案（これとは別の角度で、別の案を出す。同じ文を繰り返さない）: " + r.avoid.join(" ／ ") : ""}`).join("\n")}
 
 JSONのみで返す: [{"id":"...","vague_score":2,"issues":["数字が無い"],"suggestion_value":"...","suggestion_experience":"..."}]`;
   const text = await complete({ promptKey: "vague_check", user, maxTokens: 6000 });

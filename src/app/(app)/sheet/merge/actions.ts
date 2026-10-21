@@ -54,3 +54,26 @@ export async function resolveDiagnosis(formData: FormData) {
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.resolve" });
   revalidatePath("/sheet/diverge");
 }
+
+/** この組だけ、AIに別の言い直し案を出してもらう（前の案と同じにならないように伝える） */
+export async function redraftDiagnosis(formData: FormData) {
+  const { supabase, company, user } = await requireWritableCustomer();
+  const rowId = String(formData.get("row_id"));
+  const [summary, { data: row }, { data: d }] = await Promise.all([
+    loadProfileContext(supabase, company.id),
+    supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, target").eq("id", rowId).eq("company_id", company.id).maybeSingle(),
+    supabase.from("row_diagnoses").select("suggestion_value, suggestion_experience, redraft_history").eq("row_id", rowId).maybeSingle(),
+  ]);
+  if (!row?.value_raw) return;
+  const prev: string[] = [...((d?.redraft_history as string[] | null) ?? []), ...(d?.suggestion_value ? [d.suggestion_value as string] : [])].slice(-5);
+  const results = await aiGuard(supabase, company.id, user.id, "vague_check.redraft", () => diagnoseRows({ companyName: company.name, summary, rows: [{ id: row.id, value: row.value_raw as string, experience: row.experience_value_v1, target: row.target, avoid: prev }] }));
+  const r = results?.find((x) => x.id === row.id);
+  if (!r) { revalidatePath("/sheet/merge"); return; }
+  await supabase.from("row_diagnoses").upsert({
+    row_id: row.id, vague_score: Math.max(1, Math.min(3, Number(r.vague_score) || 1)), issues: (r.issues ?? []).slice(0, 3),
+    suggestion_value: r.suggestion_value || d?.suggestion_value || null, suggestion_experience: r.suggestion_experience || d?.suggestion_experience || null,
+    resolved: null, checked_at: new Date().toISOString(), redraft_history: prev,
+  }, { onConflict: "row_id" });
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.redraft", payload: { row_id: row.id } });
+  revalidatePath("/sheet/merge");
+}
