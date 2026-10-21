@@ -93,7 +93,8 @@ export async function recordDiagnosisView() {
   const { company, user, profile } = await requireCustomer();
   const admin = createAdminClient();
   // 契約後に開いたときは、閲覧の記録・通知をしない（申込前の検討状況を知るための記録のため）
-  if (company.status !== "diagnosed") return;
+  // 申込後（振り返りで開く）も記録・通知しない
+  if (company.status !== "diagnosed" || company.applied_at) return;
   const { data: d } = await admin.from("diagnosis_results").select("first_viewed_at, last_viewed_at, view_count, published_at").eq("company_id", company.id).maybeSingle();
   if (!d || !d.published_at) return;
   const now = new Date();
