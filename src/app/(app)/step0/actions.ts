@@ -165,7 +165,7 @@ export async function requestProfileDraft() {
 
 /** 項目ごとの 直す／承認／保留、B の回答 */
 export async function reviewProfileItem(formData: FormData) {
-  const { supabase, company } = await requireStage("step0");
+  const { supabase, company, user } = await requireStage("step0");
   const key = String(formData.get("key"));
   const action = String(formData.get("action")); // approve | fix | hold | answer | reopen
   const after = cut(String(formData.get("after") || "").trim(), MAX.profile);
@@ -181,7 +181,7 @@ export async function reviewProfileItem(formData: FormData) {
   // 戻す：確定・承認した文は消さずに下書きへ戻す（状態は「下書き」。もう一度承認・修正できる）
   else if (action === "reopen") { const keep = cur?.value ?? cur?.draft ?? null; patch.draft = keep; patch.value = null; patch.status = keep ? "draft" : "empty"; }
   await supabase.from("profile_items").upsert({ ...(cur ?? {}), ...patch }, { onConflict: "company_id,key" });
-  await supabase.from("activity_log").insert({ company_id: company.id, event: "profile.review" });
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "profile.review" });
   revalidatePath("/step0");
 }
 
