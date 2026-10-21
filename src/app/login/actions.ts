@@ -11,17 +11,15 @@ export async function sendMagicLink(formData: FormData) {
     options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`, shouldCreateUser: false },
   });
   if (error) {
+    // 送信の結果は、アドレスが登録済みかどうかに関係なく同じ「送りました」画面にする。
+    // 登録済みのときだけ起きるエラー（送信失敗・利用停止・再送間隔・送信上限など）で表示が変わると、登録の有無が分かってしまうため。
+    // 本当の理由はサーバのログに残す（メールアドレスそのものは残さない）。
+    // 例外は、アドレスに関係しない通信の混雑（送信上限以外の 429）だけ。
     const code = (error as { code?: string }).code ?? "";
-    const m = /after (\d+) seconds/.exec(error.message ?? "");
-    // メール送信の上限（同じアドレスへの再送間隔・サービス全体の上限のどちらも）は、未登録のアドレスと同じ「送りました」にする。
-    // サービス全体の上限に達しているあいだ、未登録は「送りました」・登録済みは「お待ちください」と分かれてしまうのを防ぐ。
-    // 「送りました」の画面には、届かないときは数分おいて入れ直すよう案内がある。
-    if (code === "otp_disabled" || code === "over_email_send_rate_limit" || /signups not allowed|user not found|after \d+ seconds|rate limit/i.test(error.message ?? "")) redirect(`/login?sent=1&t=${Date.now()}`);
-    // アドレスに関係しない通信の混雑（429 のうち上記以外）だけ、待つよう案内する
-    const msg = error.status === 429
-      ? `ただいま混み合っています。${m ? m[1] + "秒" : "1分ほど"}待ってから、もう一度お試しください。`
-      : "送信できませんでした。しばらくしてからもう一度お試しください。";
-    redirect(`/login?error=${encodeURIComponent(msg)}`);
+    console.error("login.sendMagicLink", { status: error.status, code, message: (error.message ?? "").slice(0, 200) });
+    const emailLimit = code === "over_email_send_rate_limit" || /rate limit|after \d+ seconds/i.test(error.message ?? "");
+    if (error.status === 429 && !emailLimit) redirect(`/login?error=${encodeURIComponent("ただいま混み合っています。1分ほど待ってから、もう一度お試しください。")}`);
+    redirect(`/login?sent=1&t=${Date.now()}`);
   }
   redirect(`/login?sent=1&t=${Date.now()}`);
 }
