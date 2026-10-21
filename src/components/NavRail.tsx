@@ -5,7 +5,7 @@ import clsx from "clsx";
 import { MEETING_AFTER_STEP, fmtMeeting } from "@/lib/meetings";
 
 type S = { key: string; step: string; label: string; href: string; open: boolean; now: boolean; ready?: boolean };
-export type MeetingMark = { at: string | null; held: boolean };
+export type MeetingMark = { at: string | null; held: boolean; candidates?: number };
 
 /** 面談の行（AIの壁打ちステップの間に挟む）。済／予定／未定 */
 function MeetingRow({ label, m }: { label: string; m?: MeetingMark }) {
@@ -13,7 +13,7 @@ function MeetingRow({ label, m }: { label: string; m?: MeetingMark }) {
   return (
     <div className={clsx("flex items-center gap-2 py-[5px] pl-3 -ml-3 text-[11px]", held ? "text-ink-3" : m?.at ? "text-warm" : "text-ink-3")}>
       <span className={clsx("inline-flex items-center justify-center shrink-0 w-[60px] rounded-full py-[2px] text-[9px] font-semibold tracking-[0.08em] leading-none", held ? "bg-paper-2 text-ink-3" : m?.at ? "bg-warm-soft text-warm border border-warm/50" : "border border-dashed border-ink-3 text-ink-3")}>面談</span>
-      <span className="leading-tight">{label}<span className="num ml-1.5">{held ? "済" : m?.at ? fmtMeeting(m.at) : "日程は追って"}</span></span>
+      <span className="leading-tight">{label}<span className="num ml-1.5">{held ? "済" : m?.candidates ? `候補${m.candidates}件・選ぶ` : m?.at ? fmtMeeting(m.at) : "日程は追って"}</span></span>
     </div>
   );
 }

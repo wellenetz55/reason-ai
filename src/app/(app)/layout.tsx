@@ -20,9 +20,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   // 契約前（適合診断済み）はキックオフ以外の面談を見せない。枠は残して「——」
   let meetingQ = supabase.from("company_meetings").select("kind, scheduled_at, meeting_url").eq("company_id", company.id).is("held_at", null).gte("scheduled_at", new Date(Date.now() - 3 * 3600_000).toISOString());
   if (company.status === "diagnosed") meetingQ = meetingQ.eq("kind", "kickoff");
-  const [{ data: openHw }, { data: nextMeeting }, { data: progress }, { data: diag }, { count: hwTotal }, { data: heldKickoff }, { data: allMeetings }] = await Promise.all([
+  const [{ data: openHw }, { data: upcomingMeetings }, { data: progress }, { data: diag }, { count: hwTotal }, { data: heldKickoff }, { data: allMeetings }] = await Promise.all([
     supabase.from("homeworks").select("id, title, due_at").eq("company_id", company.id).eq("status", "open").order("due_at"),
-    meetingQ.order("scheduled_at").limit(1).maybeSingle(),
+    meetingQ.order("scheduled_at").limit(8),
     supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle(),
     supabase.from("diagnosis_results").select("company_id").eq("company_id", company.id).maybeSingle(),
     supabase.from("homeworks").select("id", { count: "exact", head: true }).eq("company_id", company.id),
@@ -30,19 +30,28 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     supabase.from("company_meetings").select("kind, scheduled_at, held_at").eq("company_id", company.id).neq("kind", "internal").order("scheduled_at"),
   ]);
   // 左メニューの面談の印：種類ごとに「済」があれば済、無ければ一番近い予定
-  const meetingMarks: Record<string, { at: string | null; held: boolean }> = {};
+  const meetingMarks: Record<string, { at: string | null; held: boolean; candidates?: number }> = {};
   for (const m of allMeetings ?? []) {
     const cur = meetingMarks[m.kind];
     if (m.held_at) { meetingMarks[m.kind] = { at: m.held_at, held: true }; continue; }
     if (cur?.held) continue;
     if (!cur || (cur.at && new Date(m.scheduled_at) < new Date(cur.at) && new Date(m.scheduled_at) > new Date(Date.now() - 3 * 3600_000))) meetingMarks[m.kind] = { at: m.scheduled_at, held: false };
   }
+  for (const k in meetingMarks) {
+    const n = (allMeetings ?? []).filter((m) => m.kind === k && !m.held_at && new Date(m.scheduled_at) > new Date(Date.now() - 3 * 3600_000)).length;
+    if (!meetingMarks[k].held && n > 1) meetingMarks[k].candidates = n;
+  }
   const kickoffDone = company.status === "diagnosed" && !!company.paid_at && !!heldKickoff;
   // STEP 0 が空のうちは、STEP 1 以降を左メニューで開かない（押すと STEP 0 への案内が出る）
   const step0Ready = ["diagnosed", "locked", "cancelled"].includes(company.status) ? true : await isStep0Ready(supabase, company.id);
 
   const openHomework = openHw?.length ?? 0;
-  const shownMeeting = nextMeeting;
+  // 次の面談：一番近い予定。同じ種類の未実施が2件以上あるときは「候補日」なので、確定として見せず、選ぶ画面へ案内する
+  const nextMeeting = (upcomingMeetings ?? [])[0] ?? null;
+  const candidateCount = nextMeeting ? (upcomingMeetings ?? []).filter((m) => m.kind === nextMeeting.kind).length : 0;
+  const shownMeeting = candidateCount > 1 ? null : nextMeeting;
+  const PICK_HREF: Record<string, string> = { kickoff: "/", session1: "/sheet/merge", midcheck: "/sheet/counter", session2: "/sheet/litmus", session3: "/deploy" };
+  const candidateMeeting = candidateCount > 1 && nextMeeting ? { kind: nextMeeting.kind, count: candidateCount, href: PICK_HREF[nextMeeting.kind] ?? "/" } : null;
   const overdue = (openHw ?? []).filter((h) => h.due_at && new Date(h.due_at) < new Date()).length;
   const nearest = (openHw ?? []).find((h) => h.due_at);
   const nowKey = step0Ready ? currentStep(company.status, progress?.pair_count ?? 0).key : "step0";
@@ -106,7 +115,13 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <Link href="/ask" className="btn-primary mt-8 block text-center">ベレネッツに質問を残す</Link>
         <p className="mt-1.5 text-[11px] text-ink-3 text-center">ベレネッツからの回答は、質問と同じ画面に表示されます。</p>
         <div className="mt-auto pt-8 text-[13px] text-ink-2 space-y-2">
-          {["locked", "cancelled"].includes(company.status) ? null : shownMeeting ? (
+          {["locked", "cancelled"].includes(company.status) ? null : candidateMeeting ? (
+            <Link href={candidateMeeting.href} className="block rounded-[var(--radius)] bg-warm-soft border-2 border-warm px-4 py-3 -mx-1 hover:brightness-[0.98]">
+              <p className="text-[11px] font-semibold tracking-wide text-warm">次の面談 · {MEETING_LABEL[candidateMeeting.kind] ?? candidateMeeting.kind}</p>
+              <p className="text-[15px] font-semibold text-ink mt-1 leading-tight">候補日が <span className="num">{candidateMeeting.count}</span> 件届いています</p>
+              <p className="text-[12px] text-warm mt-1.5 font-medium">ご都合のよい日を1つ選んでください →</p>
+            </Link>
+          ) : shownMeeting ? (
             <div className="rounded-[var(--radius)] bg-warm-soft px-4 py-3 -mx-1">
               <p className="text-[11px] font-semibold tracking-wide text-warm">次の面談 · {MEETING_LABEL[shownMeeting.kind] ?? shownMeeting.kind}</p>
               <p className="num text-[17px] font-semibold text-ink mt-1 leading-tight">{fmtMeeting(shownMeeting.scheduled_at)}</p>
