@@ -23,3 +23,11 @@ export function toLocalInput(iso: string) {
   const g = (t: string) => p.find((x) => x.type === t)?.value ?? "";
   return `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}`;
 }
+
+/** 左メニューで、どのステップの直後にベレネッツの面談を挟むか（kickoff は STEP 0 の前） */
+export const MEETING_AFTER_STEP: Record<string, { kind: string; label: string }> = {
+  merge: { kind: "session1", label: "確認セッション①" },
+  counter: { kind: "midcheck", label: "中間チェック" },
+  litmus: { kind: "session2", label: "確認セッション②" },
+  deploy: { kind: "session3", label: "確認セッション③" },
+};

@@ -20,14 +20,23 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   // 契約前（適合診断済み）はキックオフ以外の面談を見せない。枠は残して「——」
   let meetingQ = supabase.from("company_meetings").select("kind, scheduled_at, meeting_url").eq("company_id", company.id).is("held_at", null).gte("scheduled_at", new Date(Date.now() - 3 * 3600_000).toISOString());
   if (company.status === "diagnosed") meetingQ = meetingQ.eq("kind", "kickoff");
-  const [{ data: openHw }, { data: nextMeeting }, { data: progress }, { data: diag }, { count: hwTotal }, { data: heldKickoff }] = await Promise.all([
+  const [{ data: openHw }, { data: nextMeeting }, { data: progress }, { data: diag }, { count: hwTotal }, { data: heldKickoff }, { data: allMeetings }] = await Promise.all([
     supabase.from("homeworks").select("id, title, due_at").eq("company_id", company.id).eq("status", "open").order("due_at"),
     meetingQ.order("scheduled_at").limit(1).maybeSingle(),
     supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle(),
     supabase.from("diagnosis_results").select("company_id").eq("company_id", company.id).maybeSingle(),
     supabase.from("homeworks").select("id", { count: "exact", head: true }).eq("company_id", company.id),
     supabase.from("company_meetings").select("id").eq("company_id", company.id).eq("kind", "kickoff").not("held_at", "is", null).limit(1).maybeSingle(),
+    supabase.from("company_meetings").select("kind, scheduled_at, held_at").eq("company_id", company.id).neq("kind", "internal").order("scheduled_at"),
   ]);
+  // 左メニューの面談の印：種類ごとに「済」があれば済、無ければ一番近い予定
+  const meetingMarks: Record<string, { at: string | null; held: boolean }> = {};
+  for (const m of allMeetings ?? []) {
+    const cur = meetingMarks[m.kind];
+    if (m.held_at) { meetingMarks[m.kind] = { at: m.held_at, held: true }; continue; }
+    if (cur?.held) continue;
+    if (!cur || (cur.at && new Date(m.scheduled_at) < new Date(cur.at) && new Date(m.scheduled_at) > new Date(Date.now() - 3 * 3600_000))) meetingMarks[m.kind] = { at: m.scheduled_at, held: false };
+  }
   const kickoffDone = company.status === "diagnosed" && !!company.paid_at && !!heldKickoff;
   // STEP 0 が空のうちは、STEP 1 以降を左メニューで開かない（押すと STEP 0 への案内が出る）
   const step0Ready = ["diagnosed", "locked", "cancelled"].includes(company.status) ? true : await isStep0Ready(supabase, company.id);
@@ -86,7 +95,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </nav>
         ) : (
           <>
-            {!["locked", "cancelled"].includes(company.status) && <NavRail stages={stages} />}
+            {!["locked", "cancelled"].includes(company.status) && <NavRail stages={stages} meetings={meetingMarks} />}
             {diag && (
               <Link href="/diagnosis" className="mt-4 block text-[12px] text-ink-2 hover:text-ink border-t hairline pt-3">
                 適合診断の結果<span className="text-ink-3">（初回ヒアリング）</span> →
