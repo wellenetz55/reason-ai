@@ -162,11 +162,25 @@ export async function fileToText(buf: Buffer, name: string, type: string): Promi
   if (lower.endsWith(".docx") || type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
     try {
       // 展開すると巨大になるファイル（zip爆弾）を読まない：中身の展開後サイズを先に確かめる
-      const { unzipSync } = await import("fflate");
+      // 実際に少しずつ展開して数え、上限を超えたら止める（ファイル内の申告サイズは偽れるので使わない）
+      const { Unzip, UnzipInflate } = await import("fflate");
       let unzipped = 0;
-      // filter が false を返すと展開はしない（目次の申告サイズだけ数える）
-      unzipSync(new Uint8Array(buf), { filter: (f) => { unzipped += f.originalSize; return false; } });
-      if (unzipped > MAX_DOCX_UNZIPPED) return { text: null, error: "Wordファイルの中身が大きすぎるため、読み取りませんでした（ファイルは保管しました）" };
+      let over = false;
+      const uz = new Unzip((file) => {
+        file.ondata = (err, chunk) => {
+          if (err || over) return;
+          unzipped += chunk?.length ?? 0;
+          if (unzipped > MAX_DOCX_UNZIPPED) { over = true; file.terminate(); }
+        };
+        file.start();
+      });
+      uz.register(UnzipInflate);
+      try {
+        // 小分けに流し込み、上限を超えた時点で止める（一度に全部を展開しない）
+        const u8 = new Uint8Array(buf);
+        for (let i = 0; i < u8.length && !over; i += 4096) uz.push(u8.subarray(i, i + 4096), i + 4096 >= u8.length);
+      } catch { /* 壊れたzipは mammoth 側でエラーにする */ }
+      if (over) return { text: null, error: "Wordファイルの中身が大きすぎるため、読み取りませんでした（ファイルは保管しました）" };
       const mammoth = await import("mammoth");
       const { value } = await mammoth.extractRawText({ buffer: buf });
       return { text: value.trim() || null };
