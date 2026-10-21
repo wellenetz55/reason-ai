@@ -28,7 +28,7 @@ export default async function Page() {
   }
   const [{ data: rows }, { data: diags }, ctx] = await Promise.all([
     supabase.from("sheet_rows").select("id, seq, facet, target, value_raw, experience_value_v1, status").eq("company_id", company.id).eq("status", "active").order("seq"),
-    supabase.from("row_diagnoses").select("row_id, vague_score, issues, suggestion_value, suggestion_experience, resolved, checked_at, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
+    supabase.from("row_diagnoses").select("row_id, vague_score, issues, suggestion_value, suggestion_experience, resolved, checked_at, redraft_history, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
     loadGateCtx(supabase, company.id, company.status),
   ]);
   const gate = stepGate("merge", ctx);

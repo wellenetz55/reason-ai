@@ -7,7 +7,7 @@ import { resolveDiagnosis, redraftDiagnosis } from "@/app/(app)/sheet/merge/acti
 const OPT = "rounded-[var(--radius)] border px-3 py-1.5 text-[13px] font-medium transition-colors";
 
 type Row = { id: string; seq: number; value_raw: string | null; experience_value_v1: string | null };
-type Diag = { row_id: string; vague_score: number; issues: string[]; suggestion_value: string | null; suggestion_experience: string | null; resolved: string | null; checked_at: string };
+type Diag = { row_id: string; vague_score: number; issues: string[]; suggestion_value: string | null; suggestion_experience: string | null; resolved: string | null; checked_at: string; redraft_history?: string[] | null };
 
 function Mark({ text }: { text: string | null }) {
   if (!text) return null;
@@ -62,6 +62,12 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
                     <p className="text-[11px] text-navy">AIの言い直し案</p>
                     <p className="text-sm mt-1">{d.suggestion_value}</p>
                     {d.suggestion_experience && <p className="text-sm text-ink-2 mt-0.5">だから、お客様は {d.suggestion_experience}</p>}
+                    {(d.redraft_history?.length ?? 0) > 0 && (
+                      <details className="mt-2 text-[12px]">
+                        <summary className="cursor-pointer text-ink-3">前に出た案（{d.redraft_history!.length}）</summary>
+                        <ul className="mt-1 space-y-0.5 text-ink-2">{d.redraft_history!.map((h, k) => <li key={k}>・{h}</li>)}</ul>
+                      </details>
+                    )}
                     <div className="mt-3 flex flex-wrap gap-2">
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" /><button className={OPT + " border-navy bg-navy text-on-accent font-semibold hover:brightness-110"} type="submit">この案で決定する</button></form>
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className={OPT + " border-ink-3 bg-paper text-ink hover:bg-paper-2"} type="submit">初期案（自社入力）のままにする</button></form>

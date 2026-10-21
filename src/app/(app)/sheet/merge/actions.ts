@@ -9,17 +9,26 @@ import { loadProfileContext } from "@/server/profile";
 /** ふわっと診断を AI に頼む（active な行、最大30組） */
 export async function runVagueCheck() {
   const { supabase, company, user } = await requireWritableCustomer();
-  const [summary, { data: rows }] = await Promise.all([
+  const [summary, { data: rows }, { data: prevDiags }] = await Promise.all([
     loadProfileContext(supabase, company.id),
     supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, target").eq("company_id", company.id).eq("status", "active").order("seq").limit(30),
+    supabase.from("row_diagnoses").select("row_id, suggestion_value, resolved, redraft_history, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
   ]);
-  const targets = (rows ?? []).filter((r) => r.value_raw).map((r) => ({ id: r.id, value: r.value_raw as string, experience: r.experience_value_v1, target: r.target }));
+  // すでに決めた組（決定・初期案のまま・保留）はもう一度レビューしない。未決の組だけ、前の案を履歴に残して新しい案を出す
+  const prevBy = new Map((prevDiags ?? []).map((d) => [d.row_id as string, d]));
+  const targets = (rows ?? []).filter((r) => r.value_raw && !["accepted", "kept", "held"].includes(String(prevBy.get(r.id)?.resolved ?? ""))).map((r) => {
+    const p = prevBy.get(r.id);
+    const avoid = [...(((p?.redraft_history as string[] | null) ?? [])), ...(p?.suggestion_value ? [p.suggestion_value as string] : [])].slice(-5);
+    return { id: r.id, value: r.value_raw as string, experience: r.experience_value_v1, target: r.target, avoid };
+  });
+  if (!targets.length) { revalidatePath("/sheet/merge"); return; }
   const results = await aiGuard(supabase, company.id, user.id, "vague_check.run", () => diagnoseRows({ companyName: company.name, summary, rows: targets }));
   if (!results) { revalidatePath("/sheet/merge"); return; }
   const ids = new Set(targets.map((t) => t.id));
   const upserts = results.filter((d) => ids.has(d.id)).map((d) => ({
     row_id: d.id, vague_score: Math.max(0, Math.min(3, Number(d.vague_score) || 0)), issues: (d.issues ?? []).slice(0, 3),
     suggestion_value: d.suggestion_value || null, suggestion_experience: d.suggestion_experience || null, resolved: null, checked_at: new Date().toISOString(),
+    redraft_history: targets.find((t) => t.id === d.id)?.avoid ?? [],
   }));
   if (upserts.length) await supabase.from("row_diagnoses").upsert(upserts, { onConflict: "row_id" });
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.run", payload: { n: upserts.length } });
