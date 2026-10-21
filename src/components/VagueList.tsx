@@ -36,9 +36,16 @@ export function VagueList({ rows, diags }: { rows: Row[]; diags: Diag[] }) {
   const decided = rows.map((r) => ({ r, d: dmap.get(r.id) })).filter((x) => x.d && (x.d.resolved === "accepted" || x.d.resolved === "kept"));
   const DECIDED_LABEL: Record<string, string> = { accepted: "AIの案で決定", kept: "初期案（自社入力）のまま" };
   const decidedBlock = decided.length > 0 && (
-    <details className="mt-6 rounded-[var(--radius)] bg-paper-2 px-4 py-3">
-      <summary className="cursor-pointer text-sm text-ink-2">決めた組（{decided.length}）── 御社が選択を済ませた組。シートには残っています。ここで見直せます</summary>
-      <ul className="mt-3 divide-y divide-hair">
+    <details className="mt-10 rounded-[var(--radius)] border-2 border-navy overflow-hidden">
+      <summary className="cursor-pointer list-none bg-navy text-on-accent px-5 py-4 flex flex-wrap items-center gap-x-4 gap-y-1 [&::-webkit-details-marker]:hidden">
+        <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-paper text-navy num font-bold text-[16px] shrink-0">{decided.length}</span>
+        <span className="flex-1 min-w-[200px]">
+          <span className="serif block text-[18px] leading-tight">決めた組</span>
+          <span className="block text-[12px] text-on-accent/80 mt-0.5">御社が選択を済ませた組。シートには残っています。開くと一覧と「もう一度見直す」</span>
+        </span>
+        <span className="text-[12px] text-on-accent/80 shrink-0">▼ 開く／閉じる</span>
+      </summary>
+      <ul className="px-5 py-2 divide-y divide-hair bg-paper">
         {decided.map(({ r, d }) => (
           <li key={r.id} className="py-2.5 flex flex-wrap items-start gap-x-3 gap-y-1 text-sm">
             <span className="num text-xs text-ink-3 w-6 pt-0.5">{r.seq}</span>
