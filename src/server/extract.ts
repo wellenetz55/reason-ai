@@ -135,6 +135,7 @@ const MAX_DOCX_UNZIPPED = 60 * 1024 * 1024;
  * 未知の圧縮方式・展開エラー・上限超えは、すべて「読まない」（fail closed）。
  */
 const CD_SIG = Buffer.from([0x50, 0x4b, 0x01, 0x02]);
+const LH_SIG = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
 
 async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; reason: string }> {
   const bad = (reason: string) => ({ ok: false as const, reason });
@@ -153,6 +154,11 @@ async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; 
         if (extra > 256 * 1024) return bad("Wordファイルの形式を確かめられませんでした");
       }
     }
+  }
+  // 各部品の先頭（ローカルヘッダ PK\x03\x04）のファイル名の長さにも上限：jszip はここの名前を使うため、
+  // 長い名前の1つの部品を目次から何度も指させて、名前の読み込みにメモリを使わせる細工を止める（正常な名前は数十文字）
+  for (let i = buf.indexOf(LH_SIG); i >= 0; i = buf.indexOf(LH_SIG, i + 4)) {
+    if (i + 30 <= buf.length && buf.readUInt16LE(i + 26) > 1024) return bad("Wordファイルの形式を確かめられませんでした");
   }
   const JSZip = (await import("jszip")).default;
   const pakoMod = (await import("pako")) as unknown as { Inflate?: typeof import("pako").Inflate; default?: { Inflate: typeof import("pako").Inflate } };
