@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { MARKET_AXES, MARK_LABEL, marketTotal } from "@/lib/litmus";
 import { STAGES } from "@/lib/stages";
 import { FACETS } from "@/lib/facets";
 import { PROFILE_ITEMS } from "@/lib/profileItems";
@@ -115,17 +116,22 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
       supabase.from("litmus_niche").select("*, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId),
       supabase.from("litmus_market").select("row_id, scored_by, common_sense, investment, strength_asset, feasibility, beat_competitor, internal_passion, brand_purpose_fit, magnitude_text, magnitude_score, zougenjofu, total, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId),
     ]);
-    const m = new Map((lm ?? []).map((x) => [x.row_id, x]));
-    const ids = new Set([...(ln ?? []).map((x) => x.row_id), ...(lm ?? []).map((x) => x.row_id)]);
+    // 御社の自己評価（scored_by=customer）を出す。AIの仮判定は出さない。ベレネッツの点数は見える状態（確認セッション②のあと）のときだけ合計を添える
+    const m = new Map((lm ?? []).filter((x) => x.scored_by === "customer").map((x) => [x.row_id, x]));
+    const op = new Map((lm ?? []).filter((x) => x.scored_by === "operator").map((x) => [x.row_id, x]));
+    const ids = new Set([...(ln ?? []).map((x) => x.row_id), ...m.keys(), ...op.keys()]);
+    const mk = (v: unknown) => (v === null || v === undefined || v === "" ? "" : (MARK_LABEL[Number(v)] ?? ""));
     if (ids.size) addSheet("6 選ばれる理由の見極め", [
       { header: "行No", key: "seq", width: 6 }, { header: "提供価値", key: "raw", width: 36 },
       { header: "痛みは切実か", key: "q1", width: 12 }, { header: "探しているか", key: "q2", width: 12 },
-      { header: "投資", key: "a", width: 6 }, { header: "強み", key: "b", width: 6 }, { header: "実現", key: "c", width: 6 }, { header: "競合に勝つ", key: "d", width: 8 }, { header: "社内の熱", key: "e", width: 8 }, { header: "目的合致", key: "f", width: 8 },
-      { header: "マグニチュード", key: "mag", width: 30 }, { header: "合計", key: "total", width: 6 },
+      ...MARKET_AXES.map((a) => ({ header: a.label, key: a.key, width: 10 })),
+      { header: "大きさ", key: "mag", width: 30 }, { header: "手の入れ方", key: "adj", width: 30 }, { header: "御社の合計", key: "total", width: 8 },
+      ...(op.size ? [{ header: "ベレネッツの合計", key: "op", width: 10 }] : []),
     ], [...ids].map((id) => { const n = (ln ?? []).find((x) => x.row_id === id); const s = m.get(id); return {
       seq: byId.get(id)?.seq, raw: byId.get(id)?.value_final ?? byId.get(id)?.value_raw, q1: yn(n?.q1_pain_urgency), q2: yn(n?.q2_actively_seeking),
-      a: s?.investment, b: s?.strength_asset, c: s?.feasibility, d: s?.beat_competitor, e: s?.internal_passion, f: s?.brand_purpose_fit, mag: s?.magnitude_text, total: s?.total,
-    }; }).sort((x, y) => (x.seq ?? 0) - (y.seq ?? 0)));
+      ...Object.fromEntries(MARKET_AXES.map((a) => [a.key, mk(s?.[a.key])])),
+      mag: s?.magnitude_text, adj: s?.zougenjofu, total: s ? marketTotal(s).total : "", op: op.get(id)?.total ?? "",
+    }; }).sort((x, y) => (Number(x.seq) || 0) - (Number(y.seq) || 0)));
   }
 
   // STEP 7 証拠
