@@ -39,6 +39,9 @@
 ### 2.5 赤入れ
 - ⑤⑥⑦・⑧⑨の operator 版を入力。確認セッションまで顧客に非公開（セッション時に「開示」ボタン）
 - 評価軸: 市場フィット6軸＋ブランド目的合致＋マグニチュード＋回天手法（1〜5ステップ）＋増減除付→順位。AIの仮採点を横に表示
+  - 実装: `/admin/[companyId]/litmus`。組ごとに AI／御社／ベレネッツ の◎○△×を並べ、ベレネッツ列を入力（litmus_market scored_by=operator）。大きさ（magnitude_score ◎○△× と magnitude_text）、回天のステップ（kaiten_step 1〜5。名前は method_fixed_texts.kaiten_steps の5行）、増減除付（zougenjofu）、仮順位（litmus_market.rank）
+  - ベレネッツ合計＝7軸＋大きさ。「合計点の高い順に仮順位を入れる」（保留候補＝2問とも「いいえ」と未採点は外す）→ 手で直す →「仮順位をお客様のシートに確定する」で sheet_rows.rank に写し、最上位を is_primary にする（同順位があると確定しない）
+  - kaiten_step と rank は authenticated から列ごと SELECT 不可（SQL 0039）。operator 画面はサーバ側で読む。sheet_rows.rank / is_primary と litmus_market の kaiten_step・rank・magnitude_score は顧客ロールから書けない（トリガ）
 - 競合優位性（どこ・どのように）
 - 「封をする」ボタン（確認①／②／③）。封をブロックする条件の警告（⑤⑥に事実0件の行を1位にしようとしている等）。仮封のチェック
 - 延長（最大4週）の付与、猶予・顧問の状態変更

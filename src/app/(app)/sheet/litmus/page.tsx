@@ -27,7 +27,7 @@ export default async function Page() {
   const [{ data: rows }, { data: niche, error: nErr }, { data: market }, ctx, fixed, meeting] = await Promise.all([
     supabase.from("sheet_rows").select("id, seq, value_raw, experience_value, experience_value_v1, because_phrase").eq("company_id", company.id).eq("status", "active").order("seq"),
     supabase.from("litmus_niche").select("row_id, q1_pain_urgency, q2_actively_seeking, ai_q1, ai_q2, ai_note, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
-    supabase.from("litmus_market").select("*, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
+    supabase.from("litmus_market").select("row_id, scored_by, common_sense, investment, strength_asset, feasibility, beat_competitor, internal_passion, brand_purpose_fit, magnitude_text, magnitude_score, zougenjofu, total, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
     loadGateCtx(supabase, company.id, company.status),
     loadFixedText("round2_litmus_intro"),
     loadMeetingAfter(supabase, company.id, "litmus"),

@@ -113,7 +113,7 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
   if (has("litmus")) {
     const [{ data: ln }, { data: lm }] = await Promise.all([
       supabase.from("litmus_niche").select("*, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId),
-      supabase.from("litmus_market").select("*, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId),
+      supabase.from("litmus_market").select("row_id, scored_by, common_sense, investment, strength_asset, feasibility, beat_competitor, internal_passion, brand_purpose_fit, magnitude_text, magnitude_score, zougenjofu, total, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId),
     ]);
     const m = new Map((lm ?? []).map((x) => [x.row_id, x]));
     const ids = new Set([...(ln ?? []).map((x) => x.row_id), ...(lm ?? []).map((x) => x.row_id)]);

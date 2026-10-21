@@ -28,7 +28,7 @@
 | `evidences` | id, row_id, what(何を裏づけるか), content, kind(enum: named_voice/public_voice/third_party/own_fact), source, strength(strong/mid/weak), created_at | ⑩ |
 | `competitor_comparisons` | id, row_id, competitor_id, verdict(enum: superior/equal/inferior/unknown), reason, to_verify | |
 | `litmus_niche` | row_id, q1_pain_urgency(bool/null), q2_actively_seeking(bool/null), judged_by(ai/customer/operator) | 第1塗り末の2問 |
-| `litmus_market` | row_id, common_sense(常識/非常識), investment, strength_asset, feasibility, beat_competitor, internal_passion, brand_purpose_fit, magnitude_text(金額か件数), magnitude_score, kaiten_step(1..5/null), zougenjofu(増/減/除/付 メモ), total, scored_by(ai/operator), scored_at | 市場フィット試験紙＋追加軸 |
+| `litmus_market` | row_id, common_sense(常識/非常識), investment, strength_asset, feasibility, beat_competitor, internal_passion, brand_purpose_fit, magnitude_text(金額か件数), magnitude_score, kaiten_step(1..5/null), zougenjofu(増/減/除/付 メモ), total, rank(operator の仮順位), scored_by(ai/customer/operator), scored_at | 市場フィット試験紙＋追加軸 |
 | `sheet_locks` | id, company_id, session(enum: s1/s2/s3), columns(text[]), locked_at, locked_by, is_provisional(仮封) | |
 | `sheet_lock_history` | id, lock_id, row_id, column_key, before, after, reason, changed_by, changed_at | 封をした列の変更ログ |
 | `member_notes` | id, row_id, column_key, author_id, body, created_at | TOMRA方式の担当者別メモ列 |
