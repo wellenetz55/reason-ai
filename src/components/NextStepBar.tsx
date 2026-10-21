@@ -1,14 +1,34 @@
 import Link from "next/link";
 import type { Gate } from "@/lib/gates";
 import { NOT_READY } from "@/lib/stages";
+import { fmtMeeting } from "@/lib/meetings";
 
 /**
  * 各ステップ画面の最下部に必ず置く「次へ」。
  * 進める：紺のボタン／自分で満たす条件が残っている：条件の文＋灰色ボタン／ベレネッツ側で開く：暖色で面談待ちと明記。
  */
-export function NextStepBar({ gate }: { gate: Gate }) {
+export function NextStepBar({ gate, meeting }: { gate: Gate; meeting?: { label: string; at: string | null; held: boolean } | null }) {
   const n = gate.next;
   const notReady = !!n && NOT_READY.has(n.key);
+  // ベレネッツ側で開く段階で、間に面談が挟まるなら「次」はその面談
+  if (meeting && !meeting.held && gate.byOperator && !gate.ready) {
+    return (
+      <section className="mt-16 border-t hairline pt-6 flex flex-wrap items-center gap-x-8 gap-y-3">
+        <div className="min-w-[240px] flex-1">
+          <p className="text-[11px] text-ink-3">次</p>
+          <p className="mt-0.5">
+            <span className="text-[10px] font-semibold tracking-[0.12em] text-warm mr-2">ベレネッツ面談</span>
+            <span className="serif text-[17px]">{meeting.label}</span>
+          </p>
+          <p className="text-[13px] mt-1 max-w-[40em] text-warm">
+            {meeting.at ? `${fmtMeeting(meeting.at)} に行います。` : "日程はベレネッツからご連絡します。お待ちください。"}
+            {n && `面談のあと、${n.step} ${n.label} が開きます。`}
+          </p>
+        </div>
+        <span className="btn-primary opacity-40 cursor-not-allowed" aria-disabled="true">面談のあとに開きます</span>
+      </section>
+    );
+  }
   return (
     <section className="mt-16 border-t hairline pt-6 flex flex-wrap items-center gap-x-8 gap-y-3">
       <div className="min-w-[240px] flex-1">

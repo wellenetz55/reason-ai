@@ -14,6 +14,8 @@ import { runVagueCheck } from "./actions";
 import { fmtMeeting } from "@/lib/meetings";
 import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
+import { loadMeetingAfter } from "@/server/meetingNext";
+import { MeetingNextBlock } from "@/components/MeetingNext";
 
 export const maxDuration = 60;
 
@@ -26,10 +28,11 @@ export default async function Page() {
     const n = pg?.pair_count ?? 0;
     if (n < 20) return <ClosedStage stageKey="merge" status={company.status} note={`STEP 1 で、提供価値と体験価値の組があと${20 - n}組そろうと開きます（いま${n}組）。`} />;
   }
-  const [{ data: rows }, { data: diags }, ctx] = await Promise.all([
+  const [{ data: rows }, { data: diags }, ctx, meeting] = await Promise.all([
     supabase.from("sheet_rows").select("id, seq, facet, target, value_raw, experience_value_v1, status").eq("company_id", company.id).eq("status", "active").order("seq"),
     supabase.from("row_diagnoses").select("row_id, vague_score, issues, suggestion_value, suggestion_experience, resolved, checked_at, redraft_history, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
     loadGateCtx(supabase, company.id, company.status),
+    loadMeetingAfter(supabase, company.id, "merge"),
   ]);
   const gate = stepGate("merge", ctx);
   const aiErr = await lastAiError(supabase, company.id, "vague_check.run");
@@ -38,6 +41,8 @@ export default async function Page() {
   const dlist = (diags ?? []).filter((d) => shownIds.has(d.row_id)).map((d) => ({ ...d, issues: (d.issues ?? []) as string[] }));
   const lastChecked = dlist.map((d) => d.checked_at).sort().at(-1);
   const open = dlist.filter((d) => d.resolved == null && d.vague_score >= 1).length;
+  // レビューを一度行い、未対応の組が残っていなければ「まとめて絞る」は一通り終わり
+  const done = !!lastChecked && open === 0;
 
   return (
     <div>
@@ -69,7 +74,8 @@ export default async function Page() {
         </section>
       </div>
 
-      <NextStepBar gate={gate} />
+      {meeting && <MeetingNextBlock m={meeting} done={done} before="まとめて絞る" />}
+      <NextStepBar gate={gate} meeting={meeting} />
     </div>
   );
 }

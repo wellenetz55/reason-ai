@@ -50,7 +50,7 @@ export function stepGate(key: string, c: GateCtx): Gate {
     case "merge":
       return atLeast(c.status, "week3_5")
         ? { next, ready: true, note: `絞った言葉をベレネッツが確認済みです。${next?.label ?? "次の段階"}に進めます。` }
-        : { next, ready: false, byOperator: true, note: "絞った言葉を確認セッション①でベレネッツが確認したあと、次のステップが開きます。" };
+        : { next, ready: false, byOperator: true, note: "絞った言葉は、確認セッション①でベレネッツと一緒に確認します。日程はベレネッツからご連絡します。面談のあと、次のステップが開きます。" };
     case "brakes":
       return c.brakeKinds >= 4
         ? { next, ready: true, note: "4種類のブレーキがそろいました。" }
