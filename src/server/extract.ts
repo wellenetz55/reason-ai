@@ -16,17 +16,8 @@ function htmlToText(html: string) {
 
 const MAX_FETCH_BYTES = 8 * 1024 * 1024;
 
-/** 社内ネットワーク・メタデータ等に向くURLを拒否する（SSRF対策） */
-async function isPublicHttpUrl(url: string): Promise<boolean> {
-  let u: URL;
-  try { u = new URL(url); } catch { return false; }
-  if (u.protocol !== "http:" && u.protocol !== "https:") return false;
-  const host = u.hostname.toLowerCase();
-  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) return false;
-  const { lookup } = await import("node:dns/promises");
-  let addrs: { address: string; family: number }[];
-  try { addrs = await lookup(host, { all: true }); } catch { return false; }
-  const priv = (ip: string, fam: number) => {
+/** 社内向け・予約済みのアドレスか */
+function priv(ip: string, fam: number) {
     if (fam === 6) {
       const x = ip.toLowerCase();
       // ::1／未指定／ULA(fc00::/7)／リンクローカル(fe80::/10)／IPv4射影／NAT64(64:ff9b::/96)／マルチキャスト(ff00::/8)
@@ -37,8 +28,57 @@ async function isPublicHttpUrl(url: string): Promise<boolean> {
       || (a === 198 && (b === 18 || b === 19)) // ベンチマーク用 198.18.0.0/15
       || (a === 192 && b === 0)                // 192.0.0.0/24・192.0.2.0/24
       || a >= 224;                              // マルチキャスト・予約（224.0.0.0 以上）
-  };
+  }
+
+/** 社内ネットワーク・メタデータ等に向くURLを拒否する（SSRF対策） */
+async function isPublicHttpUrl(url: string): Promise<boolean> {
+  let u: URL;
+  try { u = new URL(url); } catch { return false; }
+  if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+  const host = u.hostname.toLowerCase();
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) return false;
+  const { lookup } = await import("node:dns/promises");
+  let addrs: { address: string; family: number }[];
+  try { addrs = await lookup(host, { all: true }); } catch { return false; }
   return addrs.length > 0 && addrs.every((x) => !priv(x.address, x.family));
+}
+
+
+/**
+ * 確かめたアドレスにだけ接続する GET（DNS rebinding 対策）。
+ * 接続の直前の名前解決でも社内向けアドレスなら接続しない。fetch と同じ Response を返す。
+ */
+async function pinnedGet(url: string, signal: AbortSignal): Promise<Response> {
+  const u = new URL(url);
+  const mod = u.protocol === "https:" ? await import("node:https") : await import("node:http");
+  const dns = await import("node:dns");
+  const lookup = ((host: string, opts: unknown, cb: (err: Error | null, address?: unknown, family?: number) => void) => {
+    const o = (typeof opts === "object" && opts ? opts : {}) as { all?: boolean };
+    dns.lookup(host, { all: true }, (err, addrs) => {
+      if (err) return cb(err);
+      const list = addrs as { address: string; family: number }[];
+      if (!list.length || list.some((a) => priv(a.address, a.family))) return cb(new Error("blocked address"));
+      return o.all ? cb(null, list) : cb(null, list[0].address, list[0].family);
+    });
+  }) as unknown as typeof dns.lookup;
+  return new Promise<Response>((resolve, reject) => {
+    const req = mod.request(u, { method: "GET", lookup, signal, headers: { "user-agent": "Mozilla/5.0 (compatible; reason-ai/1.0)" } }, (res) => {
+      const headers = new Headers();
+      for (const [k, v] of Object.entries(res.headers)) if (typeof v === "string") headers.set(k, v); else if (Array.isArray(v)) headers.set(k, v.join(", "));
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          res.on("data", (c: Buffer) => controller.enqueue(new Uint8Array(c)));
+          res.on("end", () => controller.close());
+          res.on("error", (e) => controller.error(e));
+        },
+        cancel() { res.destroy(); },
+      });
+      const status = res.statusCode ?? 0;
+      resolve(new Response(status === 204 || status === 304 ? null : body, { status: status >= 200 && status <= 599 ? status : 502, headers }));
+    });
+    req.on("error", reject);
+    req.end();
+  });
 }
 
 async function fetchUrlText(url: string) {
@@ -51,7 +91,7 @@ async function fetchUrlText(url: string) {
     let res: Response | null = null;
     for (let hop = 0; hop <= 3; hop++) {
       if (!(await isPublicHttpUrl(cur))) return "";
-      res = await fetch(cur, { signal: ctrl.signal, redirect: "manual", headers: { "user-agent": "Mozilla/5.0 (compatible; reason-ai/1.0)" } });
+      res = await pinnedGet(cur, ctrl.signal);
       if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
         cur = new URL(res.headers.get("location")!, cur).toString();
         res = null;
