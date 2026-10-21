@@ -74,8 +74,8 @@ export default async function Page() {
         </section>
       </div>
 
-      {meeting && <MeetingNextBlock m={meeting} done={done} before="まとめて絞る" />}
-      <NextStepBar gate={gate} meeting={meeting} />
+      {meeting && done && <MeetingNextBlock m={meeting} done before="まとめて絞る" />}
+      <NextStepBar gate={gate} meeting={done ? meeting : null} />
     </div>
   );
 }
