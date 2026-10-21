@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
 import { setStatus, setReaccess, setPhaseEnd, resolveAlert, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink, setContractStep, inviteCustomer } from "../actions";
-import { MEETING_LABEL, fmtMeeting, toLocalInput } from "@/lib/meetings";
+import { MEETING_LABEL, ADVANCE_AFTER_MEETING, fmtMeeting, toLocalInput } from "@/lib/meetings";
 import { createHomework, updateHomework, withdrawHomework, reopenHomework } from "./homework-actions";
 import { ClearQuery } from "@/components/ClearQuery";
 import { loadKickoff } from "@/server/kickoff";
@@ -79,14 +79,14 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
     <div>
       <ClearQuery keys={["member_ok", "member_error", "link_error", "hw_ok", "hw_error", "status_error", "status_ok"]} />
       {statusOk && <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-4 py-3 text-sm max-w-[44em]">{statusOk}</p>}
-      {["diagnosed", "onboarding"].includes(c.status) && (meetings ?? []).some((m) => m.kind === "kickoff" && m.held_at) && (
-        <form action={setStatus} className="mt-4 rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-5 py-4 max-w-[44em] flex flex-wrap items-center gap-3">
+      {Object.entries(ADVANCE_AFTER_MEETING).map(([kind, rule]) => rule.from.includes(c.status) && (meetings ?? []).some((m) => m.kind === kind && m.held_at) ? (
+        <form key={kind} action={setStatus} className="mt-4 rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-5 py-4 max-w-[44em] flex flex-wrap items-center gap-3">
           <input type="hidden" name="company_id" value={c.id} />
-          <input type="hidden" name="status" value="week1_2" />
-          <p className="text-sm flex-1 min-w-[260px]"><span className="font-semibold text-warm">キックオフは実施済ですが、状態が「{STATUS_LABEL[c.status]}」のままです。</span>お客様側では STEP 0・STEP 1 がまだ開いていません。</p>
-          <button className="btn-primary" type="submit">「骨格をつくる（1〜2週目）」に進める</button>
+          <input type="hidden" name="status" value={rule.to} />
+          <p className="text-sm flex-1 min-w-[260px]"><span className="font-semibold text-warm">{MEETING_LABEL[kind]}は実施済ですが、状態が「{STATUS_LABEL[c.status]}」のままです。</span>お客様側では次のステップがまだ開いていません。</p>
+          <button className="btn-primary" type="submit">「{STATUS_LABEL[rule.to]}」に進める</button>
         </form>
-      )}
+      ) : null)}
       <h1 className="serif text-[28px] leading-tight">{c.name}</h1>
       <p className="text-sm text-ink-2 mt-1">{STATUS_LABEL[c.status]} · <Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 hover:text-ink">適合診断の記録</Link> · <Link href={`/admin/${c.id}/diagnosis`} className="underline underline-offset-4 hover:text-ink">適合診断の結果を書く</Link></p>
       <p className="text-xs text-ink-3 mt-1">

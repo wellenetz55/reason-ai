@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { requireOperator } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readTranscript, MAX_TRANSCRIPT } from "@/server/transcript";
-import { advanceAfterKickoff } from "@/app/(admin)/admin/actions";
+import { advanceAfterMeeting } from "@/app/(admin)/admin/actions";
 
 const back = (companyId: string, meetingId: string, q: string): never => redirect(`/admin/${companyId}/meetings/${meetingId}?${q}`);
 const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
@@ -36,7 +36,7 @@ export async function saveMeetingRecord(formData: FormData) {
   let advanced = false;
   if (formData.get("held") === "1") {
     await admin.from("company_meetings").update({ held_at: new Date().toISOString() }).eq("id", meetingId);
-    if (m!.kind === "kickoff") advanced = await advanceAfterKickoff(admin, companyId);
+    advanced = !!(await advanceAfterMeeting(admin, companyId, m!.kind));
   }
   await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "meeting.record", payload: { meeting_id: meetingId, kind: m!.kind, transcript: !!(tr && "text" in tr) } });
   revalidatePath(`/admin/${companyId}`);

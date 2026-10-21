@@ -31,3 +31,10 @@ export const MEETING_AFTER_STEP: Record<string, { kind: string; label: string }>
   litmus: { kind: "session2", label: "確認セッション②" },
   deploy: { kind: "session3", label: "確認セッション③" },
 };
+
+/** 面談を実施済みにしたとき、プログラムの状態をどこからどこへ進めるか（operator 操作の一部） */
+export const ADVANCE_AFTER_MEETING: Record<string, { from: string[]; to: string }> = {
+  kickoff: { from: ["diagnosed", "onboarding"], to: "week1_2" },
+  session1: { from: ["week1_2"], to: "week3_5" },
+  session2: { from: ["week3_5"], to: "week6_8" },
+};

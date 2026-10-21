@@ -1,4 +1,6 @@
 "use server";
+import { MEETING_LABEL, ADVANCE_AFTER_MEETING } from "@/lib/meetings";
+import { STATUS_LABEL } from "@/lib/stages";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -51,11 +53,21 @@ export async function applyStatus(supabase: SupabaseClient, id: string, status: 
 
 /** キックオフを実施済にしたら、契約前／キックオフ前の会社は「骨格をつくる（1〜2週目）」に進める（お客様側に STEP 1 が開く） */
 export async function advanceAfterKickoff(supabase: SupabaseClient, companyId: string): Promise<boolean> {
+  return !!(await advanceAfterMeeting(supabase, companyId, "kickoff"));
+}
+
+/**
+ * 面談を実施済みにしたとき、プログラムの状態を次へ進める（operator 操作の一部として扱う）。
+ * kickoff: diagnosed/onboarding → week1_2 ／ session1: week1_2 → week3_5 ／ session2: week3_5 → week6_8
+ * 進めたら新しい状態を返す。進める必要が無ければ null
+ */
+export async function advanceAfterMeeting(supabase: SupabaseClient, companyId: string, kind: string): Promise<string | null> {
   const { data: c } = await supabase.from("companies").select("status, kickoff_at").eq("id", companyId).single();
-  if (!c) return false;
-  if (!c.kickoff_at) await supabase.from("companies").update({ kickoff_at: new Date().toISOString() }).eq("id", companyId);
-  if (c.status !== "diagnosed" && c.status !== "onboarding") return false;
-  return applyStatus(supabase, companyId, "week1_2");
+  if (!c) return null;
+  if (kind === "kickoff" && !c.kickoff_at) await supabase.from("companies").update({ kickoff_at: new Date().toISOString() }).eq("id", companyId);
+  const rule = ADVANCE_AFTER_MEETING[kind];
+  if (!rule || !rule.from.includes(c.status)) return null;
+  return (await applyStatus(supabase, companyId, rule.to)) ? rule.to : null;
 }
 
 /** 会社の担当者を登録して招待メールを送る（既存アカウントならマジックリンク） */
@@ -182,9 +194,11 @@ export async function updateMeeting(formData: FormData) {
   }
   if (formData.get("held") === "1") {
     const { data: m } = await supabase.from("company_meetings").select("kind").eq("id", id).maybeSingle();
-    if (m?.kind === "kickoff" && (await advanceAfterKickoff(supabase, companyId))) {
+    const to = m?.kind ? await advanceAfterMeeting(supabase, companyId, m.kind) : null;
+    if (to) {
       revalidatePath(`/admin/${companyId}`);
-      redirect(`/admin/${companyId}?status_ok=${encodeURIComponent("キックオフを実施済にしたので、状態を「骨格をつくる（1〜2週目）」に進めました。お客様側に STEP 1 が開きます")}`);
+      revalidatePath("/", "layout");
+      redirect(`/admin/${companyId}?status_ok=${encodeURIComponent(`${MEETING_LABEL[m!.kind] ?? "面談"}を実施済にしたので、状態を「${STATUS_LABEL[to]}」に進めました。お客様側に次のステップが開きます`)}`);
     }
   }
   revalidatePath(`/admin/${companyId}`);
