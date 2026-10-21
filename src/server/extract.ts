@@ -177,6 +177,16 @@ async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; 
   try { zip = await JSZip.loadAsync(buf); } catch { return bad("Wordファイルの形式を確かめられませんでした"); }
   const entries = Object.values(zip.files).filter((f) => !f.dir);
   if (entries.length > 2000) return bad("Wordファイルの形式を確かめられませんでした");
+  // 展開する前に、各部品の圧縮データの長さを合計する。重ならない部品の合計はファイル自体より大きくなり得ない。
+  // ファイルより大きければ、同じ圧縮データを何度も指させている（何千回も展開させてCPUを使わせる細工）ので読まない
+  {
+    let compressed = 0;
+    for (const f of entries) {
+      const c = (f as unknown as { _data?: { compressedContent?: unknown } })._data?.compressedContent;
+      if (c instanceof Uint8Array) compressed += c.length;
+    }
+    if (compressed > buf.length) return bad("Wordファイルの形式を確かめられませんでした");
+  }
   let total = 0;
   for (const f of entries) {
     // jszip の内部（3.x の CompressedObject）：compression.magic と compressedContent（この範囲を mammoth も展開する）
