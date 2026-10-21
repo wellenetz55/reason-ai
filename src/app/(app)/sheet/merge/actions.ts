@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireWritableCustomer } from "@/lib/session";
+import { requireStage } from "@/server/stageGuard";
 import { diagnoseRows } from "@/server/diagnose";
 import { aiGuard } from "@/server/aiGuard";
 import { loadProfileContext } from "@/server/profile";
@@ -37,7 +37,7 @@ async function notifyStep2Done(supabase: SupabaseClient, companyId: string, comp
 
 /** ふわっと診断を AI に頼む（active な行、最大30組） */
 export async function runVagueCheck() {
-  const { supabase, company, user } = await requireWritableCustomer();
+  const { supabase, company, user } = await requireStage("merge");
   const [summary, { data: rows }, { data: prevDiags }] = await Promise.all([
     loadProfileContext(supabase, company.id),
     supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, target").eq("company_id", company.id).eq("status", "active").order("seq"),
@@ -72,7 +72,7 @@ export async function runVagueCheck() {
 
 /** 言い直し案を採用する／そのままでよいとする */
 export async function resolveDiagnosis(formData: FormData) {
-  const { supabase, company, user } = await requireWritableCustomer();
+  const { supabase, company, user } = await requireStage("merge");
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")); // accept | keep | hold | drop
   const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1").eq("id", rowId).eq("company_id", company.id).maybeSingle();
@@ -109,7 +109,7 @@ export async function resolveDiagnosis(formData: FormData) {
 
 /** この組だけ、AIに別の言い直し案を出してもらう（前の案と同じにならないように伝える） */
 export async function redraftDiagnosis(formData: FormData) {
-  const { supabase, company, user } = await requireWritableCustomer();
+  const { supabase, company, user } = await requireStage("merge");
   const rowId = String(formData.get("row_id"));
   const [summary, { data: row }, { data: d }] = await Promise.all([
     loadProfileContext(supabase, company.id),
@@ -132,7 +132,7 @@ export async function redraftDiagnosis(formData: FormData) {
 
 /** 決めた組をもう一度ふわっと診断の一覧に戻す（決定した言葉はそのまま。保留にしていた行は戻さない） */
 export async function reopenDiagnosis(formData: FormData) {
-  const { supabase, company, user } = await requireWritableCustomer();
+  const { supabase, company, user } = await requireStage("merge");
   const rowId = String(formData.get("row_id"));
   const { data: row } = await supabase.from("sheet_rows").select("id, status").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   if (!row) return;

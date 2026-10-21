@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireWritableCustomer } from "@/lib/session";
+import { requireStage } from "@/server/stageGuard";
 import { draftBrakes } from "@/server/brakes";
 import { loadProfileContext } from "@/server/profile";
 import { aiGuard } from "@/server/aiGuard";
@@ -13,7 +13,7 @@ const BRAKE_BATCH = 6; // 1回のAI呼び出しで扱う組数（6組×4種類�
 
 /** ブレーキがまだ無い組（BRAKE_BATCH 組ずつ）に、AIの下書きを付ける */
 export async function requestBrakeDrafts() {
-  const { supabase, company, user } = await requireWritableCustomer();
+  const { supabase, company, user } = await requireStage("brakes");
   const [{ data: rows }, { data: existing }, profile, { data: past }] = await Promise.all([
     supabase.from("sheet_rows").select("id, value_raw, experience_value, experience_value_v1").eq("company_id", company.id).eq("status", "active").order("seq"),
     supabase.from("brakes").select("row_id, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id).eq("status", "active"),
@@ -48,7 +48,7 @@ export async function requestBrakeDrafts() {
 
 /** ブレーキ1枚を 直す／承認／保留（外す）／戻す */
 export async function saveBrake(formData: FormData) {
-  const { supabase, company, user } = await requireWritableCustomer();
+  const { supabase, company, user } = await requireStage("brakes");
   const id = String(formData.get("id"));
   const action = String(formData.get("action")); // fix | approve | drop | restore
   const { data: b } = await supabase.from("brakes").select("id, row_id, customer_words, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
@@ -82,7 +82,7 @@ export async function saveBrake(formData: FormData) {
 
 /** 御社がブレーキを自分で1枚追加する */
 export async function addBrake(formData: FormData) {
-  const { supabase, company, user } = await requireWritableCustomer();
+  const { supabase, company, user } = await requireStage("brakes");
   const rowId = String(formData.get("row_id"));
   const kind = String(formData.get("kind") || "");
   const words = String(formData.get("words") || "").trim().slice(0, 400);

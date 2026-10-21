@@ -1,10 +1,11 @@
 "use server";
+import { requireStage } from "@/server/stageGuard";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 const fail = (msg: string): never => redirect(`/step0?error=${encodeURIComponent(msg)}`);
 import { randomUUID } from "node:crypto";
-import { requireCustomer, requireWritableCustomer } from "@/lib/session";
+import { requireCustomer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LIMITS } from "@/lib/limits";
 import { normalizeWebUrl } from "@/lib/url";
@@ -41,7 +42,7 @@ function kindOf(v: FormDataEntryValue | null) {
  * ① prepareUpload で検査と送り先の発行 → ② ブラウザが送る → ③ finishUpload で記録。
  */
 export async function prepareUpload(meta: { name: string; size: number; type: string }): Promise<{ ok: true; path: string; token: string } | { ok: false; error: string }> {
-  const { company, supabase } = await requireWritableCustomer();
+  const { company, supabase } = await requireStage("step0");
   if (!meta?.name || !meta.size) return { ok: false, error: "ファイルを選んでください。" };
   if (meta.size > MAX_BYTES) return { ok: false, error: "ファイルが大きすぎます（25MBまで）。" };
   if (!ALLOWED.includes(meta.type)) return { ok: false, error: "このファイルの形式は登録できません（PDF・画像・テキスト）。" };
@@ -56,7 +57,7 @@ export async function prepareUpload(meta: { name: string; size: number; type: st
 }
 
 export async function finishUpload(formData: FormData): Promise<{ ok: boolean; error?: string }> {
-  const { company, user, supabase } = await requireWritableCustomer();
+  const { company, user, supabase } = await requireStage("step0");
   const path = String(formData.get("path") || "");
   // prepareUpload が発行した形（自社フォルダ直下の uuid.拡張子）だけを受け付ける
   const re = new RegExp(`^${company.id}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.[a-z0-9]{1,5}$`);
@@ -97,7 +98,7 @@ export async function finishUpload(formData: FormData): Promise<{ ok: boolean; e
 
 /** URL を登録（Webサイト・採用ページ・レビューなど） */
 export async function addUrl(formData: FormData) {
-  const { company, user, supabase } = await requireWritableCustomer();
+  const { company, user, supabase } = await requireStage("step0");
   const raw = String(formData.get("url") || "").trim();
   if (!raw) return;
   const url = normalizeWebUrl(raw);
@@ -116,7 +117,7 @@ export async function addUrl(formData: FormData) {
 
 /** テキストを貼り付けて登録（議事録・営業トーク・メモなど） */
 export async function addText(formData: FormData) {
-  const { company, user, supabase } = await requireWritableCustomer();
+  const { company, user, supabase } = await requireStage("step0");
   const text = String(formData.get("text") || "").trim();
   if (!text) return;
   if ((await usage(supabase, company.id)).texts >= LIMITS.texts) fail("登録できるテキストの数の上限に達しています。");
@@ -133,7 +134,7 @@ export async function addText(formData: FormData) {
 
 /** 資料を取り下げる（ファイルも削除） */
 export async function removeDocument(formData: FormData) {
-  const { company, supabase } = await requireWritableCustomer();
+  const { company, supabase } = await requireStage("step0");
   const id = String(formData.get("id"));
   const { data: doc } = await supabase.from("company_documents").select("id, storage_path").eq("id", id).eq("company_id", company.id).maybeSingle();
   if (!doc) return;
@@ -146,7 +147,7 @@ export async function removeDocument(formData: FormData) {
 
 /** 資料から AI が下書きを作る。承認済み・直した・保留の項目は上書きしない */
 export async function requestProfileDraft() {
-  const { supabase, company, user } = await requireWritableCustomer();
+  const { supabase, company, user } = await requireStage("step0");
   const res = await aiGuard(supabase, company.id, user.id, "profile.draft", () => draftProfile(company.id, company.name));
   if (!res) { revalidatePath("/step0"); return; }
   const { items, skipped, errors } = res;
@@ -163,7 +164,7 @@ export async function requestProfileDraft() {
 
 /** 項目ごとの 直す／承認／保留、B の回答 */
 export async function reviewProfileItem(formData: FormData) {
-  const { supabase, company } = await requireWritableCustomer();
+  const { supabase, company } = await requireStage("step0");
   const key = String(formData.get("key"));
   const action = String(formData.get("action")); // approve | fix | hold | answer | reopen
   const after = String(formData.get("after") || "").trim();
@@ -182,7 +183,7 @@ export async function reviewProfileItem(formData: FormData) {
 
 /** 競合他社を登録（最大3社＋参考1社）。会社名は必須、商品・サービス名とURLは任意 */
 export async function addCompetitor(formData: FormData) {
-  const { company, user, supabase } = await requireWritableCustomer();
+  const { company, user, supabase } = await requireStage("step0");
   const name = String(formData.get("name") || "").trim();
   const product = String(formData.get("product") || "").trim();
   const raw = String(formData.get("website") || "").trim();
@@ -202,7 +203,7 @@ export async function addCompetitor(formData: FormData) {
 }
 
 export async function removeCompetitor(formData: FormData) {
-  const { company, user, supabase } = await requireWritableCustomer();
+  const { company, user, supabase } = await requireStage("step0");
   const id = String(formData.get("id") || "");
   await supabase.from("competitors").delete().eq("id", id).eq("company_id", company.id);
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "competitor.remove", payload: { id } });
