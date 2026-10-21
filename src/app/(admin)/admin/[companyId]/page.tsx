@@ -323,7 +323,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
         {issuedLink && <ClearIssuedLink companyId={c.id} />}
         {issuedLink && (
           <div className="mt-3 rounded-[var(--radius)] bg-navy-soft px-4 py-3">
-            <p className="text-[11px] text-navy font-semibold">発行しました（2分間は再読み込みでも表示されます。本人にだけ送ってください）</p>
+            <p className="text-[11px] text-navy font-semibold">発行しました（この画面を離れると消えます。いまコピーして、本人にだけ送ってください）</p>
             <p className="num text-[12px] break-all mt-1 select-all">{issuedLink}</p>
           </div>
         )}
