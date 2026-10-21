@@ -48,7 +48,9 @@ async function isPublicHttpUrl(url: string): Promise<boolean> {
  * 確かめたアドレスにだけ接続する GET（DNS rebinding 対策）。
  * 接続の直前の名前解決でも社内向けアドレスなら接続しない。fetch と同じ Response を返す。
  */
-async function pinnedGet(url: string, signal: AbortSignal): Promise<Response> {
+type Pinned = { status: number; headers: import("node:http").IncomingHttpHeaders; res: import("node:http").IncomingMessage };
+
+async function pinnedGet(url: string, signal: AbortSignal): Promise<Pinned> {
   const u = new URL(url);
   const mod = u.protocol === "https:" ? await import("node:https") : await import("node:http");
   const dns = await import("node:dns");
@@ -61,20 +63,11 @@ async function pinnedGet(url: string, signal: AbortSignal): Promise<Response> {
       return o.all ? cb(null, list) : cb(null, list[0].address, list[0].family);
     });
   }) as unknown as typeof dns.lookup;
-  return new Promise<Response>((resolve, reject) => {
-    const req = mod.request(u, { method: "GET", lookup, signal, headers: { "user-agent": "Mozilla/5.0 (compatible; reason-ai/1.0)" } }, (res) => {
-      const headers = new Headers();
-      for (const [k, v] of Object.entries(res.headers)) if (typeof v === "string") headers.set(k, v); else if (Array.isArray(v)) headers.set(k, v.join(", "));
-      const body = new ReadableStream<Uint8Array>({
-        start(controller) {
-          res.on("data", (c: Buffer) => controller.enqueue(new Uint8Array(c)));
-          res.on("end", () => controller.close());
-          res.on("error", (e) => controller.error(e));
-        },
-        cancel() { res.destroy(); },
-      });
-      const status = res.statusCode ?? 0;
-      resolve(new Response(status === 204 || status === 304 ? null : body, { status: status >= 200 && status <= 599 ? status : 502, headers }));
+  return new Promise<Pinned>((resolve, reject) => {
+    // 本文は自動では読み進めない（呼び出し側が読む分だけ受け取る＝相手が無限に送ってきてもメモリを食わない）
+    const req = mod.request(u, { method: "GET", lookup, signal, headers: { "user-agent": "Mozilla/5.0 (compatible; reason-ai/1.0)", "accept-encoding": "identity" } }, (res) => {
+      res.pause();
+      resolve({ status: res.statusCode ?? 0, headers: res.headers, res });
     });
     req.on("error", reject);
     req.end();
@@ -85,43 +78,47 @@ async function fetchUrlText(url: string) {
   if (!(await isPublicHttpUrl(url))) return "";
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 15_000);
+  const opened: Pinned[] = [];
   try {
     // 転送は自分でたどり、1回ごとに社内向けアドレスでないか確かめる（最大3回）
     let cur = url;
-    let res: Response | null = null;
+    let res: Pinned | null = null;
     for (let hop = 0; hop <= 3; hop++) {
       if (!(await isPublicHttpUrl(cur))) return "";
       res = await pinnedGet(cur, ctrl.signal);
-      if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
-        cur = new URL(res.headers.get("location")!, cur).toString();
+      opened.push(res);
+      const loc = res.headers.location;
+      if (res.status >= 300 && res.status < 400 && loc) {
+        res.res.destroy(); // 転送元の本文は読まずに閉じる
+        cur = new URL(loc, cur).toString();
         res = null;
         continue;
       }
       break;
     }
-    if (!res || !res.ok) return "";
-    const len = Number(res.headers.get("content-length") ?? 0);
+    if (!res || res.status < 200 || res.status >= 300) return "";
+    const len = Number(res.headers["content-length"] ?? 0);
     if (len > MAX_FETCH_BYTES) return "";
-    // 長さの申告が無い応答も、少しずつ読んで上限を超えたら打ち切る（全部メモリに載せてから測らない）
-    const chunks: Uint8Array[] = [];
+    // 少しずつ読んで上限を超えたら打ち切る（全部メモリに載せてから測らない）
+    const chunks: Buffer[] = [];
     let total = 0;
-    if (!res.body) return "";
-    const reader = res.body.getReader();
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > MAX_FETCH_BYTES) { ctrl.abort(); return ""; }
-      chunks.push(value);
+    for await (const c of res.res) {
+      const b = c as Buffer;
+      total += b.length;
+      if (total > MAX_FETCH_BYTES) return "";
+      chunks.push(b);
     }
     const buf = Buffer.concat(chunks);
-    const ct = res.headers.get("content-type") ?? "";
+    const ct = String(res.headers["content-type"] ?? "");
     if (ct.includes("pdf")) return (await pdfText(buf)).text;
     return htmlToText(buf.toString("utf8"));
   } catch {
     return "";
   } finally {
     clearTimeout(t);
+    // どの経路で抜けても、開いた接続はすべて閉じる
+    for (const o of opened) o.res.destroy();
+    ctrl.abort();
   }
 }
 
