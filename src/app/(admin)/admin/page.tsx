@@ -10,7 +10,7 @@ export default async function AdminHome() {
   const ids = (companies ?? []).map((c) => c.id);
   // 最終操作は、会社ごとにお客様の操作だけで数える（AIのエラー記録・ベレネッツ側の操作は含めない）
   // まず新しい操作をまとめて1回で読み、そこに出てこなかった会社だけ個別に探す（会社が増えても往復が増えにくい）
-  const custOnly = <Q extends { not: (c: string, o: string, v: string) => Q }>(q: Q) => q.not("event", "like", "%.error").not("event", "like", "intake.%");
+  const custOnly = <Q extends { not: (c: string, o: string, v: string) => Q }>(q: Q) => q.not("event", "like", "%.error").not("event", "like", "intake.%").not("event", "like", "admin.%");
   const { data: recent } = await custOnly(supabase.from("activity_log").select("company_id, created_at").in("company_id", ids)).order("created_at", { ascending: false }).limit(1000);
   const seen = new Set((recent ?? []).map((r) => r.company_id));
   const rest = await Promise.all(ids.filter((id) => !seen.has(id)).map((id) =>

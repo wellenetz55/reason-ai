@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ClearIssuedLink } from "@/components/ClearIssuedLink";
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
 import { setStatus, setReaccess, setPhaseEnd, resolveAlert, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink, setContractStep, inviteCustomer } from "../actions";
@@ -319,6 +320,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
           <button className="btn-text" type="submit">発行</button>
         </form>
         {linkError && <p className="text-xs text-warm mt-2">{linkError}</p>}
+        {issuedLink && <ClearIssuedLink companyId={c.id} />}
         {issuedLink && (
           <div className="mt-3 rounded-[var(--radius)] bg-navy-soft px-4 py-3">
             <p className="text-[11px] text-navy font-semibold">発行しました（2分間は再読み込みでも表示されます。本人にだけ送ってください）</p>

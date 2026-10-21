@@ -213,7 +213,7 @@ export async function resolveErrorReport(formData: FormData) {
 
 /** 顧客のサインインリンクを発行（メールが届かないときにベレネッツが直接渡す）。URLはクエリで会社ページに返す */
 export async function issueSignInLink(formData: FormData) {
-  await requireOperator();
+  const { supabase, user: op } = await requireOperator();
   const companyId = String(formData.get("company_id"));
   const email = String(formData.get("email") || "").trim().toLowerCase();
   if (!email) return;
@@ -234,6 +234,8 @@ export async function issueSignInLink(formData: FormData) {
   // トークンをURLに載せない（履歴・ログに残るため）。1回だけ読める短命クッキーで渡す
   const { cookies } = await import("next/headers");
   (await cookies()).set("issued_link", url, { httpOnly: true, secure: true, sameSite: "lax", path: `/admin/${companyId}`, maxAge: 120 });
+  // 誰が・誰宛てに発行したかを残す（リンクそのものは残さない）
+  await supabase.from("activity_log").insert({ company_id: companyId, user_id: op.id, event: "admin.signin_link", payload: { to: email } });
   redirect(`/admin/${companyId}?link=1`);
 }
 
@@ -269,4 +271,11 @@ export async function resolveAlert(formData: FormData) {
   await supabase.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("id", id).is("resolved_at", null);
   revalidatePath("/admin");
   if (companyId) revalidatePath(`/admin/${companyId}`);
+}
+
+/** 発行したサインインリンクを表示し終えたら、クッキーを消す（再読み込み・戻るで再表示させない） */
+export async function clearIssuedLink(companyId: string) {
+  await requireOperator();
+  const { cookies } = await import("next/headers");
+  (await cookies()).set("issued_link", "", { httpOnly: true, secure: true, sameSite: "lax", path: `/admin/${companyId}`, maxAge: 0 });
 }
