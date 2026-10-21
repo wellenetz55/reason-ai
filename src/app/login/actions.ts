@@ -15,9 +15,10 @@ export async function sendMagicLink(formData: FormData) {
     const m = /after (\d+) seconds/.exec(error.message ?? "");
     // 未登録のメールアドレスでも、同じアドレスへの再送が早すぎる場合でも、同じ「送りました」表示にする。
     // （再送の間隔エラーは登録済みのアドレスにしか出ないため、別の文を出すと登録の有無が分かってしまう）
-    if (code === "otp_disabled" || code === "over_email_send_rate_limit" || /signups not allowed|user not found|after \d+ seconds/i.test(error.message ?? "")) redirect(`/login?sent=1&t=${Date.now()}`);
-    // アドレスに関係しない混雑（429）だけは、待つよう案内する
-    const msg = error.status === 429
+    // 同じアドレスへの再送間隔（"after N seconds"）は登録済みにしか出ないので「送りました」に。
+    // サービス全体の送信上限（同じ code でも文言が違う）は、アドレスと関係ないので「お待ちください」に。
+    if (code === "otp_disabled" || /signups not allowed|user not found|after \d+ seconds/i.test(error.message ?? "")) redirect(`/login?sent=1&t=${Date.now()}`);
+    const msg = code === "over_email_send_rate_limit" || error.status === 429
       ? `ただいま混み合っています。${m ? m[1] + "秒" : "1分ほど"}待ってから、もう一度お試しください。`
       : "送信できませんでした。しばらくしてからもう一度お試しください。";
     redirect(`/login?error=${encodeURIComponent(msg)}`);
