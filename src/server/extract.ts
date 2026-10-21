@@ -128,57 +128,44 @@ const MAX_DOCX_UNZIPPED = 60 * 1024 * 1024;
 
 /**
  * Word(.docx) を mammoth に渡す前の安全確認（zip爆弾対策）。
- * mammoth が使う jszip と同じ読み方をする：末尾の目次（central directory）から各項目の位置と「圧縮後サイズ」を読み、
- * jszip が展開するのとまったく同じバイト列を、上限つきで実際に展開して数える。申告された展開後サイズは使わない。
- * 目次の位置のずれ・ZIP64・未知の圧縮方式・範囲外・展開エラーは、すべて「読まない」（fail closed）。
+ * mammoth が中で使う jszip そのもの（同じ版）に zip を読ませ、jszip が「中身」として扱う項目それぞれの
+ * 圧縮データを、jszip と同じ展開部品（pako・同じ版・同じ設定）で上限つきで実際に展開して数える。
+ * 自前で zip を読まない・別の部品で展開しないので、読み方・展開のしかたの食い違いが起きない。
+ * jszip は読み込みの時点では展開しない（必要になったときに展開する）ので、この確認自体は安全。
+ * 未知の圧縮方式・展開エラー・上限超えは、すべて「読まない」（fail closed）。
  */
 async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; reason: string }> {
-  const { Inflate } = await import("fflate");
   const bad = (reason: string) => ({ ok: false as const, reason });
-  const FORMAT = "Wordファイルの形式を確かめられませんでした";
   const BIG = "Wordファイルの中身が大きすぎるため、読み取りませんでした";
-  const u8 = new Uint8Array(buf);
-  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
-  const u16 = (o: number) => dv.getUint16(o, true);
-  const u32 = (o: number) => dv.getUint32(o, true);
-  // 末尾の目次の終わり（EOCD）を探す（コメント最大 65535 バイト）
-  let eocd = -1;
-  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 22 - 65535); i--) {
-    if (u32(i) === 0x06054b50) { eocd = i; break; }
-  }
-  if (eocd < 0) return bad(FORMAT);
-  const count = u16(eocd + 10), cdSize = u32(eocd + 12), cdOffset = u32(eocd + 16);
-  if (count === 0xffff || cdSize === 0xffffffff || cdOffset === 0xffffffff) return bad(FORMAT); // ZIP64 は扱わない
-  if (count === 0 || count > 2000 || cdOffset + cdSize > eocd) return bad(FORMAT);
-  if (u32(cdOffset) !== 0x02014b50) return bad(FORMAT); // 目次が申告どおりの位置に無い（前に余分なデータがある等）
-  let p = cdOffset;
+  const JSZip = (await import("jszip")).default;
+  const pako = await import("pako");
+  let zip: InstanceType<typeof JSZip>;
+  try { zip = await JSZip.loadAsync(buf); } catch { return bad("Wordファイルの形式を確かめられませんでした"); }
+  const entries = Object.values(zip.files).filter((f) => !f.dir);
+  if (entries.length > 2000) return bad("Wordファイルの形式を確かめられませんでした");
   let total = 0;
-  for (let n = 0; n < count; n++) {
-    if (p + 46 > eocd || u32(p) !== 0x02014b50) return bad(FORMAT);
-    const method = u16(p + 10), comp = u32(p + 20), uncomp = u32(p + 24);
-    const nameLen = u16(p + 28), extraLen = u16(p + 30), commentLen = u16(p + 32), local = u32(p + 42);
-    if (comp === 0xffffffff || uncomp === 0xffffffff || local === 0xffffffff) return bad(FORMAT);
-    p += 46 + nameLen + extraLen + commentLen;
-    if (method !== 0 && method !== 8) return bad("対応していない圧縮方式のWordファイルです");
-    if (local + 30 > u8.length || u32(local) !== 0x04034b50) return bad(FORMAT);
-    const start = local + 30 + u16(local + 26) + u16(local + 28);
-    const end = start + comp;
-    if (end > cdOffset) return bad(FORMAT);
-    if (method === 0) {
-      total += comp;
+  for (const f of entries) {
+    // jszip の内部（3.x の CompressedObject）：compression.magic と compressedContent（この範囲を mammoth も展開する）
+    const data = (f as unknown as { _data?: { compression?: { magic?: string }; compressedContent?: unknown } })._data;
+    const magic = data?.compression?.magic;
+    const content = data?.compressedContent;
+    if (!(content instanceof Uint8Array)) return bad("Wordファイルの形式を確かめられませんでした");
+    if (magic === "\x00\x00") { // 無圧縮
+      total += content.length;
       if (total > MAX_DOCX_UNZIPPED) return bad(BIG);
       continue;
     }
-    // 圧縮されている項目：jszip が展開するのと同じ範囲を、少しずつ展開して数える
+    if (magic !== "\x08\x00") return bad("対応していない圧縮方式のWordファイルです");
+    // jszip（lib/flate.js）と同じ：raw で、データを少しずつ push(…, false)、最後に push([], true)
     let over = false;
-    let err = false;
-    const inf = new Inflate((chunk) => { total += chunk.length; if (total > MAX_DOCX_UNZIPPED) over = true; });
+    const inf = new pako.Inflate({ raw: true });
+    inf.onData = (chunk) => { total += chunk.length; if (total > MAX_DOCX_UNZIPPED) over = true; };
     try {
-      for (let i = start; i < end && !over; i += 4096) inf.push(u8.subarray(i, Math.min(i + 4096, end)), i + 4096 >= end);
-      if (comp === 0) inf.push(new Uint8Array(0), true);
-    } catch { err = true; }
+      for (let i = 0; i < content.length && !over; i += 4096) inf.push(content.subarray(i, Math.min(i + 4096, content.length)), false);
+      if (!over) inf.push([], true);
+    } catch { return bad("Wordファイルを展開できませんでした"); }
     if (over) return bad(BIG);
-    if (err) return bad("Wordファイルを展開できませんでした");
+    if (inf.err) return bad("Wordファイルを展開できませんでした");
   }
   return { ok: true };
 }
