@@ -74,3 +74,16 @@ export function currentStep(status: string, rows: number) {
       return { key: "", title: "準備中", body: "ベレネッツからの案内をお待ちください。" };
   }
 }
+
+/**
+ * 3〜5週目は STEP 3〜6 を順に進める。状態だけでは「いまどこか」が決まらないので、
+ * 各ステップの終わりの条件（次へボタンの条件と同じ考え方）を見て、まだ終わっていない一番手前を返す。
+ */
+export function week35Step(done: { brakes: boolean; counter: boolean; trust: boolean; litmus: boolean }) {
+  if (!done.brakes) return { key: "brakes", title: "お客様のブレーキ", body: "お客様が御社を選ぶのをためらう理由（不信・不要・不適・不急）を、残した組ごとに書き出す段階です。4種類そろうと次に進めます。" };
+  if (!done.counter) return { key: "counter", title: "ブレーキを外す", body: "書き出したブレーキに、一つずつ先回りの答えをつける段階です。すべてのブレーキに答えがそろうと次に進めます。" };
+  if (!done.trust) return { key: "trust", title: "体験価値を磨く", body: "残した組に「なぜなら」（実現している根拠）を足して、三連にする段階です。すべての組に「なぜなら」が入ると次に進めます。" };
+  if (!done.litmus) return { key: "litmus", title: "選ばれる理由の見極め", body: "残した言葉が本当に選ばれる理由になるかを、2問と◎○△×で見極める段階です。" };
+  return { key: "litmus", title: "選ばれる理由の見極め", body: "すべての組を見極めました。確認セッション②で、ベレネッツと一緒に残す言葉の順位を決めます。日程はベレネッツからご連絡します。" };
+}
+

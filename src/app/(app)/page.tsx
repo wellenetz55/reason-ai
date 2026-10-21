@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireCustomer } from "@/lib/session";
-import { STAGES, currentStep, NOT_READY } from "@/lib/stages";
+import { STAGES, NOT_READY } from "@/lib/stages";
 import { ProgramStart } from "@/components/ProgramStart";
 import { loadKickoff } from "@/server/kickoff";
-import { isStep0Ready } from "@/server/gates";
+import { isStep0Ready, loadNowStep } from "@/server/gates";
 import { loadPendingCandidates } from "@/server/meetingNext";
 import { KickoffPicker } from "@/components/KickoffPicker";
 import { chooseMeeting, requestOtherDates } from "@/app/(app)/meetings/actions";
@@ -59,7 +59,7 @@ export default async function Home() {
   const rows = progress?.pair_count ?? 0;
   const step0Ready = await isStep0Ready(supabase, company.id);
   const step = step0Ready
-    ? currentStep(company.status, rows)
+    ? await loadNowStep(supabase, company.id, company.status, rows)
     : { key: "step0", title: "会社資料を上げる", body: "まず、会社案内やWebサイトを登録するか、御社の説明を入れてください。AIはここを土台に下書きを作るので、空のままでは次の段階（提供価値の書き出し）が開きません。" };
   const stage = STAGES.find((s) => s.key === step.key);
   const closed = company.status === "locked" || company.status === "cancelled";

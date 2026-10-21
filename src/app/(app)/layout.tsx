@@ -1,11 +1,11 @@
 export const instant = false;
 import Link from "next/link";
 import { requireCustomer } from "@/lib/session";
-import { STAGES, STATUS_LABEL, isStageOpen, currentStep, NOT_READY } from "@/lib/stages";
+import { STAGES, STATUS_LABEL, isStageOpen, NOT_READY } from "@/lib/stages";
 import { SignOutButton } from "@/components/SignOutButton";
 import { NavRail } from "@/components/NavRail";
 import { ProgramOutline } from "@/components/ProgramOutline";
-import { isStep0Ready } from "@/server/gates";
+import { isStep0Ready, loadNowStep } from "@/server/gates";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
 import { APP_VERSION } from "@/lib/version";
 import { PendingBar } from "@/components/PendingBar";
@@ -63,7 +63,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const candidateMeeting = candidateCount > 1 && nextMeeting ? { kind: nextMeeting.kind, count: candidateCount, href: PICK_HREF[nextMeeting.kind] ?? "/" } : null;
   const overdue = (openHw ?? []).filter((h) => h.due_at && new Date(h.due_at) < new Date()).length;
   const nearest = (openHw ?? []).find((h) => h.due_at);
-  const nowKey = step0Ready ? currentStep(company.status, progress?.pair_count ?? 0).key : "step0";
+  const nowKey = step0Ready ? (await loadNowStep(supabase, company.id, company.status, progress?.pair_count ?? 0)).key : "step0";
   const pairs = progress?.pair_count ?? 0;
   const stages = STAGES.map((s) => ({
     ...s,
