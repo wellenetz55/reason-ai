@@ -69,7 +69,7 @@ export default async function Page() {
         <div className="mt-3 rounded-[var(--radius)] bg-navy-soft px-5 py-4 text-sm leading-relaxed max-w-[44em] space-y-2">
           <p><strong>1. 見込み客の切実さ（2問）</strong>：その悩みに苦痛と緊急性があるか、自分から解決策を探しているか。2問とも「いいえ」の組は、良い言葉でも選ばれる理由になりにくいので、保留の候補にします。</p>
           <p><strong>2. 市場で通用するか</strong>：{MARKET_AXES.map((a) => a.label).join("・")}を、{MARKS.map((m) => m.label).join("")}の4段階で御社が自己評価します。あわせて、この組で動く大きさ（金額か件数）と、手の入れ方のメモを残します。</p>
-          <p>AIの仮判定は、たたき台として薄く表示します。決めるのは御社です。ベレネッツの評価は、確認セッション②で一緒に見ます。</p>
+          <p>AIの仮判定は、まだ答えていない組の欄に下書きとして入ります。合っていればそのまま保存、違えば選び直して保存してください。決めるのは御社です。ベレネッツの評価は、確認セッション②で一緒に見ます。</p>
         </div>
         <AiNotice message={loadErr ?? aiErr} />
         {noAi > 0 && (

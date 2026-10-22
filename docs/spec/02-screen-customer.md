@@ -100,7 +100,7 @@
 
 ### 3.7 STEP 6「選ばれる理由の見極め」（`/sheet/litmus`。実装済み。旧称は社内用語のため顧客には出さない）
 - 材料: 残した組（active）。組ごとのカードに ①ニッチの2問（はい／いいえ／わからない → litmus_niche.q1/q2、judged_by=customer）②市場フィット（◎○△× = 3/2/1/0 を litmus_market の scored_by=customer 行に。common_sense は text 列に "0"〜"3"）＋大きさ（magnitude_text：金額か件数）＋手の入れ方のメモ（zougenjofu 列。顧客には「伸ばす・減らす・やめる・足す」と表示）
-- AIの仮判定: 8組ずつ。ニッチは litmus_niche.ai_q1/ai_q2/ai_note、市場は scored_by=ai の行（サーバ側で書く）。薄く表示し、決めるのは顧客。prompt key `litmus_draft`、固定文 `round2_litmus_intro`（DB）
+- AIの仮判定: 8組ずつ。ニッチは litmus_niche.ai_q1/ai_q2/ai_note、市場は scored_by=ai の行（サーバ側で書く）。御社が未回答の組は、AIの判定を欄の初期値（下書き）に入れ、上に「AIの仮判定」の囲みを出す。保存するまで顧客の判定にならない。決めるのは顧客。prompt key `litmus_draft`、固定文 `round2_litmus_intro`（DB）
 - 2問とも「いいえ」は保留候補（薄く表示）。ベレネッツの採点（scored_by=operator）は確認セッション②まで顧客に見せない（0038 のRLS）
 - 見出し数字＝2問と市場評価の両方が済んだ組の数。全組済むと確認セッション②の案内。次へは確認②のあと（status week6_8）
 - 管理側の採点画面は `/admin/[companyId]/litmus`（spec 03 §2.5）。順位は operator が確定すると sheet_rows.rank に入り、顧客のシート・Excelに出る
