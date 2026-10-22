@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import { findVague, hasConcrete } from "@/lib/vague";
-import { resolveDiagnosis, redraftDiagnosis, reopenDiagnosis } from "@/app/(app)/sheet/merge/actions";
+import { resolveDiagnosis, redraftDiagnosis, reopenDiagnosis, restoreDiagnosis } from "@/app/(app)/sheet/merge/actions";
+import { decodeVague, type VagueEntry } from "@/lib/history";
 
 /** AIのふわっと度（1〜3）の言葉。0 は印なし */
 const VAGUE_LABEL: Record<number, string> = { 1: "少しふわっとしている", 2: "ふわっとしている", 3: "どの会社でも言える言葉" };
@@ -10,7 +11,7 @@ const VAGUE_LABEL: Record<number, string> = { 1: "少しふわっとしている
 const OPT = "rounded-[var(--radius)] border px-3 py-1.5 text-[13px] font-medium transition-colors";
 
 type Row = { id: string; seq: number; value_raw: string | null; experience_value_v1: string | null };
-type Diag = { row_id: string; vague_score: number; issues: string[]; suggestion_value: string | null; suggestion_experience: string | null; resolved: string | null; checked_at: string; redraft_history?: string[] | null };
+type Diag = { row_id: string; vague_score: number; issues: string[]; suggestion_value: string | null; suggestion_experience: string | null; resolved: string | null; checked_at: string; redraft_history?: unknown[] | null };
 
 function Mark({ text }: { text: string | null }) {
   if (!text) return null;
@@ -157,9 +158,22 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
                       <p className="text-[12px] text-ink-2">{d ? "AIは言い直し案を出していません（印の理由を見て、御社で直すか、AIに案を頼めます）" : "まだAIのレビュー前です（辞書の印だけ）。上の「レビューしてもらう」で案が出ます"}</p>
                     )}
                     {(d?.redraft_history?.length ?? 0) > 0 && (
-                      <details className="mt-2 text-[12px]">
-                        <summary className="cursor-pointer text-ink-3">前に出た案（{d!.redraft_history!.length}）</summary>
-                        <ul className="mt-1 space-y-0.5 text-ink-2">{d!.redraft_history!.map((h, k) => <li key={k}>・{h}</li>)}</ul>
+                      <details className="mt-3 text-[12px]">
+                        <summary className="cursor-pointer text-navy font-semibold">前に出た案から選ぶ（{d!.redraft_history!.length}）</summary>
+                        <ul className="mt-2 space-y-2">
+                          {/* 新しい順に並べる（idx は保存されている並びの位置） */}
+                          {d!.redraft_history!.map((h, k) => ({ e: decodeVague(h), k })).filter((x): x is { e: VagueEntry; k: number } => !!x.e).reverse().map(({ e, k }) => (
+                            <li key={k} className="rounded-[var(--radius)] border hairline bg-paper px-3 py-2">
+                              <p className="text-[13px] text-ink leading-snug">{e.v}</p>
+                              {e.e && <p className="text-[12px] text-ink-2 leading-snug mt-0.5">だから、お客様は {e.e}</p>}
+                              <form action={restoreDiagnosis} className="mt-1.5">
+                                <input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="idx" value={k} />
+                                <button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">この案に戻す</button>
+                              </form>
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="text-[11px] text-ink-3 mt-1.5">戻すと、いまの案はここ（前に出た案）に移ります。戻した案は、上の「この案で決定する」で決めてください。</p>
                       </details>
                     )}
                     <div className="mt-3 flex flex-wrap gap-2">

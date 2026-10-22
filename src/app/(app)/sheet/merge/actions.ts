@@ -8,6 +8,7 @@ import { loadProfileContext } from "@/server/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyOperators } from "@/server/notify";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { decodeVague, type VagueEntry } from "@/lib/history";
 
 /**
  * 「まとめて絞る」が一通り終わった（レビュー済みで未対応の組が0）なら、ベレネッツに
@@ -36,13 +37,19 @@ async function notifyStep2Done(supabase: SupabaseClient, companyId: string, comp
 }
 
 
+/** 前に出た言い直し案の履歴に、いまの案（提供価値＋体験価値）を足して最新5件にする */
+function histWithCurrent(raw: unknown, value: string | null | undefined, experience: string | null | undefined): VagueEntry[] {
+  const list = (Array.isArray(raw) ? raw : []).map(decodeVague).filter((x): x is VagueEntry => !!x);
+  return [...list, ...(value ? [{ v: value, e: experience ?? null }] : [])].slice(-5);
+}
+
 /** ふわっと診断を AI に頼む（active な行、最大30組） */
 export async function runVagueCheck() {
   const { supabase, company, user } = await requireStage("merge");
   const [summary, { data: rows }, { data: prevDiags }] = await Promise.all([
     loadProfileContext(supabase, company.id),
     supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, target").eq("company_id", company.id).eq("status", "active").order("seq"),
-    supabase.from("row_diagnoses").select("row_id, vague_score, suggestion_value, resolved, redraft_history, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
+    supabase.from("row_diagnoses").select("row_id, vague_score, suggestion_value, suggestion_experience, resolved, redraft_history, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
   ]);
   // すでに決めた組（決定・初期案のまま・保留）と、AIが「このままで通用する」と判断済みの組はもう一度レビューしない。
   // まだ一度もレビューしていない組を先に回す（組が30を超えても、全組が必ず一度はレビューされる）
@@ -52,17 +59,17 @@ export async function runVagueCheck() {
   const ordered = [...pending.filter((r) => !prevBy.has(r.id)), ...pending.filter((r) => prevBy.has(r.id))];
   const targets = ordered.map((r) => {
     const p = prevBy.get(r.id);
-    const avoid = [...(((p?.redraft_history as string[] | null) ?? [])), ...(p?.suggestion_value ? [p.suggestion_value as string] : [])].slice(-5);
-    return { id: r.id, value: r.value_raw as string, experience: r.experience_value_v1, target: r.target, avoid };
+    const hist = histWithCurrent(p?.redraft_history, p?.suggestion_value as string | null, p?.suggestion_experience as string | null);
+    return { id: r.id, value: r.value_raw as string, experience: r.experience_value_v1, target: r.target, avoid: hist.map((h) => h.v), hist };
   }).slice(0, 30); // 未決の組から30組ずつ（先に絞ってから30件。31組目以降も次の実行でレビューされる）
   if (!targets.length) { revalidatePath("/sheet/merge"); return; }
-  const results = await aiGuard(supabase, company.id, user.id, "vague_check.run", () => diagnoseRows({ companyName: company.name, summary, rows: targets }));
+  const results = await aiGuard(supabase, company.id, user.id, "vague_check.run", () => diagnoseRows({ companyName: company.name, summary, rows: targets.map((t) => ({ id: t.id, value: t.value, experience: t.experience, target: t.target, avoid: t.avoid })) }));
   if (!results) { revalidatePath("/sheet/merge"); return; }
   const ids = new Set(targets.map((t) => t.id));
   const upserts = results.filter((d) => ids.has(d.id)).map((d) => ({
     row_id: d.id, vague_score: Math.max(0, Math.min(3, Number(d.vague_score) || 0)), issues: (d.issues ?? []).slice(0, 3),
     suggestion_value: d.suggestion_value || null, suggestion_experience: d.suggestion_experience || null, resolved: null, checked_at: new Date().toISOString(),
-    redraft_history: targets.find((t) => t.id === d.id)?.avoid ?? [],
+    redraft_history: targets.find((t) => t.id === d.id)?.hist ?? [],
   }));
   if (upserts.length) await supabase.from("row_diagnoses").upsert(upserts, { onConflict: "row_id" });
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.run", payload: { n: upserts.length } });
@@ -118,8 +125,8 @@ export async function redraftDiagnosis(formData: FormData) {
     supabase.from("row_diagnoses").select("suggestion_value, suggestion_experience, redraft_history").eq("row_id", rowId).maybeSingle(),
   ]);
   if (!row?.value_raw) return;
-  const prev: string[] = [...((d?.redraft_history as string[] | null) ?? []), ...(d?.suggestion_value ? [d.suggestion_value as string] : [])].slice(-5);
-  const results = await aiGuard(supabase, company.id, user.id, "vague_check.redraft", () => diagnoseRows({ companyName: company.name, summary, rows: [{ id: row.id, value: row.value_raw as string, experience: row.experience_value_v1, target: row.target, avoid: prev }] }));
+  const prev = histWithCurrent(d?.redraft_history, d?.suggestion_value as string | null, d?.suggestion_experience as string | null);
+  const results = await aiGuard(supabase, company.id, user.id, "vague_check.redraft", () => diagnoseRows({ companyName: company.name, summary, rows: [{ id: row.id, value: row.value_raw as string, experience: row.experience_value_v1, target: row.target, avoid: prev.map((h) => h.v) }] }));
   const r = results?.find((x) => x.id === row.id);
   if (!r) { revalidatePath("/sheet/merge"); return; }
   await supabase.from("row_diagnoses").upsert({
@@ -143,3 +150,22 @@ export async function reopenDiagnosis(formData: FormData) {
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.reopen", payload: { row_id: rowId } });
   revalidatePath("/sheet/merge");
 }
+
+/** 前に出た言い直し案の1つを、いまの案に戻す（まだ決定はしない。いまの案は履歴に回す） */
+export async function restoreDiagnosis(formData: FormData) {
+  const { supabase, company, user } = await requireStage("merge");
+  const rowId = String(formData.get("row_id"));
+  const idx = Number(formData.get("idx"));
+  const { data: row } = await supabase.from("sheet_rows").select("id").eq("id", rowId).eq("company_id", company.id).maybeSingle();
+  if (!row) return;
+  const { data: d } = await supabase.from("row_diagnoses").select("suggestion_value, suggestion_experience, redraft_history").eq("row_id", rowId).maybeSingle();
+  const list = (Array.isArray(d?.redraft_history) ? d!.redraft_history : []).map(decodeVague).filter((x): x is VagueEntry => !!x);
+  if (!Number.isInteger(idx) || idx < 0 || idx >= list.length) return;
+  const picked = list[idx];
+  list.splice(idx, 1);
+  if (d?.suggestion_value) list.push({ v: d.suggestion_value as string, e: (d.suggestion_experience as string | null) ?? null });
+  await supabase.from("row_diagnoses").update({ suggestion_value: picked.v, suggestion_experience: picked.e, resolved: null, redraft_history: list.slice(-5) }).eq("row_id", rowId);
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.restore", payload: { row_id: rowId } });
+  revalidatePath("/sheet/merge");
+}
+
