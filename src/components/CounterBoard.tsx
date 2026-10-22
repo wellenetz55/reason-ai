@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { saveCounter, redraftCounter } from "@/app/(app)/sheet/counter/actions";
+import { saveCounter, redraftCounter, restoreCounter } from "@/app/(app)/sheet/counter/actions";
+import { decodeCounter } from "@/lib/history";
 import { BRAKE_KINDS, EVIDENCE_TAG_LABEL } from "@/lib/brakes";
 import { hasHole, HOLE_SPLIT } from "@/lib/counter";
 
@@ -18,6 +19,30 @@ const OPT = "rounded-[var(--radius)] border px-3 py-1.5 text-[13px] font-medium 
 function WithHoles({ text }: { text: string }) {
   const parts = text.split(HOLE_SPLIT);
   return <>{parts.map((p, i) => (i % 2 === 1 ? <mark key={i} className="bg-warm-soft text-warm font-semibold px-0.5 rounded-sm">{p}</mark> : <span key={i}>{p}</span>))}</>;
+}
+
+/** 前に出た答え（履歴）から選んで戻す */
+function HistoryPick({ b }: { b: CounterBrake }) {
+  if (b.counter_history.length === 0) return null;
+  return (
+                            <details className="mt-3 text-[12px]">
+                              <summary className="cursor-pointer text-navy font-semibold">前に出た答えから選ぶ（{b.counter_history.length}）</summary>
+                              <ul className="mt-2 space-y-2">
+                                {/* 新しい順に並べる（idx は保存されている並びの位置） */}
+                                {b.counter_history.map((h, i) => ({ e: decodeCounter(h), i })).reverse().map(({ e, i }) => (
+                                  <li key={i} className="rounded-[var(--radius)] border hairline bg-paper-2 px-3 py-2">
+                                    <p className="text-[13px] text-ink leading-snug"><span className="text-[11px] text-ink-3 mr-1.5">⑤</span>{e.c}</p>
+                                    {e.b && <p className="text-[12px] text-ink-2 leading-snug mt-0.5"><span className="text-[11px] text-ink-3 mr-1.5">⑥ なぜなら</span>{e.b}</p>}
+                                    <form action={restoreCounter} className="mt-1.5">
+                                      <input type="hidden" name="id" value={b.id} /><input type="hidden" name="idx" value={i} />
+                                      <button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">この答えに戻す</button>
+                                    </form>
+                                  </li>
+                                ))}
+                              </ul>
+                              <p className="text-[11px] text-ink-3 mt-1.5">戻すと、いまの答えはここ（前に出た答え）に移ります。最大5件まで残ります。</p>
+                            </details>
+  );
 }
 
 /** 組ごとに、ブレーキ1枚ずつ ⑤先回りの答え と ⑥なぜなら を並べる。直す／承認／AIに別案 */
@@ -86,15 +111,13 @@ export function CounterBoard({ rows, brakes }: { rows: CounterRow[]; brakes: Cou
                             <form action={redraftCounter} data-busy-timeout="90000"><input type="hidden" name="id" value={b.id} /><button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">AIに別の答えを頼む</button></form>
                             {b.counter_approved_at && <form action={saveCounter}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="reopen" /><button className="btn-text text-xs" type="submit">承認を外す</button></form>}
                           </div>
-                          {b.counter_history.length > 0 && (
-                            <details className="mt-2 text-[12px] text-ink-3">
-                              <summary className="cursor-pointer">前に出た答え（{b.counter_history.length}）</summary>
-                              <ul className="mt-1 space-y-0.5">{b.counter_history.map((h, i) => <li key={i}>・{h}</li>)}</ul>
-                            </details>
-                          )}
+                          <HistoryPick b={b} />
                         </>
                       ) : (
-                        <button type="button" onClick={() => setEditing(b.id)} className="text-[14px] text-warm hover:underline underline-offset-4 text-left">それなら…？　← 先回りの答えを書く</button>
+                        <>
+                          <button type="button" onClick={() => setEditing(b.id)} className="text-[14px] text-warm hover:underline underline-offset-4 text-left">それなら…？　← 先回りの答えを書く</button>
+                          <HistoryPick b={b} />
+                        </>
                       )}
                     </div>
                   </li>
