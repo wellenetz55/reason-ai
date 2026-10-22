@@ -72,6 +72,11 @@ export default async function Page() {
           <p>AIの仮判定は、まだ答えていない組の欄に下書きとして入ります。合っていればそのまま保存、違えば選び直して保存してください。決めるのは御社です。ベレネッツの評価は、確認セッション②で一緒に見ます。</p>
         </div>
         <AiNotice message={loadErr ?? aiErr} />
+        {noAi === 0 && list.length > 0 && (
+          <p className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-[13px] max-w-[44em]">
+            <strong>全{list.length}組に、AIの仮判定が付いています。</strong>{list.length - doneRows > 0 ? `あとは下の組ごとに、AIの判定を見ながら選び直して保存してください（御社の判定が済んでいないのは${list.length - doneRows}組）。` : ""}
+          </p>
+        )}
         {noAi > 0 && (
           <form action={requestLitmusDrafts} className="mt-4" data-busy-timeout="120000">
             <button className="btn-primary" type="submit">{noAi > 8 ? `AIの仮判定が無い${noAi}組のうち、まず8組に付ける` : `AIの仮判定が無い${noAi}組に付ける`}</button>
