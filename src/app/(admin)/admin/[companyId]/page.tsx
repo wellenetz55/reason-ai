@@ -235,7 +235,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
         <h2 className="text-sm text-ink-2">状態を変える</h2>
         <form action={setStatus} className="mt-2 flex gap-3 items-center">
           <input type="hidden" name="company_id" value={c.id} />
-          <select name="status" defaultValue={c.status} className="border-b hairline py-1 text-sm">
+          <select key={c.status} name="status" defaultValue={c.status} className="border-b hairline py-1 text-sm">{/* key：変更後に新しい状態で選び直す（フォーム送信後のリセットで古い値に戻って見えないように） */}
             {Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
           <button className="btn-text" type="submit">変更</button>
