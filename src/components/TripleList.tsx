@@ -55,7 +55,7 @@ export function TripleList({ rows }: { rows: Row[] }) {
                     {hasB ? (
                       <p className="text-[15px] leading-snug mt-1"><span className="text-[11px] text-ink-3 mr-1.5">なぜなら</span>{r.because_phrase}</p>
                     ) : (
-                      <button type="button" onClick={() => setEditing(r.id)} className="mt-1 text-[14px] text-warm hover:underline underline-offset-4 text-left">なぜなら…？　← 根拠を書くと三連になります</button>
+                      <button type="button" data-edit onClick={() => setEditing(r.id)} className="mt-1 text-[14px] text-warm hover:underline underline-offset-4 text-left">なぜなら…？　← 根拠を書くと三連になります</button>
                     )}
                     <p className="text-[11px] text-ink-3 mt-1.5 flex flex-wrap gap-x-3">
                       {hasB && <span>{TAG[r.because_tag ?? "hypothesis"]}</span>}
@@ -65,7 +65,7 @@ export function TripleList({ rows }: { rows: Row[] }) {
                       {r.because_only_us && <span className="text-navy font-medium">当社しかありません</span>}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1">
-                      <button type="button" className="btn-text" onClick={() => setEditing(r.id)}>直す</button>
+                      <button type="button" data-edit className="btn-text" onClick={() => setEditing(r.id)}>直す</button>
                       {aiB && (
                         <form action={saveTriple}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="approve" /><input type="hidden" name="shown" value={r.because_phrase ?? ""} /><button className="btn-text text-navy" type="submit">承認</button></form>
                       )}

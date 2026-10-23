@@ -111,7 +111,7 @@ export function CounterBoard({ rows, brakes }: { rows: CounterRow[]; brakes: Cou
                           </p>
                           <div className="flex flex-wrap gap-2 mt-2">
                             {!b.counter_approved_at && <form action={saveCounter}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="approve" /><input type="hidden" name="shown" value={b.counter_message ?? ""} /><button className={OPT + " border-navy bg-navy text-on-accent font-semibold hover:brightness-110"} type="submit">このままでよい</button></form>}
-                            <button type="button" className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} onClick={() => setEditing(b.id)}>{hole ? "穴を埋める・直す" : "直す"}</button>
+                            <button type="button" data-edit className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} onClick={() => setEditing(b.id)}>{hole ? "穴を埋める・直す" : "直す"}</button>
                             {!b.sealed && <form action={redraftCounter} data-busy-timeout="300000"><input type="hidden" name="id" value={b.id} /><button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">AIに別の答えを頼む</button></form>}
                             {b.counter_approved_at && <form action={saveCounter}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="reopen" /><button className="btn-text text-xs" type="submit">承認を外す</button></form>}
                           </div>
@@ -119,7 +119,7 @@ export function CounterBoard({ rows, brakes }: { rows: CounterRow[]; brakes: Cou
                         </>
                       ) : (
                         <>
-                          <button type="button" onClick={() => setEditing(b.id)} className="text-[14px] text-warm hover:underline underline-offset-4 text-left">それなら…？　← 先回りの答えを書く</button>
+                          <button type="button" data-edit onClick={() => setEditing(b.id)} className="text-[14px] text-warm hover:underline underline-offset-4 text-left">それなら…？　← 先回りの答えを書く</button>
                           <HistoryPick b={b} />
                         </>
                       )}

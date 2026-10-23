@@ -78,7 +78,7 @@ export function BrakeBoard({ rows, brakes }: { rows: BrakeRow[]; brakes: Brake[]
                                   {b.sealed && <SealBadge label={b.sealed} />}
                                 </p>
                                 <div className="flex flex-wrap gap-x-3 mt-1">
-                                  <button type="button" className="btn-text text-xs" onClick={() => setEditing(b.id)}>直す</button>
+                                  <button type="button" data-edit className="btn-text text-xs" onClick={() => setEditing(b.id)}>直す</button>
                                   {!ok && <form action={saveBrake}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="approve" /><button className="btn-text text-xs" type="submit">承認</button></form>}
                                   {!b.sealed && <form action={saveBrake}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="drop" /><button className="btn-text text-xs text-ink-3" type="submit">外す</button></form>}
                                 </div>
@@ -94,7 +94,7 @@ export function BrakeBoard({ rows, brakes }: { rows: BrakeRow[]; brakes: Brake[]
                           <div className="flex gap-2 mt-2"><button className="btn-primary" type="submit">追加</button><button type="button" className="btn-text" onClick={() => setAdding(null)}>やめる</button></div>
                         </form>
                       ) : (
-                        <button type="button" className="text-[12px] text-ink-3 hover:text-ink underline underline-offset-4" onClick={() => setAdding(addKey)}>＋ 自分で書く</button>
+                        <button type="button" data-edit className="text-[12px] text-ink-3 hover:text-ink underline underline-offset-4" onClick={() => setAdding(addKey)}>＋ 自分で書く</button>
                       )}
                     </div>
                   </div>

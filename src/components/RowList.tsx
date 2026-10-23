@@ -68,7 +68,7 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
               {hasExp ? (
                 <p className="text-[16px] leading-snug mt-1 text-ink"><span className="text-[12px] text-ink-3 mr-1.5">だから、お客様は</span>{row.experience_value_v1}</p>
               ) : (
-                <button type="button" onClick={startEdit} className="mt-1 text-[14px] text-warm hover:underline underline-offset-4 text-left">だから、お客様は…？　← 体験価値を書くと1組になります</button>
+                <button type="button" data-edit onClick={startEdit} className="mt-1 text-[14px] text-warm hover:underline underline-offset-4 text-left">だから、お客様は…？　← 体験価値を書くと1組になります</button>
               )}
             </>
           )}
@@ -85,7 +85,7 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
         </div>
         {!editing && (
           <div className="flex flex-wrap gap-1 shrink-0 pt-1 w-full sm:w-auto pl-10 sm:pl-0">
-            <button className="btn-text" onClick={startEdit}>直す</button>
+            <button type="button" data-edit className="btn-text" onClick={startEdit}>直す</button>
             {!isDraft && !held && !confirmed && (
               <form action={reviewRow}>
                 <input type="hidden" name="row_id" value={row.id} />

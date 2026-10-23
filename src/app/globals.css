@@ -205,6 +205,8 @@ button[data-busy="short"]::after { content: "…"; }
 
 /* 猶予期間（grace）は閲覧のみ：本文の中の編集フォームを隠す（data-keep のフォームは残す） */
 [data-readonly] form:not([data-keep]) { display: none !important; }
+/* 編集欄を開くボタン（フォームの外にある）も隠す。開いても中のフォームが隠れていて、文が消えたように見えるため */
+[data-readonly] [data-edit] { display: none !important; }
 
 /* 担当者以外のメンバー：承認・確定・決定・保留・却下・戻す・日程の選択・申し込みのフォームを隠す（サーバ側でも止めている） */
 [data-member] [data-admin-only],
