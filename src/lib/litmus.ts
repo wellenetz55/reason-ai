@@ -42,3 +42,8 @@ export function nicheAnswered(n: { judged_by?: string | null } | null | undefine
   return n?.judged_by === "customer";
 }
 
+/** 市場の自己評価が済んだか：7軸すべてに ◎○△× が入っている（「—」が残っていれば未） */
+export function marketScored(m: Partial<Record<AxisKey, number | string | null>> | null | undefined): boolean {
+  return !!m && marketTotal(m).filled === MARKET_AXES.length;
+}
+

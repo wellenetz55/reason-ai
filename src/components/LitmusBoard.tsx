@@ -1,5 +1,5 @@
 import { answerNiche, saveMarket } from "@/app/(app)/sheet/litmus/actions";
-import { MARKS, MARK_LABEL, NICHE_QUESTIONS, MARKET_AXES, marketTotal, nicheAnswered, type AxisKey } from "@/lib/litmus";
+import { MARKS, MARK_LABEL, NICHE_QUESTIONS, MARKET_AXES, marketTotal, nicheAnswered, marketScored, type AxisKey } from "@/lib/litmus";
 
 export type LitmusRow = { id: string; seq: number; value_raw: string | null; experience: string | null; because: string | null };
 export type Niche = { row_id: string; judged_by?: string | null; q1_pain_urgency: boolean | null; q2_actively_seeking: boolean | null; ai_q1: boolean | null; ai_q2: boolean | null; ai_note: string | null };
@@ -28,7 +28,7 @@ export function LitmusBoard({ rows, niche, market }: { rows: LitmusRow[]; niche:
         const t = m ? marketTotal(m) : null;
         return (
           <li key={r.id} className={`rounded-[var(--radius)] border hairline overflow-hidden ${hold ? "opacity-60" : ""}`}>
-            <details open={!answered || !m}>
+            <details open={!answered || !marketScored(m)}>
               <summary className="cursor-pointer list-none bg-paper-2 px-5 py-3 flex items-start gap-3 [&::-webkit-details-marker]:hidden">
                 <span className="num text-xs text-ink-3 w-6 pt-1">{r.seq}</span>
                 <span className="flex-1 min-w-0">
@@ -37,11 +37,11 @@ export function LitmusBoard({ rows, niche, market }: { rows: LitmusRow[]; niche:
                 </span>
                 <span className="text-[11px] text-ink-3 whitespace-nowrap pt-1 text-right">
                   {hold ? <span className="text-ink-2 font-semibold">保留候補</span> : answered ? <span>2問 済</span> : <span className="text-warm">2問 未{n?.ai_note ? "（AI案あり）" : ""}</span>}
-                  <span className="block">{t && t.filled ? <span className="num">市場 {t.total}/{MARKET_AXES.length * 3}</span> : <span className="text-warm">市場 未</span>}</span>
+                  <span className="block">{marketScored(m) ? <span className="num">市場 {t!.total}/{MARKET_AXES.length * 3}</span> : <span className="text-warm">市場 未{t && t.filled ? `（${t.filled}/${MARKET_AXES.length}軸）` : ""}</span>}</span>
                 </span>
               </summary>
 
-              {n?.ai_note && (!answered || !m) && (
+              {n?.ai_note && (!answered || !marketScored(m)) && (
                 <div className="mx-5 mt-4 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-4 py-3 text-[13px] leading-relaxed">
                   <p className="text-[11px] font-semibold text-navy tracking-wide">AIの仮判定（たたき台）を下の欄に入れてあります</p>
                   <p className="mt-1">{n.ai_note}</p>
@@ -72,7 +72,7 @@ export function LitmusBoard({ rows, niche, market }: { rows: LitmusRow[]; niche:
                       </fieldset>
                     );
                   })}
-                  {n?.ai_note && answered && m && <p className="text-[11px] text-ink-3">AIの見立て：{n.ai_note}</p>}
+                  {n?.ai_note && answered && marketScored(m) && <p className="text-[11px] text-ink-3">AIの見立て：{n.ai_note}</p>}
                   {hold && <p className="text-[12px] text-ink-2">2問とも「いいえ」です。この組は保留候補として、確認セッション②でベレネッツと扱いを決めます。</p>}
                   <button className="btn-primary" type="submit">2問を保存</button>
                 </form>

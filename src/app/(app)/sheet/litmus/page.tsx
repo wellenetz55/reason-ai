@@ -10,7 +10,7 @@ import { stepGate } from "@/lib/gates";
 import { loadGateCtx } from "@/server/gates";
 import { requireCustomer } from "@/lib/session";
 import { loadFixedText } from "@/server/ai/client";
-import { MARKET_AXES, MARKS, nicheAnswered } from "@/lib/litmus";
+import { MARKET_AXES, MARKS, nicheAnswered, marketScored } from "@/lib/litmus";
 import { requestLitmusDrafts } from "./actions";
 import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
@@ -41,7 +41,7 @@ export default async function Page() {
   const aiDone = new Set(nlist.filter((n) => n.ai_note).map((n) => n.row_id));
   const noAi = list.filter((r) => r.value_raw && !aiDone.has(r.id)).length;
   const answered = new Set(nlist.filter((n) => nicheAnswered(n)).map((n) => n.row_id));
-  const scored = new Set(mlist.filter((m) => m.scored_by === "customer").map((m) => m.row_id));
+  const scored = new Set(mlist.filter((m) => m.scored_by === "customer" && marketScored(m)).map((m) => m.row_id));
   const doneRows = list.filter((r) => answered.has(r.id) && scored.has(r.id)).length;
   const done = list.length > 0 && doneRows === list.length;
 
@@ -68,7 +68,7 @@ export default async function Page() {
         <h2 className="serif text-[18px]">見極め方</h2>
         <div className="mt-3 rounded-[var(--radius)] bg-navy-soft px-5 py-4 text-sm leading-relaxed max-w-[44em] space-y-2">
           <p><strong>1. 見込み客の切実さ（2問）</strong>：その悩みに苦痛と緊急性があるか、自分から解決策を探しているか。2問とも「いいえ」の組は、良い言葉でも選ばれる理由になりにくいので、保留の候補にします。</p>
-          <p><strong>2. 市場で通用するか</strong>：{MARKET_AXES.map((a) => a.label).join("・")}を、{MARKS.map((m) => m.label).join("")}の4段階で御社が自己評価します。あわせて、この組で動く大きさ（金額か件数）と、手の入れ方のメモを残します。</p>
+          <p><strong>2. 市場で通用するか</strong>：{MARKET_AXES.map((a) => a.label).join("・")}を、{MARKS.map((m) => m.label).join("")}の4段階で御社が自己評価します（7つとも選ぶと「見極めた」になります）。あわせて、この組で動く大きさ（金額か件数）と、手の入れ方のメモを残します。</p>
           <p>AIの仮判定は、まだ答えていない組の欄に下書きとして入ります。合っていればそのまま保存、違えば選び直して保存してください。決めるのは御社です。ベレネッツの評価は、確認セッション②で一緒に見ます。</p>
         </div>
         <AiNotice message={loadErr ?? aiErr} />
