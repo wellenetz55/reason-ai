@@ -31,7 +31,6 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
   const byFacet = (progress?.by_facet ?? {}) as Record<string, number>;
   const count = progress?.pair_count ?? 0;      // 対になっている組数
   const total = progress?.row_count ?? 0;       // 行数（体験価値が空も含む）
-  const missing = total - count;
   // AIの下書きを付けられるのは、使っている（保留・却下でない）行だけ。ボタンはその数で出す
   const missingActive = (rows ?? []).filter((r) => r.status === "active" && r.value_raw && !r.experience_value_v1?.trim()).length;
   const confirmed = (rows ?? []).filter((r) => r.confirmed_at && r.status === "active").length;
@@ -51,7 +50,7 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
           <h1 className="serif text-[28px] leading-tight">提供価値・体験価値を出す</h1>
           <p className="text-ink-2 text-sm mt-2 max-w-[40em]">
             {count < 20 && gate.ready ? `いま${count}組。ベレネッツが次の段階を開いています。組を足しながら進めて構いません。目標は30組。` : count < 20 ? `あと${20 - count}組で、まとめて絞る段階に進めます。目標は30組。` : count < 30 ? `${count}組。目標の30組まで出し切ると、絞ったあとに残る言葉が強くなります。` : `${count}組。出し切りました。まとめて絞る段階へ。`}
-            {missing > 0 && <span className="text-warm">　体験価値が空の行が{missing}行。</span>}
+            {missingActive > 0 && <span className="text-warm">　体験価値が空の行が{missingActive}行。</span>}
             {confirmed > 0 && <span className="text-navy">　確定 {confirmed}組。</span>}
           </p>
         </div>

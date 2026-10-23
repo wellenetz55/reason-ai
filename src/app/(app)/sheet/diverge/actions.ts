@@ -49,6 +49,8 @@ export async function reviewRow(formData: FormData) {
   const dwell = Number(formData.get("dwell_ms") || 0);
   const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, status").eq("id", rowId).eq("company_id", company.id).single();
   if (!row) return;
+  // 提供価値を空にして「直して確定」を押したときは何もしない（AIの下書きが承認なしで御社の行になってしまうため）
+  if (action === "fix" && !after) { revalidatePath("/sheet/diverge"); return; }
   const update: Record<string, unknown> = {};
   if (action === "hold") { update.status = "held"; update.confirmed_at = null; }
   if (action === "approve") update.status = "active";
