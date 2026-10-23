@@ -44,3 +44,6 @@ export function sealOn(seals: Seal[], column: string, createdAt: string | null |
   }
   return null;
 }
+
+/** ブレーキの答え（④⑥）の封で使う印。承認前のAIの下書きは仮の主張として扱う */
+export const sealTag = (b: { because_tag?: string | null; counter_by?: string | null; counter_approved_at?: string | null }) => (b.counter_by === "ai" && !b.counter_approved_at ? "hypothesis" : b.because_tag ?? "hypothesis");

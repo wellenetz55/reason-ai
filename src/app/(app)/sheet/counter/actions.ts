@@ -1,5 +1,6 @@
 "use server";
 import { sealGate, isSealed } from "@/server/seals";
+import { sealTag } from "@/lib/seals";
 import { isMember } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
@@ -11,7 +12,6 @@ import { decodeCounter, encodeCounter } from "@/lib/history";
 
 const TAGS = ["fact", "verify", "hypothesis"];
 /** 封の判定に使う印：承認前のAIの答えは仮封（封の対象にしない） */
-const sealTag = (b: { because_tag?: string | null; counter_by?: string | null; counter_approved_at?: string | null }) => (b.counter_by === "ai" && !b.counter_approved_at ? "hypothesis" : b.because_tag ?? "hypothesis");
 const COUNTER_BATCH = 8; // 1回のAI呼び出しで扱うブレーキの枚数
 
 type BrakeRow = { id: string; row_id: string; kind: string; customer_words: string | null; counter_message: string | null; because?: string | null; because_tag?: string | null; counter_by?: string | null; counter_approved_at?: string | null; counter_history: string[] | null; sheet_rows: { value_raw: string | null; experience_value: string | null; experience_value_v1: string | null; status: string } };
