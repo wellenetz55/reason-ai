@@ -86,15 +86,15 @@ export async function setContractStep(formData: FormData) {
   if (!clear && step === "paid") {
     const { customerEmails, notifyCustomer } = await import("@/server/notify");
     const { data: co } = await supabase.from("companies").select("name").eq("id", id).single();
-    // 候補日（「適合診断の結果を書く」で最大3つ）のうち、まだ過ぎていないものがあるときだけ「選んでください」と送る
-    const { data: dr } = await supabase.from("diagnosis_results").select("candidate_dates, chosen_date").eq("company_id", id).maybeSingle();
-    const future = ((dr?.candidate_dates ?? []) as string[]).filter((d) => new Date(d) > new Date());
-    if (!dr?.chosen_date) {
-      const lines = future.length
-        ? ["ご入金を確認しました。ありがとうございます。", `選ばれる理由AIにサインインし、診断結果の画面で、キックオフ（3時間・オンライン）の日を候補の${future.length}つからお選びください。`]
+    // 候補日は「適合診断の結果」の候補と、面談に入れたキックオフの候補の両方を見る（お客様のホーム画面と同じ数え方）
+    const { loadKickoff } = await import("@/server/kickoff");
+    const k = await loadKickoff(id);
+    if (!k.chosen) {
+      const lines = k.candidates.length
+        ? ["ご入金を確認しました。ありがとうございます。", `選ばれる理由AIにサインインし、ホーム画面で、キックオフ（3時間・オンライン）の日を候補の${k.candidates.length}つからお選びください。`]
         : ["ご入金を確認しました。ありがとうございます。", "キックオフ（3時間・オンライン）の候補日は、あらためてベレネッツからご連絡します。"];
       for (const to of await customerEmails(id)) {
-        await notifyCustomer({ to, subject: future.length ? "ご入金を確認しました。キックオフ日をお選びください" : "ご入金を確認しました", lines: [co?.name ?? "", "ご担当者様", "", ...lines, "", "株式会社ベレネッツ"], path: "/diagnosis" });
+        await notifyCustomer({ to, subject: k.candidates.length ? "ご入金を確認しました。キックオフ日をお選びください" : "ご入金を確認しました", lines: [co?.name ?? "", "ご担当者様", "", ...lines, "", "株式会社ベレネッツ"], path: "/" });
       }
     }
   }
