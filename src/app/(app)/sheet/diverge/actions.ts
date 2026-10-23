@@ -117,6 +117,8 @@ export async function requestExperienceDrafts() {
     supabase.from("sheet_rows").select("id, value_raw, target").eq("company_id", company.id).eq("status", "active").or("experience_value_v1.is.null,experience_value_v1.eq.").limit(10),
   ]);
   const targets = (rows ?? []).filter((r) => r.value_raw).map((r) => ({ id: r.id, value: r.value_raw as string, target: r.target }));
+  // 対象が無ければAIを呼ばない（呼び出し回数の上限を無駄に使わない）
+  if (!targets.length) { revalidatePath("/sheet/diverge"); return; }
   const drafts = await aiGuard(supabase, company.id, user.id, "row.draft", () => draftExperiences({ companyName: company.name, summary, rows: targets }));
   if (!drafts) { revalidatePath("/sheet/diverge"); return; }
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "row.draft", payload: { n: drafts.length, kind: "experience" } });

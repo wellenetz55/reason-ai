@@ -32,6 +32,8 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
   const count = progress?.pair_count ?? 0;      // 対になっている組数
   const total = progress?.row_count ?? 0;       // 行数（体験価値が空も含む）
   const missing = total - count;
+  // AIの下書きを付けられるのは、使っている（保留・却下でない）行だけ。ボタンはその数で出す
+  const missingActive = (rows ?? []).filter((r) => r.status === "active" && r.value_raw && !r.experience_value_v1?.trim()).length;
   const confirmed = (rows ?? []).filter((r) => r.confirmed_at && r.status === "active").length;
   const rec = facetForToday(byFacet, progress?.max_round ?? 1);
   // 面は顧客が選べる（URLで保持）。指定が無ければ「いちばん薄い面」をおすすめとして出す
@@ -110,9 +112,9 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
             <input type="hidden" name="round" value={round} />
             <button className="rounded-[var(--radius)] border-2 border-navy bg-paper text-navy px-4 py-2 text-[14px] font-semibold hover:bg-navy-soft transition-colors" type="submit">この面でAIに下書きを出させる（対で）</button>
           </form>
-          {missing > 0 && (
+          {missingActive > 0 && (
             <form action={requestExperienceDrafts}>
-              <button className="rounded-[var(--radius)] border-2 border-navy bg-paper text-navy px-4 py-2 text-[14px] font-semibold hover:bg-navy-soft transition-colors" type="submit">{missing > 10 ? `体験価値が空の${missing}行のうち、まず10行にAIの下書きを付ける` : `体験価値が空の${missing}行に、AIの下書きを付ける`}</button>
+              <button className="rounded-[var(--radius)] border-2 border-navy bg-paper text-navy px-4 py-2 text-[14px] font-semibold hover:bg-navy-soft transition-colors" type="submit">{missingActive > 10 ? `体験価値が空の${missingActive}行のうち、まず10行にAIの下書きを付ける` : `体験価値が空の${missingActive}行に、AIの下書きを付ける`}</button>
             </form>
           )}
         </div>
