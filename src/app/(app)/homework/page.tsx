@@ -9,7 +9,7 @@ export default async function HomeworkPage({ searchParams }: PageProps<"/homewor
   const { data: items } = await supabase.from("homeworks").select("*").eq("company_id", company.id).order("priority", { ascending: false }).order("due_at");
   const open = (items ?? []).filter((h) => h.status === "open");
   const done = (items ?? []).filter((h) => h.status !== "open");
-  const closed = ["diagnosed", "locked", "cancelled"].includes(company.status);
+  const closed = ["diagnosed", "grace", "locked", "cancelled"].includes(company.status); // grace（閲覧のみ）も回答欄が隠れるので、理由を出す
   return (
     <div>
       <ClearQuery keys={["error"]} />
