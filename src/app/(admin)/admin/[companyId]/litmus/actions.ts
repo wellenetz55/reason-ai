@@ -54,7 +54,7 @@ export async function confirmRanking(formData: FormData) {
   const companyId = String(formData.get("company_id") ?? "");
   if (!UUID.test(companyId)) return;
   const [{ data: rows }, { data: ops }] = await Promise.all([
-    supabase.from("sheet_rows").select("id").eq("company_id", companyId).eq("status", "active"),
+    supabase.from("sheet_rows").select("id, rank, created_at").eq("company_id", companyId).eq("status", "active"),
     createAdminClient().from("litmus_market").select("row_id, rank, sheet_rows!inner(company_id)").eq("scored_by", "operator").eq("sheet_rows.company_id", companyId),
   ]);
   // 外した組・保留の組に残っている仮順位は数えない（重なりの判定や1位がずれないように）
@@ -75,6 +75,15 @@ export async function confirmRanking(formData: FormData) {
     const n = rankOf.get(r.id);
     if (n === undefined) continue;
     await supabase.from("sheet_rows").update({ rank: n, is_primary: n === top }).eq("id", r.id).eq("company_id", companyId);
+  }
+  // 確認セッション②の封のあとに順位を確定し直したときは、封の変更の記録に残す（封をした順位が、記録なしで変わらないように）
+  const { data: lock } = await supabase.from("sheet_locks").select("id, locked_at, columns").eq("company_id", companyId).eq("session", "s2").maybeSingle();
+  if (lock && ((lock.columns as string[] | null) ?? []).includes("sheet_rows.rank")) {
+    const changed = (rows ?? []).filter((r) => new Date(r.created_at as string) <= new Date(lock.locked_at as string) && (r.rank ?? null) !== (rankOf.get(r.id) ?? null));
+    if (changed.length) await createAdminClient().from("sheet_lock_history").insert(changed.map((r) => ({
+      lock_id: lock.id, row_id: r.id, column_key: "sheet_rows.rank", before_text: r.rank == null ? null : `${r.rank}位`, after_text: rankOf.has(r.id) ? `${rankOf.get(r.id)}位` : null,
+      reason: "ベレネッツが順位を確定し直した", changed_by: user.id,
+    })));
   }
   await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "admin.litmus.rank", payload: { n: rankOf.size } });
   revalidatePath(`/admin/${companyId}/litmus`);

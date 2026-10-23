@@ -22,6 +22,7 @@ export default async function LitmusAdmin({ params, searchParams }: PageProps<"/
   const err = typeof sp?.error === "string" ? sp.error : null;
   const notice = typeof sp?.notice === "string" ? sp.notice : null;
   const { supabase } = await requireOperator();
+  const { data: s2Lock } = await supabase.from("sheet_locks").select("id").eq("company_id", companyId).eq("session", "s2").maybeSingle();
   const [{ data: c }, { data: rows }, { data: niche }, { data: market, error: mErr }, kaitenText] = await Promise.all([
     supabase.from("companies").select("id, name, status").eq("id", companyId).maybeSingle(),
     supabase.from("sheet_rows").select("id, seq, value_raw, experience_value, experience_value_v1, because_phrase, rank").eq("company_id", companyId).eq("status", "active").order("seq"),
@@ -109,7 +110,7 @@ export default async function LitmusAdmin({ params, searchParams }: PageProps<"/
             <button type="submit" className="rounded-[var(--radius)] border-2 border-navy bg-paper text-navy px-4 py-2 text-[14px] font-semibold hover:bg-navy-soft transition-colors">合計点の高い順に仮順位を入れる</button>
             <p className="text-[11px] text-ink-3 mt-1 max-w-[22em]">保留候補と未採点の組は順位から外します。入れたあと、組ごとに手で直せます。</p>
           </form>
-          <form action={confirmRanking}>
+          <form action={confirmRanking} data-confirm={s2Lock ? "確認セッション②の封のあとです。順位を確定し直すと、変わった順位は封の変更の記録に残ります。よろしいですか？" : undefined}>
             <input type="hidden" name="company_id" value={c.id} />
             <button type="submit" className="btn-primary">仮順位をお客様のシートに確定する</button>
             <p className="text-[11px] text-ink-3 mt-1 max-w-[26em]">確認セッション②で順位を決めてから押してください。押すと、お客様のシートとExcel出力に「順位」が出て、1位が主役の組になります。何度でも押し直せます。</p>
