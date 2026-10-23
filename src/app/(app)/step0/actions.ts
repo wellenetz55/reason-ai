@@ -49,8 +49,16 @@ export async function prepareUpload(meta: { name: string; size: number; type: st
   if (!ALLOWED.includes(meta.type)) return { ok: false, error: "このファイルの形式は登録できません（PDF・画像・テキスト）。" };
   const u = await usage(supabase, company.id);
   // 送り先だけ発行して登録まで済まなかったファイルも保管場所には残るので、実際に置かれているファイルの数・容量でも上限を確かめる
-  const { data: stored } = await createAdminClient().storage.from("company-docs").list(company.id, { limit: 1000 });
-  const files = (stored ?? []).filter((o) => o.id);
+  const store = createAdminClient().storage.from("company-docs");
+  const { data: stored } = await store.list(company.id, { limit: 1000 });
+  // 登録まで済まずに残ったファイル（1時間以上前に置かれ、どの資料にも結びついていないもの）は片づけてから数える
+  const { data: known } = await supabase.from("company_documents").select("storage_path").eq("company_id", company.id).not("storage_path", "is", null);
+  const knownSet = new Set((known ?? []).map((k) => k.storage_path));
+  const hourAgo = Date.now() - 3600_000;
+  const orphans = (stored ?? []).filter((o) => o.id && !knownSet.has(`${company.id}/${o.name}`) && new Date(o.created_at ?? Date.now()).getTime() < hourAgo);
+  if (orphans.length) await store.remove(orphans.map((o) => `${company.id}/${o.name}`));
+  const gone = new Set(orphans.map((o) => o.name));
+  const files = (stored ?? []).filter((o) => o.id && !gone.has(o.name));
   const storedBytes = files.reduce((a, o) => a + Number((o.metadata as { size?: number } | null)?.size ?? 0), 0);
   const nFiles = Math.max(u.files, files.length), nBytes = Math.max(u.bytes, storedBytes);
   if (nFiles >= LIMITS.files || nBytes + meta.size > LIMITS.totalBytes) return { ok: false, error: "登録できるファイルの数か容量の上限に達しています。不要な資料を取り下げてください。" };
