@@ -10,12 +10,12 @@ import { decodeCounter, encodeCounter } from "@/lib/history";
 const TAGS = ["fact", "verify", "hypothesis"];
 const COUNTER_BATCH = 8; // 1回のAI呼び出しで扱うブレーキの枚数
 
-type BrakeRow = { id: string; row_id: string; kind: string; customer_words: string | null; counter_message: string | null; because?: string | null; because_tag?: string | null; counter_history: string[] | null; sheet_rows: { value_raw: string | null; experience_value: string | null; experience_value_v1: string | null; status: string } };
+type BrakeRow = { id: string; row_id: string; kind: string; customer_words: string | null; counter_message: string | null; because?: string | null; because_tag?: string | null; counter_by?: string | null; counter_history: string[] | null; sheet_rows: { value_raw: string | null; experience_value: string | null; experience_value_v1: string | null; status: string } };
 
 async function loadOpenBrakes(supabase: Awaited<ReturnType<typeof requireStage>>["supabase"], companyId: string) {
   const { data } = await supabase
     .from("brakes")
-    .select("id, row_id, kind, customer_words, counter_message, because, because_tag, counter_history, created_at, sheet_rows!inner(company_id, status, seq, value_raw, experience_value, experience_value_v1)")
+    .select("id, row_id, kind, customer_words, counter_message, because, because_tag, counter_by, counter_history, created_at, sheet_rows!inner(company_id, status, seq, value_raw, experience_value, experience_value_v1)")
     .eq("sheet_rows.company_id", companyId)
     .eq("sheet_rows.status", "active")
     .eq("status", "active")
@@ -67,7 +67,7 @@ export async function redraftCounter(formData: FormData) {
   const b = all.find((x) => x.id === id);
   if (!b || !b.customer_words) return;
   // 前の答えは ⑥なぜなら・印ごと履歴に残す（あとで「この答えに戻す」で選び直せるように）
-  const history = [...(b.counter_history ?? []), ...(b.counter_message ? [encodeCounter({ c: b.counter_message, b: b.because ?? null, t: b.because_tag ?? null })] : [])].slice(-5);
+  const history = [...(b.counter_history ?? []), ...(b.counter_message ? [encodeCounter({ c: b.counter_message, b: b.because ?? null, t: b.because_tag ?? null, a: b.counter_by ?? null })] : [])].slice(-5);
   const profile = await loadProfileContext(supabase, company.id);
   const drafts = await aiGuard(supabase, company.id, user.id, "counter.draft", () => draftCounters({ companyName: company.name, profile, items: [{ ...toIn(b), avoid: history.map((h) => decodeCounter(h).c) }] }));
   const d = drafts?.find((x) => x.id === id);
@@ -82,7 +82,7 @@ export async function saveCounter(formData: FormData) {
   const { supabase, company, user } = await requireStage("counter");
   const id = String(formData.get("id"));
   const action = String(formData.get("action")); // fix | approve | reopen
-  const { data: b } = await supabase.from("brakes").select("id, row_id, counter_message, because, because_tag, counter_history, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
+  const { data: b } = await supabase.from("brakes").select("id, row_id, counter_message, because, because_tag, counter_by, counter_history, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!b) return;
   if (action === "fix") {
     const counter = cut(String(formData.get("counter") || "").trim(), MAX.value);
@@ -91,7 +91,7 @@ export async function saveCounter(formData: FormData) {
     if (!counter) return;
     // 直す前の答えも履歴に残す（直したあとで、前の答えに戻したくなったとき用）
     const changed = !!b.counter_message && (b.counter_message !== counter || (b.because ?? "") !== because);
-    const history = changed ? [...((b.counter_history as string[] | null) ?? []), encodeCounter({ c: b.counter_message as string, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null })].slice(-5) : undefined;
+    const history = changed ? [...((b.counter_history as string[] | null) ?? []), encodeCounter({ c: b.counter_message as string, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null, a: (b.counter_by as string | null) ?? null })].slice(-5) : undefined;
     await supabase.from("brakes").update({ counter_message: counter, because: because || null, because_tag: TAGS.includes(tag) ? tag : "hypothesis", counter_by: "customer", counter_approved_at: new Date().toISOString(), ...(history ? { counter_history: history } : {}) }).eq("id", id);
     await supabase.from("sheet_row_reviews").insert({ row_id: b.row_id, column_key: "counter_message", action: "fix", before_text: b.counter_message, after_text: counter, reviewer_id: user.id });
   } else if (action === "approve") {
@@ -117,11 +117,11 @@ export async function restoreCounter(formData: FormData) {
   if (!entry || idx < 0) { revalidatePath("/sheet/counter"); return; }
   const picked = decodeCounter(hist[idx]);
   hist.splice(idx, 1);
-  if (b.counter_message) hist.push(encodeCounter({ c: b.counter_message as string, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null }));
+  if (b.counter_message) hist.push(encodeCounter({ c: b.counter_message as string, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null, a: (b.counter_by as string | null) ?? null }));
   await supabase.from("brakes").update({
     counter_message: cut(picked.c, MAX.value), because: picked.b ? cut(picked.b, MAX.value) : null,
     because_tag: picked.t && TAGS.includes(picked.t) ? picked.t : "hypothesis",
-    counter_by: "ai", counter_approved_at: null, counter_history: hist.slice(-5),
+    counter_by: picked.a === "customer" ? "customer" : "ai", counter_approved_at: null, counter_history: hist.slice(-5),
   }).eq("id", id);
   await supabase.from("sheet_row_reviews").insert({ row_id: b.row_id, column_key: "counter_message", action: "fix", before_text: b.counter_message, after_text: picked.c, reviewer_id: user.id });
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "counter.save", payload: { action: "restore" } });

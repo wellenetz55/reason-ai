@@ -52,7 +52,7 @@ export async function saveBrake(formData: FormData) {
   const { supabase, company, user } = await requireStage("brakes");
   const id = String(formData.get("id"));
   const action = String(formData.get("action")); // fix | approve | drop | restore
-  const { data: b } = await supabase.from("brakes").select("id, row_id, customer_words, counter_message, because, because_tag, counter_history, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
+  const { data: b } = await supabase.from("brakes").select("id, row_id, customer_words, counter_message, because, because_tag, counter_by, counter_history, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!b) return;
   const patch: Record<string, unknown> = {};
   if (action === "fix") {
@@ -67,7 +67,7 @@ export async function saveBrake(formData: FormData) {
     patch.approved_at = new Date().toISOString();
     // ブレーキの言葉が変わったら、STEP 4 の答えは別の言葉に向けて書いたものなので外す（前の答えは履歴に残す）
     if (words !== (b.customer_words ?? "") && b.counter_message?.trim()) {
-      patch.counter_history = [...((b.counter_history as string[] | null) ?? []), encodeCounter({ c: b.counter_message, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null })].slice(-5);
+      patch.counter_history = [...((b.counter_history as string[] | null) ?? []), encodeCounter({ c: b.counter_message, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null, a: (b.counter_by as string | null) ?? null })].slice(-5);
       patch.counter_message = null;
       patch.because = null;
       patch.because_tag = "hypothesis";
