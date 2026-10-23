@@ -1,5 +1,5 @@
 "use server";
-import { sealGate, isSealed } from "@/server/seals";
+import { sealRetry, sealGate, isSealed } from "@/server/seals";
 import { sealTag } from "@/lib/seals";
 import { isMember } from "@/lib/session";
 import { revalidatePath } from "next/cache";
@@ -75,7 +75,7 @@ export async function saveBrake(formData: FormData) {
         { column: "brakes.counter_message", rowId: b.row_id, createdAt: b.created_at, before: b.counter_message as string | null, after: "", tag: t },
         { column: "brakes.because", rowId: b.row_id, createdAt: b.created_at, before: b.because as string | null, after: "", tag: t },
       ] : []),
-    ] }))) { revalidatePath("/sheet/brakes"); return; }
+    ] }))) sealRetry("/sheet/brakes");
     const source = String(formData.get("source") || "own");
     const tag = String(formData.get("tag") || "hypothesis");
     patch.customer_words = words;

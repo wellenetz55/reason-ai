@@ -1,5 +1,5 @@
 "use server";
-import { sealGate, isSealed } from "@/server/seals";
+import { sealRetry, sealGate, isSealed } from "@/server/seals";
 import { sealTag } from "@/lib/seals";
 import { isMember } from "@/lib/session";
 import { revalidatePath } from "next/cache";
@@ -110,7 +110,7 @@ export async function saveCounter(formData: FormData) {
       { column: "brakes.counter_message", rowId: b.row_id, createdAt: b.created_at, before: b.counter_message, after: counter, tag: sealTag(b) },
       { column: "brakes.because", rowId: b.row_id, createdAt: b.created_at, before: b.because, after: because, tag: sealTag(b) },
       { column: "brakes.because_tag", rowId: b.row_id, createdAt: b.created_at, before: b.because_tag, after: TAGS.includes(tag) ? tag : "hypothesis", tag: sealTag(b) },
-    ] }))) { revalidatePath("/sheet/counter"); return; }
+    ] }))) sealRetry("/sheet/counter");
     // 直す前の答えも履歴に残す（直したあとで、前の答えに戻したくなったとき用）
     const changed = !!b.counter_message && (nl(b.counter_message) !== counter || nl(b.because) !== because);
     const history = changed ? [...((b.counter_history as string[] | null) ?? []), encodeCounter({ c: b.counter_message as string, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null, a: (b.counter_by as string | null) ?? null })].slice(-5) : undefined;

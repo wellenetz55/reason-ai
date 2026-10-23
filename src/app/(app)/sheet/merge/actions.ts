@@ -1,5 +1,5 @@
 "use server";
-import { sealGate, isSealed } from "@/server/seals";
+import { sealRetry, sealGate, isSealed } from "@/server/seals";
 import { isMember } from "@/lib/session";
 import { MAX, cut, nl } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
@@ -103,7 +103,7 @@ export async function resolveDiagnosis(formData: FormData) {
       { column: "sheet_rows.experience_value_v1", rowId, createdAt: row.created_at, before: row.experience_value_v1, after: afterExp },
       ...(afterExp !== cut(nl(row.experience_value_v1).trim(), MAX.value) ? [{ column: "sheet_rows.experience_value", rowId, createdAt: row.created_at, before: row.experience_value, after: afterExp }] : []),
     ] });
-    if (!ok) { revalidatePath("/sheet/merge"); return; }
+    if (!ok) sealRetry("/sheet/merge");
     const expChanged = afterExp !== cut(nl(row.experience_value_v1).trim(), MAX.value); // 保存済みの側も、入力と同じ形（前後の空白なし・上限の長さ）にそろえて比べる
     await supabase.from("sheet_rows").update({ value_raw: after, experience_value_v1: afterExp || null, ...(expChanged ? { experience_value: afterExp || null } : {}), created_by: "customer" }).eq("id", rowId);
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "value_raw", action: "fix", before_text: row.value_raw, after_text: after, reviewer_id: user.id });

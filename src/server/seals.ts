@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sealOn, type Seal } from "@/lib/seals";
 import { cut, nl } from "@/lib/limits";
+import { redirect } from "next/navigation";
 
 /** その会社の封（新しい順） */
 export async function loadSeals(supabase: SupabaseClient, companyId: string): Promise<Seal[]> {
@@ -37,4 +38,9 @@ export async function sealGate(opts: {
 /** 行・ブレーキが封の対象か（理由つきの「直す」以外の操作を止めるため） */
 export async function isSealed(supabase: SupabaseClient, companyId: string, column: string, createdAt: string | null, tag?: string | null): Promise<boolean> {
   return !!sealOn(await loadSeals(supabase, companyId), column, createdAt, tag);
+}
+
+/** 封をした言葉に理由が無く保存しなかったとき、その画面に戻して合図を出す（黙って何も起きないように） */
+export function sealRetry(path: string): never {
+  redirect(`${path}?seal_retry=1`);
 }

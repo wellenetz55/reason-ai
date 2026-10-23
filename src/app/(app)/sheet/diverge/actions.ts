@@ -1,5 +1,5 @@
 "use server";
-import { sealGate, isSealed } from "@/server/seals";
+import { sealRetry, sealGate, isSealed } from "@/server/seals";
 import { isMember } from "@/lib/session";
 import { MAX, cut, nl } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
@@ -65,7 +65,7 @@ export async function reviewRow(formData: FormData) {
       // 体験価値を変えると STEP 5 の体験価値も同じ文にそろえるので、そちらの封（確認セッション②）も確かめる
       ...(afterExp !== null && afterExp !== cut(nl(row.experience_value_v1).trim(), MAX.value) ? [{ column: "sheet_rows.experience_value", rowId, createdAt: row.created_at, before: row.experience_value, after: afterExp }] : []),
     ] });
-    if (!ok) { revalidatePath("/sheet/diverge"); return; }
+    if (!ok) sealRetry("/sheet/diverge");
   }
   const update: Record<string, unknown> = {};
   if (action === "hold") { update.status = "held"; update.confirmed_at = null; }

@@ -1,5 +1,5 @@
 "use server";
-import { sealGate } from "@/server/seals";
+import { sealRetry, sealGate } from "@/server/seals";
 import { isMember } from "@/lib/session";
 import { MAX, cut, nl } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
@@ -55,7 +55,7 @@ export async function saveTriple(formData: FormData) {
       { column: "sheet_rows.experience_value", rowId, createdAt: row.created_at, before: row.experience_value, after: exp },
       { column: "sheet_rows.because_phrase", rowId, createdAt: row.created_at, before: row.because_phrase, after: because, tag: row.because_by === "ai" ? "hypothesis" : row.because_tag ?? "hypothesis" } /* 承認前のAIの下書きは仮封 */,
       { column: "sheet_rows.because_tag", rowId, createdAt: row.created_at, before: row.because_tag, after: ["fact", "verify", "hypothesis"].includes(tag) ? tag : "hypothesis", tag: row.because_by === "ai" ? "hypothesis" : row.because_tag ?? "hypothesis" } /* 承認前のAIの下書きは仮封 */,
-    ] }))) { revalidatePath("/sheet/trust"); return; }
+    ] }))) sealRetry("/sheet/trust");
     patch.experience_value = exp || null;
     patch.because_phrase = because || null;
     patch.because_tag = member && tag === "fact" ? "verify" : ["fact", "verify", "hypothesis"].includes(tag) ? tag : "hypothesis";

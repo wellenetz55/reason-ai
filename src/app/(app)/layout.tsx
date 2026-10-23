@@ -9,6 +9,7 @@ import { isStep0Ready, loadNowStep } from "@/server/gates";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
 import { APP_VERSION } from "@/lib/version";
 import { PendingBar } from "@/components/PendingBar";
+import { SealRetryNotice } from "@/components/SealRetryNotice";
 import { Bug } from "lucide-react";
 import { MEETING_LABEL, fmtMeeting, safeMeetingUrl } from "@/lib/meetings";
 import { SideNav } from "@/components/SideNav";
@@ -82,6 +83,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex-1 flex flex-col md:flex-row min-h-screen">
       <PendingBar stamp={Date.now()} />
+      <SealRetryNotice />
       <RouteTracker />
       <SideNav brand={<Link href="/" className="block"><ReasonLogo width={180} /></Link>}>
         <Link href="/" className="hidden md:block"><ReasonLogo width={212} /></Link>
