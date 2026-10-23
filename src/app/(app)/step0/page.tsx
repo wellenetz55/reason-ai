@@ -118,7 +118,7 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
                 </span>
                 <span className="num text-[11px] text-ink-3 shrink-0">{d.storage_path ? fmtSize(d.size_bytes) : d.url ? "URL" : `テキスト ${d.text_content?.length ?? 0}字`}</span>
                 <span className="num text-[11px] text-ink-3 shrink-0">{fmtDate(d.created_at)}</span>
-                <form action={removeDocument}><input type="hidden" name="id" value={d.id} /><button className="btn-text" type="submit">取り下げ</button></form>
+                <form action={removeDocument} data-admin-only><input type="hidden" name="id" value={d.id} /><button className="btn-text" type="submit">取り下げ</button></form>
               </li>
             ))}
           </ul>
@@ -137,7 +137,7 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
                 <span className="font-medium">{c.name}</span>
                 {c.product && <span className="text-ink-2">{c.product}</span>}
                 {c.website && <a href={c.website} target="_blank" rel="noopener noreferrer" className="num text-[12px] underline underline-offset-4 break-all">{c.website.replace(/^https?:\/\//, "")} ↗</a>}
-                <form action={removeCompetitor} className="ml-auto"><input type="hidden" name="id" value={c.id} /><button className="btn-text text-xs" type="submit">外す</button></form>
+                <form action={removeCompetitor} data-admin-only className="ml-auto"><input type="hidden" name="id" value={c.id} /><button className="btn-text text-xs" type="submit">外す</button></form>
               </li>
             ))}
           </ul>

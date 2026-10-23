@@ -151,7 +151,8 @@ export async function addText(formData: FormData) {
 
 /** 資料を取り下げる（ファイルも削除） */
 export async function removeDocument(formData: FormData) {
-  const { company, supabase } = await requireStage("step0");
+  const { company, supabase, profile } = await requireStage("step0");
+  if (isMember(profile)) { revalidatePath("/step0"); return; } // 資料の取り下げ（ファイルも消える）は担当者だけ
   const id = String(formData.get("id"));
   const { data: doc } = await supabase.from("company_documents").select("id, storage_path").eq("id", id).eq("company_id", company.id).maybeSingle();
   if (!doc) return;
@@ -268,7 +269,8 @@ export async function addCompetitor(formData: FormData) {
 }
 
 export async function removeCompetitor(formData: FormData) {
-  const { company, user, supabase } = await requireStage("step0");
+  const { company, user, supabase, profile } = await requireStage("step0");
+  if (isMember(profile)) { revalidatePath("/step0"); return; } // 競合を外すのは担当者だけ
   const id = String(formData.get("id") || "");
   await supabase.from("competitors").delete().eq("id", id).eq("company_id", company.id);
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "competitor.remove", payload: { id } });
