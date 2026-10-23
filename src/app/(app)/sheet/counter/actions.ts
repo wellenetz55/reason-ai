@@ -72,7 +72,14 @@ export async function redraftCounter(formData: FormData) {
   const drafts = await aiGuard(supabase, company.id, user.id, "counter.draft", () => draftCounters({ companyName: company.name, profile, items: [{ ...toIn(b), avoid: history.map((h) => decodeCounter(h).c) }] }));
   const d = drafts?.find((x) => x.id === id);
   if (!d) { revalidatePath("/sheet/counter"); return; }
-  await supabase.from("brakes").update({ counter_message: d.counter, because: d.because || null, because_tag: d.tag, counter_by: "ai", counter_approved_at: null, counter_history: history }).eq("id", id);
+  // AIを待つ間に答えが直されていたら上書きしない（そのときはAIの答えを「前に出た答え」に入れて選べるようにする）
+  let q = supabase.from("brakes").update({ counter_message: d.counter, because: d.because || null, because_tag: d.tag, counter_by: "ai", counter_approved_at: null, counter_history: history }).eq("id", id);
+  q = b.counter_message ? q.eq("counter_message", b.counter_message) : q.is("counter_message", null);
+  const { data: upd } = await q.select("id");
+  if (!upd?.length) {
+    const { data: now } = await supabase.from("brakes").select("counter_history").eq("id", id).maybeSingle();
+    await supabase.from("brakes").update({ counter_history: [...((now?.counter_history as string[] | null) ?? []), encodeCounter({ c: d.counter, b: d.because || null, t: d.tag, a: "ai" })].slice(-5) }).eq("id", id);
+  }
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "counter.draft", payload: { n: 1, redraft: true } });
   revalidatePath("/sheet/counter");
 }

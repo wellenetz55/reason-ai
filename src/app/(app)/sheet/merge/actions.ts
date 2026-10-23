@@ -129,11 +129,14 @@ export async function redraftDiagnosis(formData: FormData) {
   const results = await aiGuard(supabase, company.id, user.id, "vague_check.redraft", () => diagnoseRows({ companyName: company.name, summary, rows: [{ id: row.id, value: row.value_raw as string, experience: row.experience_value_v1, target: row.target, avoid: prev.map((h) => h.v) }] }));
   const r = results?.find((x) => x.id === row.id);
   if (!r) { revalidatePath("/sheet/merge"); return; }
-  await supabase.from("row_diagnoses").upsert({
+  const rec = {
     row_id: row.id, vague_score: Math.max(1, Math.min(3, Number(r.vague_score) || 1)), issues: (r.issues ?? []).slice(0, 3),
     suggestion_value: r.suggestion_value || d?.suggestion_value || null, suggestion_experience: r.suggestion_experience || d?.suggestion_experience || null,
     resolved: null, checked_at: new Date().toISOString(), redraft_history: prev,
-  }, { onConflict: "row_id" });
+  };
+  // AIを待つ間に別の画面でこの組を決めていたら、決定を「未決」に戻さない
+  if (d) await supabase.from("row_diagnoses").update(rec).eq("row_id", row.id).is("resolved", null);
+  else await supabase.from("row_diagnoses").upsert(rec, { onConflict: "row_id" });
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.redraft", payload: { row_id: row.id } });
   revalidatePath("/sheet/merge");
 }
