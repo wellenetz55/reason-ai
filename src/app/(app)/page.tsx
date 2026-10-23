@@ -57,7 +57,8 @@ export default async function Home() {
   ]);
   const openHomework = hw?.length ?? 0;
   const rows = progress?.pair_count ?? 0;
-  const step0Ready = await isStep0Ready(supabase, company.id);
+  // 編集期間が終わった会社は STEP 0 が空でも資料の登録を促さない（左メニューと同じ）
+  const step0Ready = ["locked", "cancelled"].includes(company.status) ? true : await isStep0Ready(supabase, company.id);
   const step = step0Ready
     ? await loadNowStep(supabase, company.id, company.status, rows)
     : { key: "step0", title: "会社資料を上げる", body: "まず、会社案内やWebサイトを登録するか、御社の説明を入れてください。AIはここを土台に下書きを作るので、空のままでは次の段階（提供価値の書き出し）が開きません。" };
