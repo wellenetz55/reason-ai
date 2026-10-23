@@ -13,8 +13,12 @@ export const SEAL_SESSIONS = [
     columns: ["brakes.customer_words", "brakes.counter_message", "brakes.because", "brakes.because_tag", "brakes.status", "sheet_rows.experience_value", "sheet_rows.because_phrase", "sheet_rows.because_tag", "sheet_rows.rank"],
   },
   {
-    key: "s3", label: "確認セッション③", what: "すべての列（証拠を含む）",
-    columns: ["evidences.*"],
+    key: "s3", label: "確認セッション③", what: "すべての列（①②の列に加え、②のあとに足した組・ブレーキと、採用した証拠）",
+    columns: [
+      "sheet_rows.target", "sheet_rows.value_raw", "sheet_rows.experience_value_v1", "sheet_rows.status",
+      "brakes.customer_words", "brakes.counter_message", "brakes.because", "brakes.because_tag", "brakes.status",
+      "sheet_rows.experience_value", "sheet_rows.because_phrase", "sheet_rows.because_tag", "sheet_rows.rank", "evidences.*",
+    ],
   },
 ] as const;
 export type SealKey = (typeof SEAL_SESSIONS)[number]["key"];

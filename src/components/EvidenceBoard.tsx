@@ -4,7 +4,7 @@ import { EVIDENCE_TAG_LABEL } from "@/lib/brakes";
 
 export type EvClaim = { ref: string; label: string; text: string; tag: string; brakeWords?: string };
 export type EvRow = { id: string; seq: number; rank: number | null; primary: boolean; value: string; experience: string | null; claims: EvClaim[] };
-export type Ev = { id: string; row_id: string; what: string | null; content: string; kind: string; source: string | null; strength: string | null; status: string; claim_ref: string | null; created_by: string };
+export type Ev = { id: string; row_id: string; what: string | null; content: string; kind: string; source: string | null; strength: string | null; status: string; claim_ref: string | null; created_by: string; sealed?: boolean };
 
 const tagText: Record<string, string> = { fact: "text-fact", verify: "text-verify", hypothesis: "text-hypo" };
 const OPT = "rounded-[var(--radius)] border px-3 py-1.5 text-[13px] font-medium transition-colors";
@@ -36,7 +36,7 @@ function EvItem({ e, claimLabel }: { e: Ev; claimLabel: string | null }) {
           <span className="text-[11px] text-ink-3">「実名の声」は、本人の許諾を確認してから選んでください。</span>
         </div>
       ) : (
-        <form action={decideEvidence} className="mt-1.5"><input type="hidden" name="id" value={e.id} /><input type="hidden" name="action" value="drop" /><button className="btn-text text-xs" type="submit">取り下げる</button></form>
+        e.sealed ? <p className="mt-1.5 text-[11px] text-navy">確認セッション③で封をした証拠です</p> : <form action={decideEvidence} className="mt-1.5"><input type="hidden" name="id" value={e.id} /><input type="hidden" name="action" value="drop" /><button className="btn-text text-xs" type="submit">取り下げる</button></form>
       )}
     </li>
   );

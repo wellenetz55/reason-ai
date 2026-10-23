@@ -59,12 +59,14 @@ export async function decideEvidence(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const action = String(formData.get("action") ?? ""); // accept | drop
   if (!UUID.test(id)) return;
-  const { data: ev } = await supabase.from("evidences").select("id, row_id, status, claim_ref, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
+  const { data: ev } = await supabase.from("evidences").select("id, row_id, status, claim_ref, created_at, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!ev) return;
   if (action === "accept" && ev.status === "candidate") {
     const kind = String(formData.get("kind") ?? "");
     await supabase.from("evidences").update({ status: "adopted", ...(KIND_SET.has(kind) ? { kind, strength: STRENGTH_OF[kind] } : {}) }).eq("id", id);
   } else if (action === "drop") {
+    // 確認セッション③で封をした証拠（封の時点で採用済み）は取り下げない
+    if (ev.status === "adopted" && (await isSealed(supabase, company.id, "evidences.status", ev.created_at))) { back(); return; }
     // 証拠は組（sheet_rows）ではないので、見送り・取り下げは消してよい
     await supabase.from("evidences").delete().eq("id", id);
     // 採用済みの証拠を取り下げて、その主張の証拠が無くなったら、「事実」の印を「要確認」に戻す

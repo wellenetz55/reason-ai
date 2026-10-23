@@ -13,6 +13,8 @@ import { requestEvidenceCandidates } from "./actions";
 import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
 import { EVIDENCE_KINDS, buildClaims, triedKey } from "@/lib/evidence";
+import { loadSeals } from "@/server/seals";
+import { sealOn } from "@/lib/seals";
 
 export const maxDuration = 300; // AIが資料から候補を探す時間を取る
 
@@ -41,7 +43,8 @@ export default async function Page() {
       const claims: EvClaim[] = buildClaims(r, (brakes ?? []).filter((b) => b.row_id === r.id));
       return { id: r.id, seq: r.seq, rank: r.rank, primary: r.is_primary, value: r.value_raw as string, experience: r.experience_value ?? r.experience_value_v1, claims };
     });
-  const evList = (evs ?? []) as unknown as Ev[];
+  const seals = await loadSeals(supabase, company.id);
+  const evList = ((evs ?? []) as unknown as (Ev & { created_at: string })[]).map((e) => ({ ...e, sealed: e.status === "adopted" && !!sealOn(seals, "evidences.status", e.created_at) }));
   const adoptedRows = new Set(evList.filter((e) => e.status === "adopted").map((e) => e.row_id));
   const withEv = list.filter((r) => adoptedRows.has(r.id)).length;
   const candidates = evList.filter((e) => e.status === "candidate").length;
