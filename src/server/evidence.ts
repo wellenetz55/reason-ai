@@ -52,7 +52,7 @@ JSONのみで返す: [{"row_id":"...","claim_ref":"row","what":"...","content":"
   if (!Array.isArray(parsed)) throw new Error("evidence_draft: AIの返答を読み取れませんでした");
   const hay = sections.map(([k, v]) => [k, squash(v)] as const);
   const rowIds = new Map(opts.rows.map((r) => [r.id, new Set(r.claims.map((c) => c.ref))]));
-  const claimText = new Map(opts.rows.flatMap((r) => r.claims.map((c) => [`${r.id}|${c.ref}`, squash(c.text)] as const)));
+  const claimTexts = new Map(opts.rows.map((r) => [r.id, r.claims.map((c) => squash(c.text)).filter(Boolean)] as const));
   const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
   return parsed
     .filter((d) => d && typeof d === "object" && rowIds.has(String(d.row_id)))
@@ -71,8 +71,8 @@ JSONのみで返す: [{"row_id":"...","claim_ref":"row","what":"...","content":"
       if (sq.length < 12) return [];
       const hit = hay.find(([, v]) => v.includes(sq));
       if (!hit) return [];
-      const claim = d.claim_ref ? claimText.get(`${d.row_id}|${d.claim_ref}`) : undefined;
-      if (claim && (claim.includes(sq) || sq.includes(claim))) return [];
+      // その組のどの主張とも重なる引用は捨てる（AIが指した主張以外の文を引いていても、自分で自分を裏づけることになる）
+      if ((claimTexts.get(d.row_id) ?? []).some((c) => c.includes(sq) || sq.includes(c))) return [];
       const detail = d.source && !d.source.includes(hit[0]) ? `／${d.source}` : "";
       return [{ ...d, source: `${hit[0]}${detail}`.slice(0, 200) }];
     });
