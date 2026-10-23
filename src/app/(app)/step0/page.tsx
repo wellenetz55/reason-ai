@@ -16,6 +16,7 @@ import { loadBQuestions } from "@/server/profile";
 import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readFlash } from "@/server/flash";
 
 export const maxDuration = 300; // AIの下書き（資料・URLの読み込みを含む）が画面側の待ち時間より先に打ち切られないように
 
@@ -28,7 +29,7 @@ const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("ja-JP", { tim
 
 export default async function Page({ searchParams }: PageProps<"/step0">) {
   const sp = await searchParams;
-  const docError = typeof sp?.error === "string" ? sp.error : null;
+  const docError = sp?.error === "1" ? await readFlash("step0") : null;
   const { supabase, company } = await requireCustomer();
   if (!isStageOpen(STAGES.find((x) => x.key === "step0")!, company.status)) return <ClosedStage stageKey="step0" status={company.status} />;
   const [{ data: docs }, ctx, { data: items }, { data: summary }, bq, compRes] = await Promise.all([

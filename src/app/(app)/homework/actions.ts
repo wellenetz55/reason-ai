@@ -16,7 +16,7 @@ export async function answerHomework(formData: FormData) {
   }
   if (!askedWhom || !answer) {
     const { redirect } = await import("next/navigation");
-    redirect(`/homework?error=${encodeURIComponent(!askedWhom ? "「誰に聞いたか」を入れてください" : mode === "pass" ? "パスする理由を回答欄に書いてください" : "回答を書いてください")}`);
+    redirect(`/homework?e=${!askedWhom ? "whom" : mode === "pass" ? "pass" : "answer"}`);
   }
   await supabase
     .from("homeworks")

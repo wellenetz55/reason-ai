@@ -3,7 +3,9 @@ import { requireStage } from "@/server/stageGuard";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-const fail = (msg: string): never => redirect(`/step0?error=${encodeURIComponent(msg)}`);
+import { setFlash } from "@/server/flash";
+// 文は cookie で渡し、URLには印だけを載せる（URLの文をそのまま出す画面にしないため）
+const fail = async (msg: string): Promise<never> => { await setFlash("step0", msg); redirect("/step0?error=1"); };
 import { randomUUID } from "node:crypto";
 import { requireCustomer, isMember } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -119,8 +121,8 @@ export async function addUrl(formData: FormData) {
   const raw = String(formData.get("url") || "").trim();
   if (!raw) return;
   const url = normalizeWebUrl(raw);
-  if (!url) fail("URLの形式が正しくありません（例：https://www.example.co.jp）。");
-  if ((await usage(supabase, company.id)).urls >= LIMITS.urls) fail("登録できるURLの数の上限に達しています。");
+  if (!url) await fail("URLの形式が正しくありません（例：https://www.example.co.jp）。");
+  if ((await usage(supabase, company.id)).urls >= LIMITS.urls) await fail("登録できるURLの数の上限に達しています。");
   await supabase.from("company_documents").insert({
     company_id: company.id,
     kind: kindOf(formData.get("kind")),
@@ -137,7 +139,7 @@ export async function addText(formData: FormData) {
   const { company, user, supabase } = await requireStage("step0");
   const text = cut(String(formData.get("text") || "").trim(), MAX.pasted);
   if (!text) return;
-  if ((await usage(supabase, company.id)).texts >= LIMITS.texts) fail("登録できるテキストの数の上限に達しています。");
+  if ((await usage(supabase, company.id)).texts >= LIMITS.texts) await fail("登録できるテキストの数の上限に達しています。");
   await supabase.from("company_documents").insert({
     company_id: company.id,
     kind: kindOf(formData.get("kind")),
@@ -161,7 +163,7 @@ export async function removeDocument(formData: FormData) {
     supabase.from("company_documents").select("id", { count: "exact", head: true }).eq("company_id", company.id),
     supabase.from("profile_items").select("key", { count: "exact", head: true }).eq("company_id", company.id).in("status", ["approved", "fixed"]),
   ]);
-  if (company.status !== "onboarding" && (docs ?? 0) <= 1 && (items ?? 0) === 0) fail("これが最後の資料です。取り下げると STEP 1 以降が開けなくなるので、先に差し替える資料を登録するか、御社の説明を1項目以上承認してから取り下げてください。");
+  if (company.status !== "onboarding" && (docs ?? 0) <= 1 && (items ?? 0) === 0) await fail("これが最後の資料です。取り下げると STEP 1 以降が開けなくなるので、先に差し替える資料を登録するか、御社の説明を1項目以上承認してから取り下げてください。");
   if (isOwnDocPath(company.id, doc.storage_path)) await createAdminClient().storage.from("company-docs").remove([doc.storage_path]);
   await supabase.from("company_documents").delete().eq("id", doc.id);
   revalidatePath("/step0");
@@ -223,7 +225,7 @@ export async function reviewProfileItem(formData: FormData) {
       supabase.from("company_documents").select("id", { count: "exact", head: true }).eq("company_id", company.id),
       supabase.from("profile_items").select("key", { count: "exact", head: true }).eq("company_id", company.id).in("status", ["approved", "fixed"]),
     ]);
-    if ((docs ?? 0) === 0 && (items ?? 0) <= 1) fail("これが承認・修正済みの最後の項目です。外すと STEP 1 以降が開けなくなるので、先に資料を登録するか、別の項目を承認してから操作してください。");
+    if ((docs ?? 0) === 0 && (items ?? 0) <= 1) await fail("これが承認・修正済みの最後の項目です。外すと STEP 1 以降が開けなくなるので、先に資料を登録するか、別の項目を承認してから操作してください。");
   }
   if (action === "approve") {
     // 画面で見ていた下書きと、いまの下書きが違う（別のタブで作り直された）ときは承認しない
@@ -254,16 +256,16 @@ export async function addCompetitor(formData: FormData) {
   const product = cut(String(formData.get("product") || "").trim(), MAX.title);
   const raw = String(formData.get("website") || "").trim();
   const isReference = formData.get("is_reference") === "1";
-  if (!name) fail("競合の会社名を入れてください。");
+  if (!name) await fail("競合の会社名を入れてください。");
   const website = raw ? normalizeWebUrl(raw) : null;
-  if (raw && !website) fail("URLの形式が正しくありません（例：https://www.example.co.jp）。");
+  if (raw && !website) await fail("URLの形式が正しくありません（例：https://www.example.co.jp）。");
   const { data: ex } = await supabase.from("competitors").select("id, is_reference, name").eq("company_id", company.id);
-  if ((ex ?? []).some((c) => c.name.trim() === name)) fail("同じ名前の競合がすでに登録されています。");
+  if ((ex ?? []).some((c) => c.name.trim() === name)) await fail("同じ名前の競合がすでに登録されています。");
   const n = (ex ?? []).filter((c) => c.is_reference === isReference).length;
-  if (!isReference && n >= 3) fail("競合は3社までです。参考にしたい会社は「参考」として1社入れられます。");
-  if (isReference && n >= 1) fail("参考の会社は1社までです。");
+  if (!isReference && n >= 3) await fail("競合は3社までです。参考にしたい会社は「参考」として1社入れられます。");
+  if (isReference && n >= 1) await fail("参考の会社は1社までです。");
   const { error } = await supabase.from("competitors").insert({ company_id: company.id, name, product: product || null, website, is_reference: isReference, created_by: user.id });
-  if (error) fail("登録できませんでした" + (/product|created_by/.test(error.message) ? "（SQL 0027 が未実行の可能性があります）" : "") + "：" + error.message);
+  if (error) await fail("登録できませんでした" + (/product|created_by/.test(error.message) ? "（SQL 0027 が未実行の可能性があります）" : "") + "：" + error.message);
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "competitor.add", payload: { name, reference: isReference } });
   revalidatePath("/step0");
 }

@@ -4,7 +4,9 @@ import { ClearQuery } from "@/components/ClearQuery";
 
 export default async function HomeworkPage({ searchParams }: PageProps<"/homework">) {
   const sp = await searchParams;
-  const formError = typeof sp?.error === "string" ? sp.error : null;
+  // 文はURLから受け取らず、決まった記号から引く
+  const FORM_ERRORS: Record<string, string> = { whom: "「誰に聞いたか」を入れてください", pass: "パスする理由を回答欄に書いてください", answer: "回答を書いてください" };
+  const formError = typeof sp?.e === "string" && Object.hasOwn(FORM_ERRORS, sp.e) ? FORM_ERRORS[sp.e] : null;
   const { supabase, company } = await requireCustomer();
   const { data: items } = await supabase.from("homeworks").select("*").eq("company_id", company.id).order("priority", { ascending: false }).order("due_at");
   const open = (items ?? []).filter((h) => h.status === "open");
@@ -12,7 +14,7 @@ export default async function HomeworkPage({ searchParams }: PageProps<"/homewor
   const closed = ["diagnosed", "grace", "locked", "cancelled"].includes(company.status); // grace（閲覧のみ）も回答欄が隠れるので、理由を出す
   return (
     <div>
-      <ClearQuery keys={["error"]} />
+      <ClearQuery keys={["e"]} />
       <h1 className="serif text-[28px] leading-tight">宿題</h1>
       {formError && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[40em]">{formError}。入力した内容は送られていません。</p>}
       <p className="text-ink-2 text-sm mt-2 max-w-[40em]">一人で決めないでください。周りの人に聞いてから書いてください。誰に聞いたかも残します。</p>
