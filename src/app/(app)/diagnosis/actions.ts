@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireCustomer } from "@/lib/session";
+import { requireCustomer, isMember } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyOperators, notifyCustomer } from "@/server/notify";
 import { fmtMeeting } from "@/lib/meetings";
@@ -8,6 +8,7 @@ import { fmtMeeting } from "@/lib/meetings";
 /** 顧客が「申し込む」を押す → 申込日時を記録し、ベレネッツに知らせる（契約書・請求書はアプリ外で送る） */
 export async function applyProgram() {
   const { company, user, profile } = await requireCustomer();
+  if (isMember(profile)) return; // 申し込みは担当者だけ
   const admin = createAdminClient();
   // 契約前で、結果が公開されていて、閲覧期限内のときだけ受け付ける
   if (company.status !== "diagnosed") { revalidatePath("/diagnosis"); return; }
@@ -44,7 +45,8 @@ export async function applyProgram() {
 
 /** 顧客がキックオフ候補日を選ぶ（契約・入金の確認後のみ） → 面談として登録し、ベレネッツに知らせる */
 export async function chooseKickoff(formData: FormData) {
-  const { company, user } = await requireCustomer();
+  const { company, user, profile } = await requireCustomer();
+  if (isMember(profile)) return; // キックオフの日程を選ぶのは担当者だけ
   const iso = String(formData.get("date") || "");
   // キックオフ日を選ぶのは契約前（diagnosed）の会社だけ
   if (company.status !== "diagnosed") return;

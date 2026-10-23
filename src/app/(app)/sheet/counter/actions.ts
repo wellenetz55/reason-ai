@@ -1,4 +1,5 @@
 "use server";
+import { isMember } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
 import { draftCounters, type CounterIn } from "@/server/counter";
@@ -87,9 +88,11 @@ export async function redraftCounter(formData: FormData) {
 
 /** ⑤⑥を 直す／承認する */
 export async function saveCounter(formData: FormData) {
-  const { supabase, company, user } = await requireStage("counter");
+  const { supabase, company, user, profile } = await requireStage("counter");
   const id = String(formData.get("id"));
   const action = String(formData.get("action")); // fix | approve | reopen
+  // メンバーは承認・承認を外すができない（直すだけ。直した答えは担当者の承認待ち）
+  if (isMember(profile) && action !== "fix") { revalidatePath("/sheet/counter"); return; }
   const { data: b } = await supabase.from("brakes").select("id, row_id, counter_message, because, because_tag, counter_by, counter_history, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!b) return;
   if (action === "fix") {
@@ -100,7 +103,7 @@ export async function saveCounter(formData: FormData) {
     // 直す前の答えも履歴に残す（直したあとで、前の答えに戻したくなったとき用）
     const changed = !!b.counter_message && (nl(b.counter_message) !== counter || nl(b.because) !== because);
     const history = changed ? [...((b.counter_history as string[] | null) ?? []), encodeCounter({ c: b.counter_message as string, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null, a: (b.counter_by as string | null) ?? null })].slice(-5) : undefined;
-    await supabase.from("brakes").update({ counter_message: counter, because: because || null, because_tag: TAGS.includes(tag) ? tag : "hypothesis", counter_by: "customer", counter_approved_at: new Date().toISOString(), ...(history ? { counter_history: history } : {}) }).eq("id", id);
+    await supabase.from("brakes").update({ counter_message: counter, because: because || null, because_tag: TAGS.includes(tag) ? tag : "hypothesis", counter_by: "customer", counter_approved_at: isMember(profile) ? null : new Date().toISOString(), ...(history ? { counter_history: history } : {}) }).eq("id", id);
     await supabase.from("sheet_row_reviews").insert({ row_id: b.row_id, column_key: "counter_message", action: "fix", before_text: b.counter_message, after_text: counter, reviewer_id: user.id });
   } else if (action === "approve") {
     // 画面で見ていた答えと、いまの答えが違う（別のタブでAIの別案などに変わった）ときは承認しない

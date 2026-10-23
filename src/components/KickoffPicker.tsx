@@ -30,7 +30,7 @@ export function KickoffPicker({ dates, action, preview = false, label = "キッ�
           {!declining ? (
             <button type="button" disabled={preview} onClick={() => setDeclining(true)} className="text-[13px] text-ink-2 underline underline-offset-4 hover:text-ink disabled:opacity-60">すべての日程が難しい（別日を希望する）</button>
           ) : (
-            <form action={preview ? undefined : declineAction} className="rounded-[var(--radius)] border-2 border-ink-3 bg-paper-2 px-5 py-4 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <form data-admin-only action={preview ? undefined : declineAction} className="rounded-[var(--radius)] border-2 border-ink-3 bg-paper-2 px-5 py-4 flex flex-wrap items-center gap-x-5 gap-y-3">
               {kind && <input type="hidden" name="kind" value={kind} />}
               <p className="text-[15px]">{label}の候補日は、すべて難しいでしょうか？<span className="block text-[12px] text-ink-2 mt-0.5">「はい」を押すと今の候補は取り下げられ、ベレネッツから新しい候補日をお送りします。</span></p>
               <div className="flex items-center gap-3 ml-auto">
@@ -42,7 +42,7 @@ export function KickoffPicker({ dates, action, preview = false, label = "キッ�
         </div>
       )}
       {picked && (
-        <form action={preview ? undefined : action} className="mt-4 rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-5 py-4 flex flex-wrap items-center gap-x-5 gap-y-3">
+        <form data-admin-only action={preview ? undefined : action} className="mt-4 rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-5 py-4 flex flex-wrap items-center gap-x-5 gap-y-3">
           <input type="hidden" name="date" value={picked} />
           {kind && <input type="hidden" name="kind" value={kind} />}
           <p className="text-[15px]">{label}は <span className="num font-semibold">{fmtMeeting(picked)}</span> でよろしいですか？<span className="block text-[12px] text-ink-2 mt-0.5">「はい」を押すと決定し、ベレネッツに連絡が届きます。</span></p>

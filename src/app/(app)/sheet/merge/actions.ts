@@ -1,4 +1,5 @@
 "use server";
+import { isMember } from "@/lib/session";
 import { MAX, cut, nl } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
@@ -80,7 +81,8 @@ export async function runVagueCheck() {
 
 /** 言い直し案を採用する／そのままでよいとする */
 export async function resolveDiagnosis(formData: FormData) {
-  const { supabase, company, user } = await requireStage("merge");
+  const { supabase, company, user, profile } = await requireStage("merge");
+  if (isMember(profile)) { revalidatePath("/sheet/merge"); return; } // 決定・却下・保留・戻すは担当者だけ
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")); // accept | keep | hold | drop
   const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1").eq("id", rowId).eq("company_id", company.id).maybeSingle();
@@ -143,7 +145,8 @@ export async function redraftDiagnosis(formData: FormData) {
 
 /** 決めた組をもう一度ふわっと診断の一覧に戻す（決定した言葉はそのまま。保留にしていた行は戻さない） */
 export async function reopenDiagnosis(formData: FormData) {
-  const { supabase, company, user } = await requireStage("merge");
+  const { supabase, company, user, profile } = await requireStage("merge");
+  if (isMember(profile)) { revalidatePath("/sheet/merge"); return; } // 決定・却下・保留・戻すは担当者だけ
   const rowId = String(formData.get("row_id"));
   const { data: row } = await supabase.from("sheet_rows").select("id, status").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   if (!row) return;

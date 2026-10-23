@@ -28,7 +28,7 @@ export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = 
             <>
               <div className="rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-6 sm:px-8 py-7 text-center">
                 <p className="text-sm text-ink-2 max-w-[36em] mx-auto">診断結果を読んで「進めたい」と思われたら、下のボタンを押してください。受付メールが届き、2営業日以内にベレネッツから申込書・契約書と請求書をメールでお送りします。</p>
-                <form action={preview ? undefined : applyProgram} className="mt-5">
+                <form data-admin-only action={preview ? undefined : applyProgram} className="mt-5">
                   <button type="submit" disabled={preview} className="w-full sm:w-auto sm:min-w-[380px] rounded-[var(--radius)] bg-warm text-on-accent serif text-[20px] sm:text-[22px] font-semibold px-10 py-5 shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:brightness-110 active:translate-y-px disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-navy">このプログラムに申し込む →</button>
                 </form>
                 <p className="text-[12px] text-ink-2 mt-4">ボタンを押した時点では費用は発生しません。契約書の内容を確認してからのご契約です。</p>

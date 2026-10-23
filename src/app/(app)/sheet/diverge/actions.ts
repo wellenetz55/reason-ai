@@ -1,4 +1,5 @@
 "use server";
+import { isMember } from "@/lib/session";
 import { MAX, cut, nl } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
@@ -41,7 +42,7 @@ export async function addRow(formData: FormData) {
 }
 
 export async function reviewRow(formData: FormData) {
-  const { supabase, company, user } = await requireStage("diverge");
+  const { supabase, company, user, profile } = await requireStage("diverge");
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")) as "approve" | "fix" | "hold" | "confirm" | "unconfirm";
   const after = cut(String(formData.get("after") || "").trim(), MAX.value);
@@ -51,6 +52,9 @@ export async function reviewRow(formData: FormData) {
   if (!row) return;
   // 提供価値を空にして「直して確定」を押したときは何もしない（AIの下書きが承認なしで御社の行になってしまうため）
   if (action === "fix" && !after) { revalidatePath("/sheet/diverge"); return; }
+  // メンバーは確定・保留・承認ができない（直すだけ。直した行は確定前の状態で残り、担当者が確定する）
+  const member = isMember(profile);
+  if (member && action !== "fix") { revalidatePath("/sheet/diverge"); return; }
   const update: Record<string, unknown> = {};
   if (action === "hold") { update.status = "held"; update.confirmed_at = null; }
   if (action === "approve") update.status = "active";
@@ -61,8 +65,10 @@ export async function reviewRow(formData: FormData) {
     // STEP 1 で体験価値を直したら、STEP 5 で表示する体験価値も同じにそろえる
     // 体験価値を実際に書き換えたときだけ、STEP 5 で表示する体験価値もそろえる（提供価値だけ直したときは STEP 5 の文を残す）
     if (afterExp !== null && afterExp !== cut(nl(row.experience_value_v1).trim(), MAX.value)) { update.experience_value_v1 = afterExp || null; update.experience_value = afterExp || null; }
-    update.status = "active";
-    update.confirmed_at = new Date().toISOString(); // ボタンは「直して確定」：直した文で確定する
+    if (!member) {
+      update.status = "active";
+      update.confirmed_at = new Date().toISOString(); // ボタンは「直して確定」：直した文で確定する
+    } else update.confirmed_at = null; // メンバーが直した行は、担当者の確定待ち
   }
   // approving an AI draft converts it to a customer-owned row
   if (action !== "hold") update.created_by = "customer";

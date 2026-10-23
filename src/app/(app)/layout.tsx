@@ -182,7 +182,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </div>
         )}
         {/* 猶予期間は編集のフォームを出さない（サーバ側でも書き込みを止めている）。質問・エラーレポートなど data-keep の付いたフォームは残す */}
-        <div className="max-w-[1120px]" data-readonly={company.status === "grace" ? "" : undefined}>{children}</div>
+        {profile.role === "customer_member" && !["grace", "locked", "cancelled"].includes(company.status) && (
+          <p className="max-w-[1120px] mb-6 rounded-[var(--radius)] bg-paper-2 px-4 py-2.5 text-[13px] text-ink-2">メンバーとして参加しています。書き出し・修正・AIへの依頼はできます。承認・確定・面談日程の選択は担当者が行います（メンバーが直したものは、担当者の承認待ちになります）。</p>
+        )}
+        <div className="max-w-[1120px]" data-readonly={company.status === "grace" ? "" : undefined} data-member={profile.role === "customer_member" ? "" : undefined}>{children}</div>
         <footer className="print:hidden max-w-[1120px] mt-20 pt-5 border-t hairline flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 text-[12px] text-ink-3">
           <div className="space-y-1">
             <p className="text-ink-2">選ばれる理由AI <span className="mx-1.5">·</span> 運営 株式会社ベレネッツ</p>

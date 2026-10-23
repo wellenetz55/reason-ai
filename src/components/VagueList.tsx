@@ -57,7 +57,7 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
             <span className="num text-xs text-ink-3 w-6 pt-0.5">{r.seq}</span>
             <span className="flex-1 min-w-[240px]"><span className="serif">{r.value_raw}</span>{r.experience_value_v1 && <span className="block text-ink-2 text-[13px]">だから、お客様は {r.experience_value_v1}</span>}</span>
             <span className="text-[11px] text-ink-3 whitespace-nowrap">{DECIDED_LABEL[d!.resolved!] ?? d!.resolved}</span>
-            <form action={reopenDiagnosis}><input type="hidden" name="row_id" value={r.id} /><button className="btn-text text-xs" type="submit">もう一度見直す</button></form>
+            <form data-admin-only action={reopenDiagnosis}><input type="hidden" name="row_id" value={r.id} /><button className="btn-text text-xs" type="submit">もう一度見直す</button></form>
           </li>
         ))}
       </ul>
@@ -79,7 +79,7 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
           <li key={r.id} className="py-2.5 flex flex-wrap items-start gap-x-3 gap-y-1 text-sm text-ink-3">
             <span className="num text-xs w-6 pt-0.5">{r.seq}</span>
             <span className="flex-1 min-w-[240px] line-through"><span className="serif">{r.value_raw}</span>{r.experience_value_v1 && <span className="block text-[13px]">だから、お客様は {r.experience_value_v1}</span>}</span>
-            <form action={reopenDiagnosis}><input type="hidden" name="row_id" value={r.id} /><button className="btn-text text-xs" type="submit">戻す</button></form>
+            <form data-admin-only action={reopenDiagnosis}><input type="hidden" name="row_id" value={r.id} /><button className="btn-text text-xs" type="submit">戻す</button></form>
           </li>
         ))}
       </ul>
@@ -180,7 +180,7 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
                       {d?.suggestion_value && <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" /><input type="hidden" name="after" value={d.suggestion_value} /><input type="hidden" name="after_experience" value={d.suggestion_experience ?? r.experience_value_v1 ?? ""} /><button className={OPT + " border-navy bg-navy text-on-accent font-semibold hover:brightness-110"} type="submit">この案で決定する</button></form>}
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className={OPT + " border-ink-3 bg-paper text-ink hover:bg-paper-2"} type="submit">初期案（自社入力）のままにする</button></form>
                       <form action={redraftDiagnosis} data-busy-timeout="300000"><input type="hidden" name="row_id" value={r.id} /><button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">{d?.suggestion_value ? "この組だけAIで別案を出す" : "この組だけAIに言い直し案を頼む"}</button></form>
-                      <button type="button" className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} onClick={() => setEditing(r.id)}>一部自社で直す</button>
+                      <button type="button" data-admin-only className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} onClick={() => setEditing(r.id)}>一部自社で直す</button>
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className={OPT + " border-ink-3 bg-paper text-ink-2 hover:bg-paper-2"} type="submit">保留にする</button></form>
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="drop" /><button className={OPT + " border-ink-3 bg-paper text-ink-3 hover:bg-paper-2 hover:text-ink"} type="submit" title="インパクトに欠ける・使わない組を外します。シートには残り、あとで戻せます">却下する</button></form>
                     </div>

@@ -81,3 +81,9 @@ export async function requireSuperAdmin() {
   if (!ctx.isSuper) redirect("/admin/members?error=" + encodeURIComponent("この操作はスーパー管理者だけができます"));
   return ctx;
 }
+
+/**
+ * 担当者以外のメンバー（customer_member）か。仕様 00：メンバーは書き出し・修正・AIへの依頼はできるが、承認・確定・決定はできない。
+ * メンバーの修正は「承認待ち」の状態で保存し、承認・決定・面談日程の選択・申し込みは担当者（customer_admin）だけが行う。
+ */
+export const isMember = (profile: { role: string }) => profile.role === "customer_member";

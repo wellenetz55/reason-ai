@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 const fail = (msg: string): never => redirect(`/step0?error=${encodeURIComponent(msg)}`);
 import { randomUUID } from "node:crypto";
-import { requireCustomer } from "@/lib/session";
+import { requireCustomer, isMember } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LIMITS, MAX, cut, nl } from "@/lib/limits";
 import { normalizeWebUrl } from "@/lib/url";
@@ -194,7 +194,7 @@ export async function requestProfileDraft() {
 
 /** 項目ごとの 直す／承認／保留、B の回答 */
 export async function reviewProfileItem(formData: FormData) {
-  const { supabase, company, user } = await requireStage("step0");
+  const { supabase, company, user, profile } = await requireStage("step0");
   const key = String(formData.get("key"));
   const action = String(formData.get("action")); // approve | fix | hold | answer | reopen
   const after = cut(String(formData.get("after") || "").trim(), MAX.profile);
@@ -203,6 +203,15 @@ export async function reviewProfileItem(formData: FormData) {
   if (!def || def.fixed) return;
   const { data: cur } = await supabase.from("profile_items").select("*").eq("company_id", company.id).eq("key", key).maybeSingle();
   const patch: Record<string, unknown> = { company_id: company.id, key, updated_at: new Date().toISOString() };
+  // メンバーは承認・保留・戻すができない。直した文・答えは「下書き」として残し、担当者の承認を待つ
+  if (isMember(profile)) {
+    if (action !== "fix" && action !== "answer") { revalidatePath("/step0"); return; }
+    if (!after) return;
+    await supabase.from("profile_items").upsert({ ...(cur ?? {}), ...patch, draft: after, value: null, status: "draft", source: OWN_SOURCE, ...(action === "answer" ? { tag: "fact" } : {}) }, { onConflict: "company_id,key" });
+    await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "profile.review" });
+    revalidatePath("/step0");
+    return;
+  }
   // 保留・戻すで、承認・修正済みの最後の1項目を外すと STEP 0 が空になり、プログラムの途中で STEP 1 以降が開けなくなる。資料も無ければ止める
   if ((action === "hold" || action === "reopen") && company.status !== "onboarding" && ["approved", "fixed"].includes(cur?.status ?? "")) {
     const [{ count: docs }, { count: items }] = await Promise.all([

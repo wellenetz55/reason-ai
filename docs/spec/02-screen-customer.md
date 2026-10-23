@@ -1,6 +1,6 @@
 # 画面1：顧客画面
 
-使う人: `customer_admin` / `customer_member`。状態（`companies.status`）で表示できるセクションが変わる。
+使う人: `customer_admin` / `customer_member`。メンバー（customer_member）は書き出し・修正・AIへの依頼・自己評価・宿題・質問ができ、承認・確定・決定・保留・却下・戻す・面談日程の選択・申し込みはできない（サーバ側 isMember で止め、画面ではそのボタンを隠す）。メンバーの修正は承認待ち（STEP 0 は下書き、STEP 1 は確定前、STEP 3・4 は未承認）で保存する。状態（`companies.status`）で表示できるセクションが変わる。
 
 ## 共通レイアウト
 

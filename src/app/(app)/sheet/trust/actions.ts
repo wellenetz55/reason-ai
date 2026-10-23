@@ -1,4 +1,5 @@
 "use server";
+import { isMember } from "@/lib/session";
 import { MAX, cut } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
@@ -35,9 +36,10 @@ export async function requestBecauseDrafts() {
 
 /** 三連を直す／承認する */
 export async function saveTriple(formData: FormData) {
-  const { supabase, company, user } = await requireStage("trust");
+  const { supabase, company, user, profile } = await requireStage("trust");
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")); // fix | approve
+  if (isMember(profile) && action !== "fix") { revalidatePath("/sheet/trust"); return; } // 承認は担当者だけ
   const { data: row } = await supabase.from("sheet_rows").select("id, experience_value, experience_value_v1, because_phrase").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   if (!row) return;
   const patch: Record<string, unknown> = { because_by: "customer" };
