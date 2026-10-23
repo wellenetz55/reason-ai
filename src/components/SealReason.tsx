@@ -1,0 +1,15 @@
+/** 封をした言葉を直すときの「変更の理由」欄（必須）。封のある組・ブレーキの「直す」フォームの中に置く */
+export function SealReason({ label }: { label?: string }) {
+  return (
+    <label className="block mt-2 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-3 py-2">
+      <span className="text-[11px] font-semibold text-navy">🔒 {label ?? "確認セッションで封をした言葉です。"}変更の理由（必須）</span>
+      <textarea name="seal_reason" required rows={2} maxLength={1000} className="mt-1 w-full border-b hairline py-1 text-[13px] bg-transparent" placeholder="例：お客様3社に聞いたところ、この言い方の方が伝わったため" />
+      <span className="block text-[11px] text-ink-3 mt-0.5">理由と変更前後は、ベレネッツに記録として共有されます。</span>
+    </label>
+  );
+}
+
+/** 封の印（組・ブレーキの見出しに出す） */
+export function SealBadge({ label }: { label: string }) {
+  return <span className="inline-flex items-center gap-1 text-[11px] text-navy font-semibold whitespace-nowrap" title="確認セッションで確定した言葉です。直すときは理由を書いてください">🔒 {label}で封</span>;
+}

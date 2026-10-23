@@ -5,6 +5,8 @@ import { STAGES, isStageOpen } from "@/lib/stages";
 import { ExportButton } from "@/components/ExportButton";
 import { NextStepBar } from "@/components/NextStepBar";
 import { StepGuide } from "@/components/StepGuide";
+import { loadSeals } from "@/server/seals";
+import { sealOn, SEAL_LABEL } from "@/lib/seals";
 import { CounterBoard, type CounterBrake } from "@/components/CounterBoard";
 import { stepGate } from "@/lib/gates";
 import { loadGateCtx } from "@/server/gates";
@@ -34,10 +36,16 @@ export default async function Page() {
   const aiErr = await lastAiError(supabase, company.id, "counter.draft");
   const loadErr = bErr ? `ブレーキを読み込めませんでした${/because_tag|counter_/.test(bErr.message) ? "（SQL 0035 が未実行の可能性があります）" : ""}：${bErr.message}` : null;
   const list = (rows ?? []).map((r) => ({ id: r.id, seq: r.seq, value_raw: r.value_raw, experience: r.experience_value ?? r.experience_value_v1 }));
-  const blist: CounterBrake[] = (brakes ?? []).map((b) => ({
-    id: b.id, row_id: b.row_id, kind: b.kind, customer_words: b.customer_words, counter_message: b.counter_message, because: b.because,
-    because_tag: b.because_tag ?? "hypothesis", counter_by: b.counter_by, counter_approved_at: b.counter_approved_at, counter_history: (b.counter_history ?? []) as string[],
-  }));
+  const seals = await loadSeals(supabase, company.id);
+  const blist: CounterBrake[] = (brakes ?? []).map((b) => {
+    // 封（確認セッション②）：根拠が「事実」の答えだけが封の対象（事実でなければ仮封で、理由なしで直せる）
+    const x = b.counter_message ? sealOn(seals, "brakes.counter_message", b.created_at, b.because_tag ?? "hypothesis") : null;
+    return {
+      id: b.id, row_id: b.row_id, kind: b.kind, customer_words: b.customer_words, counter_message: b.counter_message, because: b.because,
+      because_tag: b.because_tag ?? "hypothesis", counter_by: b.counter_by, counter_approved_at: b.counter_approved_at, counter_history: (b.counter_history ?? []) as string[],
+      sealed: x ? SEAL_LABEL[x.session] : null,
+    };
+  });
   const answered = blist.filter((b) => b.counter_message?.trim());
   const complete = answered.filter((b) => !hasHole(b.counter_message) && !hasHole(b.because));
   const empty = blist.filter((b) => b.customer_words && !b.counter_message?.trim()).length;

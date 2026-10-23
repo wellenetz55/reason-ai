@@ -44,6 +44,12 @@
   - kaiten_step と rank は authenticated から列ごと SELECT 不可（SQL 0039）。operator 画面はサーバ側で読む。sheet_rows.rank / is_primary と litmus_market の kaiten_step・rank・magnitude_score は顧客ロールから書けない（トリガ）
 - 競合優位性（どこ・どのように）
 - 「封をする」ボタン（確認①／②／③）。封をブロックする条件の警告（⑤⑥に事実0件の行を1位にしようとしている等）。仮封のチェック
+  - 実装：`/admin/[companyId]/seals`（会社ページ上部の「封」）。確認①②③ごとに「封をする」「いまの内容で封をし直す」（同じ封を更新。変更の記録は残る）「封を解く」（記録ごと消える）。状態の前進は面談の「実施済」のまま（封とは別）
+  - 封の列（`src/lib/seals.ts` SEAL_SESSIONS）：①＝sheet_rows の target・value_raw・experience_value_v1・status／②＝brakes の customer_words・counter_message・because・status、sheet_rows の experience_value・because_phrase・rank／③＝evidences.*
+  - 封の対象は、封をした時点で既にあった行・ブレーキだけ（created_at ≤ locked_at）。根拠の印が事実でない⑤⑥・なぜなら は仮封で理由なしに直せる。空の欄を埋めるのは変更に数えない
+  - お客様が封の対象を直すときは「変更の理由」が必須（`SealReason`）。理由と変更前後を sheet_lock_history に記録（サーバ側 `sealGate`、service role で書く）。封の対象は保留・却下・外す・AIの別案・前の答えに戻す ができない
+  - 2位以下ではなく1位（rank=1）について、根拠が事実のなぜなら／答えが0件なら警告を出す（強制しない）
+  - 下に、封をした列の変更の記録（新しい順50件：日時・封・列・前・後・理由）
 - 延長（最大4週）の付与、猶予・顧問の状態変更
 
 ### 2.6 開示要求ログ・本業引き上げ

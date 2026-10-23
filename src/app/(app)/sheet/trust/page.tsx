@@ -5,6 +5,8 @@ import { STAGES, isStageOpen } from "@/lib/stages";
 import { ExportButton } from "@/components/ExportButton";
 import { NextStepBar } from "@/components/NextStepBar";
 import { StepGuide } from "@/components/StepGuide";
+import { loadSeals } from "@/server/seals";
+import { sealOn, SEAL_LABEL } from "@/lib/seals";
 import { TripleList } from "@/components/TripleList";
 import { stepGate } from "@/lib/gates";
 import { loadGateCtx } from "@/server/gates";
@@ -22,13 +24,18 @@ export default async function Page() {
   if (!isStageOpen(STAGES.find((x) => x.key === "trust")!, company.status)) return <ClosedStage stageKey="trust" status={company.status} />;
   if (!(await isStep0Ready(supabase, company.id))) return <Step0Required stageKey="trust" />;
   const [{ data: rows }, ctx, fixed] = await Promise.all([
-    supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, experience_value, because_phrase, because_tag, because_only_us, because_by, trust_axis").eq("company_id", company.id).eq("status", "active").order("seq"),
+    supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, experience_value, because_phrase, because_tag, because_only_us, because_by, trust_axis, created_at").eq("company_id", company.id).eq("status", "active").order("seq"),
     loadGateCtx(supabase, company.id, company.status),
     loadFixedText("round2_trust_intro"),
   ]);
   const gate = stepGate("trust", ctx);
   const aiErr = await lastAiError(supabase, company.id, "because.draft");
-  const list = (rows ?? []).map((r) => ({ ...r, because_only_us: !!r.because_only_us }));
+  const seals = await loadSeals(supabase, company.id);
+  // 封（確認セッション②）：磨いた体験価値、または根拠が「事実」のなぜなら が封の対象
+  const list = (rows ?? []).map((r) => {
+    const x = (r.experience_value ? sealOn(seals, "sheet_rows.experience_value", r.created_at) : null) ?? (r.because_phrase ? sealOn(seals, "sheet_rows.because_phrase", r.created_at, r.because_tag ?? "hypothesis") : null);
+    return { ...r, because_only_us: !!r.because_only_us, sealed: x ? SEAL_LABEL[x.session] : null };
+  });
   const withB = list.filter((r) => r.because_phrase).length;
   const onlyUs = list.filter((r) => r.because_only_us).length;
   const missing = list.length - withB;

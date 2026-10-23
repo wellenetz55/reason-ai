@@ -1,4 +1,5 @@
 "use server";
+import { sealGate, isSealed } from "@/server/seals";
 import { isMember } from "@/lib/session";
 import { MAX, cut, nl } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
@@ -85,16 +86,23 @@ export async function resolveDiagnosis(formData: FormData) {
   if (isMember(profile)) { revalidatePath("/sheet/merge"); return; } // 決定・却下・保留・戻すは担当者だけ
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")); // accept | keep | hold | drop
-  const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1").eq("id", rowId).eq("company_id", company.id).maybeSingle();
+  const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, created_at").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   const { data: d0 } = await supabase.from("row_diagnoses").select("*").eq("row_id", rowId).maybeSingle();
   if (!row) return;
   // 辞書の印だけでAIのレビュー行が無い組でも決められるよう、無ければ作る
   const d = d0 ?? (await supabase.from("row_diagnoses").upsert({ row_id: rowId, vague_score: 0, issues: [], suggestion_value: null, suggestion_experience: null, resolved: null, checked_at: new Date().toISOString() }, { onConflict: "row_id" }).select("*").single()).data;
   if (!d) return;
+  // 封（確認セッション①）：封の時点であった組は、保留・却下にできず、言葉を変えるときは理由が要る
+  if ((action === "hold" || action === "drop") && (await isSealed(supabase, company.id, "sheet_rows.status", row.created_at))) { revalidatePath("/sheet/merge"); return; }
   if (action === "accept") {
     const after = cut(nl(String(formData.get("after") || d.suggestion_value || "")).trim(), MAX.value);
     const afterExp = cut(nl(String(formData.get("after_experience") || d.suggestion_experience || row.experience_value_v1 || "")).trim(), MAX.value);
     if (!after) return;
+    const ok = await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
+      { column: "sheet_rows.value_raw", rowId, createdAt: row.created_at, before: row.value_raw, after },
+      { column: "sheet_rows.experience_value_v1", rowId, createdAt: row.created_at, before: row.experience_value_v1, after: afterExp },
+    ] });
+    if (!ok) { revalidatePath("/sheet/merge"); return; }
     const expChanged = afterExp !== cut(nl(row.experience_value_v1).trim(), MAX.value); // 保存済みの側も、入力と同じ形（前後の空白なし・上限の長さ）にそろえて比べる
     await supabase.from("sheet_rows").update({ value_raw: after, experience_value_v1: afterExp || null, ...(expChanged ? { experience_value: afterExp || null } : {}), created_by: "customer" }).eq("id", rowId);
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "value_raw", action: "fix", before_text: row.value_raw, after_text: after, reviewer_id: user.id });

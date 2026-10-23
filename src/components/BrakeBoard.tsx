@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
+import { SealReason, SealBadge } from "@/components/SealReason";
 import { saveBrake, addBrake } from "@/app/(app)/sheet/brakes/actions";
 import { BRAKE_KINDS, BRAKE_SOURCES, BRAKE_SOURCE_LABEL, EVIDENCE_TAG_LABEL } from "@/lib/brakes";
 
 export type BrakeRow = { id: string; seq: number; value_raw: string | null; experience: string | null };
-export type Brake = { id: string; row_id: string; kind: string; customer_words: string | null; source_tag: string | null; evidence_tag: string; status: string; created_by: string; approved_at: string | null };
+export type Brake = { id: string; row_id: string; kind: string; customer_words: string | null; source_tag: string | null; evidence_tag: string; status: string; created_by: string; approved_at: string | null; sealed?: string | null };
 
 const tagCls: Record<string, string> = { fact: "tag-fact", verify: "tag-verify", hypothesis: "tag-hypo" };
 const tagText: Record<string, string> = { fact: "text-fact", verify: "text-verify", hypothesis: "text-hypo" };
@@ -65,7 +66,7 @@ export function BrakeBoard({ rows, brakes }: { rows: BrakeRow[]; brakes: Brake[]
                               <form action={async (fd) => { await saveBrake(fd); setEditing(null); }}>
                                 <input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="fix" />
                                 <Fields words={b.customer_words ?? ""} source={b.source_tag === "ai" ? "own" : b.source_tag ?? "own"} tag={b.evidence_tag} />
-                                <div className="flex gap-2 mt-2"><button className="btn-primary" type="submit">確定</button><button type="button" className="btn-text" onClick={() => setEditing(null)}>やめる</button></div>
+                                {b.sealed && <SealReason />}<div className="flex gap-2 mt-2"><button className="btn-primary" type="submit">確定</button><button type="button" className="btn-text" onClick={() => setEditing(null)}>やめる</button></div>
                               </form>
                             ) : (
                               <>
@@ -74,11 +75,12 @@ export function BrakeBoard({ rows, brakes }: { rows: BrakeRow[]; brakes: Brake[]
                                   <span className={tagText[b.evidence_tag] ?? "text-hypo"}>{EVIDENCE_TAG_LABEL[b.evidence_tag] ?? b.evidence_tag}</span>
                                   <span className="text-ink-3">{BRAKE_SOURCE_LABEL[b.source_tag ?? ""] ?? "出所なし"}</span>
                                   {ok ? <span className="text-navy">承認済</span> : b.created_by === "ai" ? <span className="text-ink-3">AIの下書き</span> : null}
+                                  {b.sealed && <SealBadge label={b.sealed} />}
                                 </p>
                                 <div className="flex flex-wrap gap-x-3 mt-1">
                                   <button type="button" className="btn-text text-xs" onClick={() => setEditing(b.id)}>直す</button>
                                   {!ok && <form action={saveBrake}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="approve" /><button className="btn-text text-xs" type="submit">承認</button></form>}
-                                  <form action={saveBrake}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="drop" /><button className="btn-text text-xs text-ink-3" type="submit">外す</button></form>
+                                  {!b.sealed && <form action={saveBrake}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="drop" /><button className="btn-text text-xs text-ink-3" type="submit">外す</button></form>}
                                 </div>
                               </>
                             )}

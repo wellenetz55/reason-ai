@@ -1,4 +1,5 @@
 "use server";
+import { sealGate, isSealed } from "@/server/seals";
 import { isMember } from "@/lib/session";
 import { MAX, cut, nl } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
@@ -48,13 +49,22 @@ export async function reviewRow(formData: FormData) {
   const after = cut(String(formData.get("after") || "").trim(), MAX.value);
   const afterExp = formData.has("after_experience") ? cut(String(formData.get("after_experience") || "").trim(), MAX.value) : null;
   const dwell = Number(formData.get("dwell_ms") || 0);
-  const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, status").eq("id", rowId).eq("company_id", company.id).single();
+  const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, status, created_at").eq("id", rowId).eq("company_id", company.id).single();
   if (!row) return;
   // 提供価値を空にして「直して確定」を押したときは何もしない（AIの下書きが承認なしで御社の行になってしまうため）
   if (action === "fix" && !after) { revalidatePath("/sheet/diverge"); return; }
   // メンバーは確定・保留・承認ができない（直すだけ。直した行は確定前の状態で残り、担当者が確定する）
   const member = isMember(profile);
   if (member && action !== "fix") { revalidatePath("/sheet/diverge"); return; }
+  // 封（確認セッション①）：封の時点であった組は、保留にできず、直すときは理由が要る（理由と変更前後を記録）
+  if (action === "hold" && (await isSealed(supabase, company.id, "sheet_rows.status", row.created_at))) { revalidatePath("/sheet/diverge"); return; }
+  if (action === "fix") {
+    const ok = await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
+      { column: "sheet_rows.value_raw", rowId, createdAt: row.created_at, before: row.value_raw, after },
+      ...(afterExp !== null ? [{ column: "sheet_rows.experience_value_v1", rowId, createdAt: row.created_at, before: row.experience_value_v1, after: afterExp }] : []),
+    ] });
+    if (!ok) { revalidatePath("/sheet/diverge"); return; }
+  }
   const update: Record<string, unknown> = {};
   if (action === "hold") { update.status = "held"; update.confirmed_at = null; }
   if (action === "approve") update.status = "active";

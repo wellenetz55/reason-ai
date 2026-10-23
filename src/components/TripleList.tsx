@@ -2,10 +2,12 @@
 import { useState } from "react";
 import { saveTriple } from "@/app/(app)/sheet/trust/actions";
 import { BECAUSE_TYPES } from "@/lib/because";
+import { SealReason, SealBadge } from "@/components/SealReason";
 
 type Row = {
   id: string; seq: number; value_raw: string | null; experience_value_v1: string | null; experience_value: string | null;
   because_phrase: string | null; because_tag: string | null; because_only_us: boolean; because_by: string | null; trust_axis: string | null;
+  sealed?: string | null;
 };
 const TAG: Record<string, string> = { fact: "事実", verify: "要確認", hypothesis: "仮説" };
 const tagCls: Record<string, string> = { fact: "tag-fact", verify: "tag-verify", hypothesis: "tag-hypo" };
@@ -44,6 +46,7 @@ export function TripleList({ rows }: { rows: Row[] }) {
                       </select>
                       <label className="flex items-center gap-1.5"><input type="checkbox" name="only_us" value="1" defaultChecked={r.because_only_us} />「当社しかありません」と言える</label>
                     </div>
+                    {r.sealed && <SealReason />}
                     <div className="flex gap-2"><button className="btn-primary" type="submit">確定</button><button type="button" className="btn-text" onClick={() => setEditing(null)}>やめる</button></div>
                   </form>
                 ) : (
@@ -58,6 +61,7 @@ export function TripleList({ rows }: { rows: Row[] }) {
                       {hasB && <span>{TAG[r.because_tag ?? "hypothesis"]}</span>}
                       {r.trust_axis && <span>{BECAUSE_TYPES.find((t) => t.key === r.trust_axis)?.label}</span>}
                       {aiB && <span className="text-verify">なぜならは承認待ち（AIの下書き、またはメンバーの修正）</span>}
+                      {r.sealed && <SealBadge label={r.sealed} />}
                       {r.because_only_us && <span className="text-navy font-medium">当社しかありません</span>}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1">

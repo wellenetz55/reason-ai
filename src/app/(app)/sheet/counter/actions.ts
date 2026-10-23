@@ -1,4 +1,5 @@
 "use server";
+import { sealGate, isSealed } from "@/server/seals";
 import { isMember } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
@@ -67,6 +68,8 @@ export async function redraftCounter(formData: FormData) {
   const all = await loadOpenBrakes(supabase, company.id);
   const b = all.find((x) => x.id === id);
   if (!b || !b.customer_words) return;
+  // 封をした答え（根拠が事実）は、AIの案で置き換えない（直すときは「直す」から理由を書く）
+  if (b.counter_message && (await isSealed(supabase, company.id, "brakes.counter_message", b.created_at, b.because_tag))) { revalidatePath("/sheet/counter"); return; }
   // 前の答えは ⑥なぜなら・印ごと履歴に残す（あとで「この答えに戻す」で選び直せるように）
   const history = [...(b.counter_history ?? []), ...(b.counter_message ? [encodeCounter({ c: b.counter_message, b: b.because ?? null, t: b.because_tag ?? null, a: b.counter_by ?? null })] : [])].slice(-5);
   const profile = await loadProfileContext(supabase, company.id);
@@ -93,13 +96,18 @@ export async function saveCounter(formData: FormData) {
   const action = String(formData.get("action")); // fix | approve | reopen
   // メンバーは承認・承認を外すができない（直すだけ。直した答えは担当者の承認待ち）
   if (isMember(profile) && action !== "fix") { revalidatePath("/sheet/counter"); return; }
-  const { data: b } = await supabase.from("brakes").select("id, row_id, counter_message, because, because_tag, counter_by, counter_history, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
+  const { data: b } = await supabase.from("brakes").select("id, row_id, counter_message, because, because_tag, counter_by, counter_history, created_at, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!b) return;
   if (action === "fix") {
     const counter = cut(String(formData.get("counter") || "").trim(), MAX.value);
     const because = cut(String(formData.get("because") || "").trim(), MAX.value);
     const tag = String(formData.get("tag") || "hypothesis");
     if (!counter) return;
+    // 封（確認セッション②）：根拠が「事実」の答えは、変えるときに理由が要る（理由と変更前後を記録）
+    if (!(await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
+      { column: "brakes.counter_message", rowId: b.row_id, createdAt: b.created_at, before: b.counter_message, after: counter, tag: b.because_tag },
+      { column: "brakes.because", rowId: b.row_id, createdAt: b.created_at, before: b.because, after: because, tag: b.because_tag },
+    ] }))) { revalidatePath("/sheet/counter"); return; }
     // 直す前の答えも履歴に残す（直したあとで、前の答えに戻したくなったとき用）
     const changed = !!b.counter_message && (nl(b.counter_message) !== counter || nl(b.because) !== because);
     const history = changed ? [...((b.counter_history as string[] | null) ?? []), encodeCounter({ c: b.counter_message as string, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null, a: (b.counter_by as string | null) ?? null })].slice(-5) : undefined;
@@ -123,8 +131,9 @@ export async function restoreCounter(formData: FormData) {
   const id = String(formData.get("id"));
   // 位置ではなく中身で探す（別のタブでAIの別案を頼むと履歴の並びがずれるため）
   const entry = String(formData.get("entry") ?? "");
-  const { data: b } = await supabase.from("brakes").select("id, row_id, counter_message, because, because_tag, counter_by, counter_history, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
+  const { data: b } = await supabase.from("brakes").select("id, row_id, counter_message, because, because_tag, counter_by, counter_history, created_at, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!b) return;
+  if (b.counter_message && (await isSealed(supabase, company.id, "brakes.counter_message", b.created_at, b.because_tag))) { revalidatePath("/sheet/counter"); return; } // 封をした答えは戻さない
   const hist = ((b.counter_history as string[] | null) ?? []).slice();
   const idx = hist.lastIndexOf(entry);
   if (!entry || idx < 0) { revalidatePath("/sheet/counter"); return; }

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { findVague, hasConcrete } from "@/lib/vague";
 import { resolveDiagnosis, redraftDiagnosis, reopenDiagnosis, restoreDiagnosis } from "@/app/(app)/sheet/merge/actions";
 import { decodeVague, type VagueEntry } from "@/lib/history";
+import { SealReason, SealBadge } from "@/components/SealReason";
 
 /** AIのふわっと度（1〜3）の言葉。0 は印なし */
 const VAGUE_LABEL: Record<number, string> = { 1: "少しふわっとしている", 2: "ふわっとしている", 3: "どの会社でも言える言葉" };
@@ -10,7 +11,7 @@ const VAGUE_LABEL: Record<number, string> = { 1: "少しふわっとしている
 /** 言い直し案の下の選択肢ボタン（罫線で囲って目立たせる） */
 const OPT = "rounded-[var(--radius)] border px-3 py-1.5 text-[13px] font-medium transition-colors";
 
-type Row = { id: string; seq: number; value_raw: string | null; experience_value_v1: string | null };
+type Row = { id: string; seq: number; value_raw: string | null; experience_value_v1: string | null; sealed?: string | null };
 type Diag = { row_id: string; vague_score: number; issues: string[]; suggestion_value: string | null; suggestion_experience: string | null; resolved: string | null; checked_at: string; redraft_history?: unknown[] | null };
 
 function Mark({ text }: { text: string | null }) {
@@ -104,7 +105,7 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
             <span className="flex-1 min-w-[240px]"><span className="serif">{r.value_raw}</span>{r.experience_value_v1 && <span className="block text-ink-2 text-[13px]">だから、お客様は {r.experience_value_v1}</span>}<span className="block text-[11px] text-ink-3 mt-0.5">{dict.length > 0 ? `辞書の印：${[...new Set(dict)].join("・")}` : ""}{!concrete ? "　数字・固有名詞なし（AIは文脈から具体的と判断）" : ""}</span></span>
             <span className="flex gap-1">
               <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className="btn-text text-xs" type="submit">このままでよい</button></form>
-              <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className="btn-text text-xs" type="submit">保留</button></form>
+              {!r.sealed && <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className="btn-text text-xs" type="submit">保留</button></form>}
             </span>
           </li>
         ))}
@@ -122,7 +123,7 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
           <div className="flex items-start gap-4">
             <span className="num text-xs text-ink-3 w-6 pt-1">{r.seq}</span>
             <div className="flex-1 min-w-0">
-              <p className="serif text-[16px] leading-snug"><span className="text-[11px] text-ink-3 font-normal mr-1.5">御社は</span><Mark text={r.value_raw} /></p>
+              <p className="serif text-[16px] leading-snug"><span className="text-[11px] text-ink-3 font-normal mr-1.5">御社は</span><Mark text={r.value_raw} />{r.sealed && <span className="ml-2 align-middle"><SealBadge label={r.sealed} /></span>}</p>
               {r.experience_value_v1 && <p className="text-[15px] leading-snug mt-0.5"><span className="text-[11px] text-ink-3 mr-1.5">だから、お客様は</span><Mark text={r.experience_value_v1} /></p>}
               <p className="text-[12px] mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
                 {dict.length > 0 && <span className="text-warm font-semibold">どの会社でも言える語：{[...new Set(dict)].join("・")}</span>}
@@ -144,6 +145,7 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
                     <textarea name="after" defaultValue={d?.suggestion_value ?? r.value_raw ?? ""} rows={2} className="w-full border-b hairline py-1 text-sm bg-transparent" />
                     <p className="text-[11px] text-ink-3 mt-2">だから、お客様は</p>
                     <textarea name="after_experience" defaultValue={d?.suggestion_experience ?? r.experience_value_v1 ?? ""} rows={2} className="w-full border-b hairline py-1 text-sm bg-transparent" placeholder="…と感じることができる" />
+                    {r.sealed && <SealReason />}
                     <div className="mt-2 flex gap-2"><button className="btn-primary" type="submit">この内容で決定する</button><button type="button" className="btn-text" onClick={() => setEditing(null)}>やめる</button></div>
                   </form>
                 ) : (
@@ -177,12 +179,12 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
                       </details>
                     )}
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {d?.suggestion_value && <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" /><input type="hidden" name="after" value={d.suggestion_value} /><input type="hidden" name="after_experience" value={d.suggestion_experience ?? r.experience_value_v1 ?? ""} /><button className={OPT + " border-navy bg-navy text-on-accent font-semibold hover:brightness-110"} type="submit">この案で決定する</button></form>}
+                      {d?.suggestion_value && <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" /><input type="hidden" name="after" value={d.suggestion_value} /><input type="hidden" name="after_experience" value={d.suggestion_experience ?? r.experience_value_v1 ?? ""} />{r.sealed && <SealReason />}<button className={OPT + " border-navy bg-navy text-on-accent font-semibold hover:brightness-110"} type="submit">この案で決定する</button></form>}
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className={OPT + " border-ink-3 bg-paper text-ink hover:bg-paper-2"} type="submit">初期案（自社入力）のままにする</button></form>
                       <form action={redraftDiagnosis} data-busy-timeout="300000"><input type="hidden" name="row_id" value={r.id} /><button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">{d?.suggestion_value ? "この組だけAIで別案を出す" : "この組だけAIに言い直し案を頼む"}</button></form>
                       <button type="button" data-admin-only className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} onClick={() => setEditing(r.id)}>一部自社で直す</button>
-                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className={OPT + " border-ink-3 bg-paper text-ink-2 hover:bg-paper-2"} type="submit">保留にする</button></form>
-                      <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="drop" /><button className={OPT + " border-ink-3 bg-paper text-ink-3 hover:bg-paper-2 hover:text-ink"} type="submit" title="インパクトに欠ける・使わない組を外します。シートには残り、あとで戻せます">却下する</button></form>
+                      {!r.sealed && <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="hold" /><button className={OPT + " border-ink-3 bg-paper text-ink-2 hover:bg-paper-2"} type="submit">保留にする</button></form>}
+                      {!r.sealed && <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="drop" /><button className={OPT + " border-ink-3 bg-paper text-ink-3 hover:bg-paper-2 hover:text-ink"} type="submit" title="インパクトに欠ける・使わない組を外します。シートには残り、あとで戻せます">却下する</button></form>}
                     </div>
                   </div>
                 )

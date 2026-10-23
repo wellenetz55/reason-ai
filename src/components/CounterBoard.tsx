@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { saveCounter, redraftCounter, restoreCounter } from "@/app/(app)/sheet/counter/actions";
 import { decodeCounter } from "@/lib/history";
+import { SealReason, SealBadge } from "@/components/SealReason";
 import { BRAKE_KINDS, EVIDENCE_TAG_LABEL } from "@/lib/brakes";
 import { hasHole, HOLE_SPLIT } from "@/lib/counter";
 
@@ -9,6 +10,7 @@ export type CounterRow = { id: string; seq: number; value_raw: string | null; ex
 export type CounterBrake = {
   id: string; row_id: string; kind: string; customer_words: string | null;
   counter_message: string | null; because: string | null; because_tag: string; counter_by: string | null; counter_approved_at: string | null; counter_history: string[];
+  sealed?: string | null;
 };
 
 const tagCls: Record<string, string> = { fact: "tag-fact", verify: "tag-verify", hypothesis: "tag-hypo" };
@@ -94,6 +96,7 @@ export function CounterBoard({ rows, brakes }: { rows: CounterRow[]; brakes: Cou
                             <option value="fact">事実（確認済み）</option><option value="verify">要確認（数字・条件を確かめたい）</option><option value="hypothesis">仮説（根拠なし）</option>
                           </select>
                           <p className="text-[11px] text-ink-3">分からない数字・固有名詞は「○」のまま残してください。○ が残っている答えは、まだ完成扱いになりません。</p>
+                          {b.sealed && <SealReason />}
                           <div className="flex gap-2"><button className="btn-primary" type="submit">確定</button><button type="button" className="btn-text" onClick={() => setEditing(null)}>やめる</button></div>
                         </form>
                       ) : b.counter_message ? (
@@ -104,14 +107,15 @@ export function CounterBoard({ rows, brakes }: { rows: CounterRow[]; brakes: Cou
                             <span className={tagText[b.because_tag] ?? "text-hypo"}>{EVIDENCE_TAG_LABEL[b.because_tag] ?? b.because_tag}</span>
                             {hole && <span className="text-warm font-semibold">○ の穴があります（埋めると完成）</span>}
                             {b.counter_approved_at && done ? <span className="text-navy">承認済</span> : b.counter_by === "ai" ? <span className="text-ink-3">AIの下書き</span> : null}
+                            {b.sealed && <SealBadge label={b.sealed} />}
                           </p>
                           <div className="flex flex-wrap gap-2 mt-2">
                             {!b.counter_approved_at && <form action={saveCounter}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="approve" /><input type="hidden" name="shown" value={b.counter_message ?? ""} /><button className={OPT + " border-navy bg-navy text-on-accent font-semibold hover:brightness-110"} type="submit">このままでよい</button></form>}
                             <button type="button" className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} onClick={() => setEditing(b.id)}>{hole ? "穴を埋める・直す" : "直す"}</button>
-                            <form action={redraftCounter} data-busy-timeout="300000"><input type="hidden" name="id" value={b.id} /><button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">AIに別の答えを頼む</button></form>
+                            {!b.sealed && <form action={redraftCounter} data-busy-timeout="300000"><input type="hidden" name="id" value={b.id} /><button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">AIに別の答えを頼む</button></form>}
                             {b.counter_approved_at && <form action={saveCounter}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="reopen" /><button className="btn-text text-xs" type="submit">承認を外す</button></form>}
                           </div>
-                          <HistoryPick b={b} />
+                          {!b.sealed && <HistoryPick b={b} />}
                         </>
                       ) : (
                         <>

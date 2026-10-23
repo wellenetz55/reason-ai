@@ -1,4 +1,5 @@
 "use server";
+import { sealGate, isSealed } from "@/server/seals";
 import { isMember } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
@@ -56,12 +57,15 @@ export async function saveBrake(formData: FormData) {
   const action = String(formData.get("action")); // fix | approve | drop | restore
   // メンバーは承認・外す・戻すができない（直すだけ。直したブレーキは担当者の承認待ち）
   if (isMember(profile) && action !== "fix") { revalidatePath("/sheet/brakes"); return; }
-  const { data: b } = await supabase.from("brakes").select("id, row_id, customer_words, counter_message, because, because_tag, counter_by, counter_history, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
+  const { data: b } = await supabase.from("brakes").select("id, row_id, customer_words, counter_message, because, because_tag, counter_by, counter_history, created_at, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!b) return;
+  // 封（確認セッション②）：封の時点であったブレーキは外せず、言葉を変えるときは理由が要る
+  if (action === "drop" && (await isSealed(supabase, company.id, "brakes.status", b.created_at))) { revalidatePath("/sheet/brakes"); return; }
   const patch: Record<string, unknown> = {};
   if (action === "fix") {
     const words = nl(String(formData.get("words") || "")).trim().slice(0, 400);
     if (!words) return;
+    if (!(await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [{ column: "brakes.customer_words", rowId: b.row_id, createdAt: b.created_at, before: b.customer_words, after: words }] }))) { revalidatePath("/sheet/brakes"); return; }
     const source = String(formData.get("source") || "own");
     const tag = String(formData.get("tag") || "hypothesis");
     patch.customer_words = words;

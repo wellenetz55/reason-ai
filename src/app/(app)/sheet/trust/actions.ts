@@ -1,4 +1,5 @@
 "use server";
+import { sealGate } from "@/server/seals";
 import { isMember } from "@/lib/session";
 import { MAX, cut, nl } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
@@ -40,7 +41,7 @@ export async function saveTriple(formData: FormData) {
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")); // fix | approve
   if (isMember(profile) && action !== "fix") { revalidatePath("/sheet/trust"); return; } // 承認は担当者だけ
-  const { data: row } = await supabase.from("sheet_rows").select("id, experience_value, experience_value_v1, because_phrase, because_tag, because_by").eq("id", rowId).eq("company_id", company.id).maybeSingle();
+  const { data: row } = await supabase.from("sheet_rows").select("id, experience_value, experience_value_v1, because_phrase, because_tag, because_by, created_at").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   if (!row) return;
   const member = isMember(profile);
   // メンバーの修正は承認待ち（because_by を "ai" のままにして「承認」ボタンを残す）。印を「事実」にするのは担当者だけ
@@ -49,6 +50,11 @@ export async function saveTriple(formData: FormData) {
     const exp = cut(String(formData.get("experience") || "").trim(), MAX.value);
     const because = cut(String(formData.get("because") || "").trim(), MAX.value);
     const tag = String(formData.get("tag") || "hypothesis");
+    // 封（確認セッション②）：磨いた体験価値と、根拠が「事実」のなぜなら は、変えるときに理由が要る
+    if (!(await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
+      { column: "sheet_rows.experience_value", rowId, createdAt: row.created_at, before: row.experience_value, after: exp },
+      { column: "sheet_rows.because_phrase", rowId, createdAt: row.created_at, before: row.because_phrase, after: because, tag: row.because_tag ?? "hypothesis" },
+    ] }))) { revalidatePath("/sheet/trust"); return; }
     patch.experience_value = exp || null;
     patch.because_phrase = because || null;
     patch.because_tag = member && tag === "fact" ? "verify" : ["fact", "verify", "hypothesis"].includes(tag) ? tag : "hypothesis";

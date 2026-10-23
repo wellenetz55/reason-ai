@@ -13,6 +13,8 @@ import { addRow, requestDraft, requestExperienceDrafts } from "./actions";
 import { RowList } from "@/components/RowList";
 import { FacetBars } from "@/components/FacetBars";
 import { StepGuide } from "@/components/StepGuide";
+import { loadSeals } from "@/server/seals";
+import { sealOn, SEAL_LABEL } from "@/lib/seals";
 import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
 
@@ -23,8 +25,9 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
   const { supabase, company } = await requireCustomer();
   if (!isStageOpen(STAGES.find((x) => x.key === "diverge")!, company.status)) return <ClosedStage stageKey="diverge" status={company.status} />;
   if (!(await isStep0Ready(supabase, company.id))) return <Step0Required stageKey="diverge" />;
-  const [{ data: rows }, { data: progress }, fixed] = await Promise.all([
-    supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, target, one_liner, target_tag, facet, round, status, created_by, confirmed_at").eq("company_id", company.id).order("seq"),
+  const [{ data: rows }, seals, { data: progress }, fixed] = await Promise.all([
+    supabase.from("sheet_rows").select("id, seq, value_raw, experience_value_v1, target, one_liner, target_tag, facet, round, status, created_by, confirmed_at, created_at").eq("company_id", company.id).order("seq"),
+    loadSeals(supabase, company.id),
     supabase.from("v_divergence_progress").select("*").eq("company_id", company.id).maybeSingle(),
     loadFixedText("round1_intro"),
   ]);
@@ -120,7 +123,7 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
       </section>
 
       <section className="mt-12">
-        <RowList rows={rows ?? []} facets={FACETS.map((f) => ({ key: f.key, label: f.label }))} />
+        <RowList rows={(rows ?? []).map((r) => ({ ...r, sealed: sealOn(seals, "sheet_rows.value_raw", r.created_at) ? SEAL_LABEL[sealOn(seals, "sheet_rows.value_raw", r.created_at)!.session] : null }))} facets={FACETS.map((f) => ({ key: f.key, label: f.label }))} />
       </section>
       <NextStepBar gate={gate} />
     </div>
