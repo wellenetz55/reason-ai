@@ -48,7 +48,12 @@ export async function prepareUpload(meta: { name: string; size: number; type: st
   if (meta.size > MAX_BYTES) return { ok: false, error: "ファイルが大きすぎます（25MBまで）。" };
   if (!ALLOWED.includes(meta.type)) return { ok: false, error: "このファイルの形式は登録できません（PDF・画像・テキスト）。" };
   const u = await usage(supabase, company.id);
-  if (u.files >= LIMITS.files || u.bytes + meta.size > LIMITS.totalBytes) return { ok: false, error: "登録できるファイルの数か容量の上限に達しています。不要な資料を取り下げてください。" };
+  // 送り先だけ発行して登録まで済まなかったファイルも保管場所には残るので、実際に置かれているファイルの数・容量でも上限を確かめる
+  const { data: stored } = await createAdminClient().storage.from("company-docs").list(company.id, { limit: 1000 });
+  const files = (stored ?? []).filter((o) => o.id);
+  const storedBytes = files.reduce((a, o) => a + Number((o.metadata as { size?: number } | null)?.size ?? 0), 0);
+  const nFiles = Math.max(u.files, files.length), nBytes = Math.max(u.bytes, storedBytes);
+  if (nFiles >= LIMITS.files || nBytes + meta.size > LIMITS.totalBytes) return { ok: false, error: "登録できるファイルの数か容量の上限に達しています。不要な資料を取り下げてください。" };
   // 保管場所のキーは英数字だけにする（日本語のキーを受け付けない環境があるため）。元の名前は記録の題名に残す
   const ext = (meta.name.match(/\.([A-Za-z0-9]{1,5})$/)?.[1] ?? "bin").toLowerCase();
   const path = `${company.id}/${randomUUID()}.${ext}`;
