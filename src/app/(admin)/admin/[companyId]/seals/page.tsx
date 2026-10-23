@@ -62,7 +62,7 @@ export default async function SealsAdmin({ params, searchParams }: PageProps<"/a
                   topFacts === 0
                     ? <p className="mt-2 text-[13px] text-warm font-semibold">注意：1位の組（No.{top.seq}「{top.value_raw}」）には、根拠が「事実」の「なぜなら」・答えが1件もありません。このまま1位として封をしてよいか、確かめてください。</p>
                     : <p className="mt-2 text-[12px] text-ink-3">1位の組：No.{top.seq}「{top.value_raw}」（根拠が事実の主張 {topFacts}件）</p>
-                ) : <p className="mt-2 text-[13px] text-warm">1位の組がまだ確定していません（「選ばれる理由の見極め」で順位を確定してから封をしてください。展開画面は、1位を封するまで開きません）。</p>
+                ) : <p className="mt-2 text-[13px] text-warm">1位の組がまだ確定していません（「選ばれる理由の見極め」で順位を確定してから封をしてください）。</p>
               )}
               <div className="mt-3 flex flex-wrap gap-3 items-center">
                 <form action={sealSession}>
