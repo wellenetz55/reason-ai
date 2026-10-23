@@ -189,6 +189,14 @@ export async function reviewProfileItem(formData: FormData) {
   if (!def || def.fixed) return;
   const { data: cur } = await supabase.from("profile_items").select("*").eq("company_id", company.id).eq("key", key).maybeSingle();
   const patch: Record<string, unknown> = { company_id: company.id, key, updated_at: new Date().toISOString() };
+  // 保留・戻すで、承認・修正済みの最後の1項目を外すと STEP 0 が空になり、プログラムの途中で STEP 1 以降が開けなくなる。資料も無ければ止める
+  if ((action === "hold" || action === "reopen") && company.status !== "onboarding" && ["approved", "fixed"].includes(cur?.status ?? "")) {
+    const [{ count: docs }, { count: items }] = await Promise.all([
+      supabase.from("company_documents").select("id", { count: "exact", head: true }).eq("company_id", company.id),
+      supabase.from("profile_items").select("key", { count: "exact", head: true }).eq("company_id", company.id).in("status", ["approved", "fixed"]),
+    ]);
+    if ((docs ?? 0) === 0 && (items ?? 0) <= 1) fail("これが承認・修正済みの最後の項目です。外すと STEP 1 以降が開けなくなるので、先に資料を登録するか、別の項目を承認してから操作してください。");
+  }
   if (action === "approve") {
     // 画面で見ていた下書きと、いまの下書きが違う（別のタブで作り直された）ときは承認しない
     if (nl(String(formData.get("shown") ?? "")) !== nl(cur?.draft)) { revalidatePath("/step0"); return; }
