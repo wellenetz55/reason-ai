@@ -136,7 +136,7 @@ export async function updateMeeting(formData: FormData) {
   const { supabase } = await requireOperator();
   const id = String(formData.get("id"));
   // 会社はフォームの値ではなく、面談そのものの会社を使う（食い違ったフォームで別の会社の状態を進めない）
-  const { data: own } = await supabase.from("company_meetings").select("company_id").eq("id", id).maybeSingle();
+  const { data: own } = await supabase.from("company_meetings").select("company_id, kind, scheduled_at").eq("id", id).maybeSingle();
   if (!own) return;
   const companyId = own.company_id as string;
   const local = String(formData.get("scheduled_at") || "");
@@ -146,6 +146,10 @@ export async function updateMeeting(formData: FormData) {
   if (formData.get("held") === "1") patch.held_at = new Date().toISOString();
   if (formData.get("unheld") === "1") patch.held_at = null; // 押し間違いを戻す（記録はそのまま残る）
   await supabase.from("company_meetings").update(patch).eq("id", id);
+  // キックオフの日時を動かしたら、お客様が選んだ日（診断結果の chosen_date）も新しい日時にそろえる（ホームと次の面談の表示が食い違わないように）
+  if (own.kind === "kickoff" && patch.scheduled_at && new Date(patch.scheduled_at as string).getTime() !== new Date(own.scheduled_at as string).getTime()) {
+    await supabase.from("diagnosis_results").update({ chosen_date: patch.scheduled_at }).eq("company_id", companyId).eq("chosen_date", own.scheduled_at as string); // 選んだ日がこの面談の日だったときだけ
+  }
   // URLを入れた／実施済みにしたら「日程が選ばれました」のアラートは済み
   if (url || formData.get("held") === "1") {
     const { data: mk } = await supabase.from("company_meetings").select("kind").eq("id", id).maybeSingle();
