@@ -1,4 +1,5 @@
 "use server";
+import { inviteGate } from "@/server/intake";
 import { revalidatePath } from "next/cache";
 import { requireCustomer, isMember } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -14,6 +15,8 @@ export async function applyProgram() {
   if (company.status !== "diagnosed") { revalidatePath("/diagnosis"); return; }
   const { data: dr } = await admin.from("diagnosis_results").select("published_at, expires_at").eq("company_id", company.id).maybeSingle();
   if (!dr?.published_at || (dr.expires_at && new Date(dr.expires_at) < new Date())) { revalidatePath("/diagnosis"); return; }
+  // 判定が「適合」のときだけ受け付ける（公開後に判定を変えた場合の取りこぼしを止める）
+  if (!(await inviteGate(company.id, company.status)).ok) { revalidatePath("/diagnosis"); return; }
   // 二度押しでも1回だけ：まだ申込が入っていない行だけを更新し、更新できたときだけ知らせる
   const { data: won } = await admin.from("companies").update({ applied_at: new Date().toISOString() }).eq("id", company.id).is("applied_at", null).select("id");
   if (!won?.length) {

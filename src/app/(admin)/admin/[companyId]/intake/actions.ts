@@ -32,6 +32,11 @@ export async function saveIntake(formData: FormData) {
     updated_at: new Date().toISOString(),
   });
   if (error) back(companyId, `error=${encodeURIComponent("保存できませんでした（SQL 0021 が未実行の可能性があります）：" + error.message)}`);
+  // 判定を「適合」以外にしたら、契約前の会社で公開中の結果（◎適合・申し込みボタン）を非公開に戻す
+  if (["unfit", "hold"].includes(verdict)) {
+    const { data: co } = await supabase.from("companies").select("status").eq("id", companyId).maybeSingle();
+    if (co?.status === "diagnosed") await supabase.from("diagnosis_results").update({ published_at: null }).eq("company_id", companyId).not("published_at", "is", null);
+  }
   revalidatePath(`/admin/${companyId}/intake`);
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/step0");

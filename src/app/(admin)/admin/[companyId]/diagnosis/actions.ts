@@ -100,9 +100,20 @@ export async function setVerdict(formData: FormData) {
   if (!["fit", "unfit", "hold"].includes(verdict)) redirect(`/admin/${companyId}/diagnosis?error=${encodeURIComponent("判定を選んでください")}`);
   const { error } = await supabase.from("diagnosis_intakes").upsert({ company_id: companyId, verdict, updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "company_id" });
   if (error) redirect(`/admin/${companyId}/diagnosis?error=${encodeURIComponent("判定を保存できませんでした：" + error.message)}`);
+  // 判定を「適合」以外にしたら、公開中の結果（◎適合・申し込みボタン）を非公開に戻す（契約前の会社だけ）
+  const unpub = verdict !== "fit" ? await unpublishIfDiagnosed(supabase, companyId) : false;
   revalidatePath(`/admin/${companyId}/diagnosis`);
   revalidatePath(`/admin/${companyId}/intake`);
   revalidatePath(`/admin/${companyId}`);
   const label = { fit: "適合", unfit: "不適合", hold: "保留" }[verdict as "fit" | "unfit" | "hold"];
-  redirect(`/admin/${companyId}/diagnosis?notice=${encodeURIComponent(`判定を「${label}」にしました${verdict === "fit" ? "。下の「公開して招待する」からお客様を登録できます" : ""}`)}`);
+  redirect(`/admin/${companyId}/diagnosis?notice=${encodeURIComponent(`判定を「${label}」にしました${verdict === "fit" ? "。下の「公開して招待する」からお客様を登録できます" : unpub ? "。公開していた結果は非公開に戻しました（お客様の画面に出ません）" : ""}`)}`);
 }
+
+/** 契約前の会社で公開中の診断結果を非公開に戻す。戻したら true */
+async function unpublishIfDiagnosed(supabase: Awaited<ReturnType<typeof requireOperator>>["supabase"], companyId: string): Promise<boolean> {
+  const { data: c } = await supabase.from("companies").select("status").eq("id", companyId).maybeSingle();
+  if (c?.status !== "diagnosed") return false;
+  const { data } = await supabase.from("diagnosis_results").update({ published_at: null }).eq("company_id", companyId).not("published_at", "is", null).select("company_id");
+  return !!data?.length;
+}
+
