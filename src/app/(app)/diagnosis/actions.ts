@@ -51,8 +51,8 @@ export async function chooseKickoff(formData: FormData) {
   const { company, user, profile } = await requireCustomer();
   if (isMember(profile)) return; // キックオフの日程を選ぶのは担当者だけ
   const iso = String(formData.get("date") || "");
-  // キックオフ日を選ぶのは契約前（diagnosed）の会社だけ
-  if (company.status !== "diagnosed") return;
+  // キックオフ日を選ぶのは、キックオフ前の会社（diagnosed／入金後にベレネッツが「キックオフ前」に進めた onboarding）
+  if (company.status !== "diagnosed" && company.status !== "onboarding") return;
   const admin = createAdminClient();
   const { data: c } = await admin.from("companies").select("paid_at").eq("id", company.id).single();
   if (!c?.paid_at) return;

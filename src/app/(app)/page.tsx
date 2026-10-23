@@ -8,6 +8,7 @@ import { isStep0Ready, loadNowStep } from "@/server/gates";
 import { loadPendingCandidates } from "@/server/meetingNext";
 import { KickoffPicker } from "@/components/KickoffPicker";
 import { chooseMeeting, requestOtherDates } from "@/app/(app)/meetings/actions";
+import { chooseKickoff } from "@/app/(app)/diagnosis/actions";
 
 function greeting() {
   const h = Number(new Intl.DateTimeFormat("ja-JP", { hour: "numeric", hour12: false, timeZone: "Asia/Tokyo" }).format(new Date()));
@@ -50,6 +51,8 @@ export default async function Home() {
       </div>
     );
   }
+  // キックオフ前（onboarding）でまだ日を選んでいないときは、ホームで候補から選べるようにする（diagnosed のときと同じ選び方）
+  const kickoffPick = company.status === "onboarding" && company.paid_at ? await loadKickoff(company.id) : null;
   const [{ data: progress }, { data: hw }, pick] = await Promise.all([
     supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle(),
     supabase.from("homeworks").select("id, title, why, due_at, priority").eq("company_id", company.id).eq("status", "open").order("priority", { ascending: false }).order("due_at").limit(3),
@@ -68,6 +71,14 @@ export default async function Home() {
   return (
     <div>
       <h1 className="serif text-[30px] leading-tight">{company.name}様、{greeting()}。</h1>
+
+      {kickoffPick && !kickoffPick.chosen && kickoffPick.candidates.length > 0 && (
+        <section id="kickoff-pick" className="mt-8 rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-6 py-5 max-w-[44em]">
+          <p className="text-[11px] font-semibold tracking-wide text-warm">ベレネッツとの面談 · キックオフ</p>
+          <p className="text-[15px] mt-1">キックオフ（3時間・オンライン）の候補日が <span className="num font-semibold">{kickoffPick.candidates.length}</span> 件届いています。ご都合のよい日時を1つ選んでください。</p>
+          <KickoffPicker dates={kickoffPick.candidates} action={chooseKickoff} kind="kickoff" declineAction={requestOtherDates} />
+        </section>
+      )}
 
       {pick && (
         <section id="meeting-pick" className="mt-8 rounded-[var(--radius)] border-2 border-warm bg-warm-soft px-6 py-5 max-w-[44em]">

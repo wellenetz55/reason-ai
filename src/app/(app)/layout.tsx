@@ -58,7 +58,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   // 候補日を選べる場所：確認セッション①は STEP 2 の出口、それ以外はホーム上部（#meeting-pick）。キックオフはホーム（契約前）
   const PICK_HREF: Record<string, string> = { kickoff: "/", session1: "/sheet/merge", midcheck: "/#meeting-pick", session2: "/#meeting-pick", session3: "/#meeting-pick" };
   // 候補日として扱うのはベレネッツとの面談だけ（社内打合せ・顧問月次は、何件あっても候補ではない）
-  const pickable = !!nextMeeting && !!PICK_HREF[nextMeeting.kind] && (nextMeeting.kind !== "kickoff" || company.status === "diagnosed");
+  const pickable = !!nextMeeting && !!PICK_HREF[nextMeeting.kind] && (nextMeeting.kind !== "kickoff" || company.status === "diagnosed" || company.status === "onboarding");
   const candidateCount = nextMeeting && pickable ? (upcomingMeetings ?? []).filter((m) => m.kind === nextMeeting.kind && new Date(m.scheduled_at) > new Date()).length : 0;
   const shownMeeting = candidateCount > 1 ? null : nextMeeting;
   const candidateMeeting = candidateCount > 1 && nextMeeting ? { kind: nextMeeting.kind, count: candidateCount, href: PICK_HREF[nextMeeting.kind] ?? "/" } : null;
