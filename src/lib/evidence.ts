@@ -13,3 +13,19 @@ export const STRENGTH_LABEL: Record<string, string> = { strong: "強", mid: "中
 
 /** 裏づける主張の参照：'row'＝STEP 5 の「なぜなら」、'brake:<id>'＝STEP 4 の⑥ */
 export const CLAIM_RE = /^(row|brake:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+
+/** 組の「裏づけたい主張」を作る（画面とAIの対象で同じものを使う）。STEP 5 のなぜなら＋STEP 4 の⑤⑥（答えか根拠のどちらかがあれば） */
+export type Claim = { ref: string; label: string; text: string; tag: string; brakeWords?: string };
+export function buildClaims(
+  row: { because_phrase: string | null; because_tag?: string | null },
+  brakes: { id: string; customer_words?: string | null; counter_message: string | null; because: string | null; because_tag?: string | null }[],
+): Claim[] {
+  return [
+    ...(row.because_phrase?.trim() ? [{ ref: "row", label: "なぜなら（STEP 5）", text: row.because_phrase, tag: row.because_tag ?? "hypothesis" }] : []),
+    ...brakes.filter((b) => b.counter_message?.trim() || b.because?.trim()).map((b) => ({
+      ref: `brake:${b.id}`, label: "ブレーキへの答え（STEP 4）",
+      text: [b.counter_message?.trim(), b.because?.trim() ? `なぜなら ${b.because.trim()}` : ""].filter(Boolean).join("　"),
+      tag: b.because_tag ?? "hypothesis", brakeWords: b.customer_words ?? "",
+    })),
+  ];
+}

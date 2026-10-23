@@ -12,7 +12,7 @@ import { loadFixedText } from "@/server/ai/client";
 import { requestEvidenceCandidates } from "./actions";
 import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
-import { EVIDENCE_KINDS } from "@/lib/evidence";
+import { EVIDENCE_KINDS, buildClaims } from "@/lib/evidence";
 
 export const maxDuration = 300; // AIが資料から候補を探す時間を取る
 
@@ -37,10 +37,7 @@ export default async function Page() {
   const list: EvRow[] = (rows ?? []).filter((r) => r.value_raw)
     .sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999) || a.seq - b.seq)
     .map((r) => {
-      const claims: EvClaim[] = [
-        ...(r.because_phrase ? [{ ref: "row", label: "なぜなら（STEP 5）", text: r.because_phrase, tag: r.because_tag ?? "hypothesis" }] : []),
-        ...(brakes ?? []).filter((b) => b.row_id === r.id && b.counter_message).map((b) => ({ ref: `brake:${b.id}`, label: "ブレーキへの答え（STEP 4）", text: `${b.counter_message}${b.because ? `　なぜなら ${b.because}` : ""}`, tag: b.because_tag ?? "hypothesis", brakeWords: b.customer_words ?? "" })),
-      ];
+      const claims: EvClaim[] = buildClaims(r, (brakes ?? []).filter((b) => b.row_id === r.id));
       return { id: r.id, seq: r.seq, rank: r.rank, primary: r.is_primary, value: r.value_raw as string, experience: r.experience_value ?? r.experience_value_v1, claims };
     });
   const evList = (evs ?? []) as unknown as Ev[];

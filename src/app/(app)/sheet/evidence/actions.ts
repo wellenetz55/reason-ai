@@ -5,7 +5,7 @@ import { isMember } from "@/lib/session";
 import { aiGuard } from "@/server/aiGuard";
 import { loadProfileContext } from "@/server/profile";
 import { findEvidenceCandidates, type RowIn } from "@/server/evidence";
-import { CLAIM_RE, KIND_SET, STRENGTH_OF } from "@/lib/evidence";
+import { CLAIM_RE, KIND_SET, STRENGTH_OF, buildClaims } from "@/lib/evidence";
 import { cut } from "@/lib/limits";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -80,8 +80,8 @@ export async function markClaimFact(formData: FormData) {
 export async function requestEvidenceCandidates() {
   const { supabase, company, user } = await requireStage("evidence");
   const [{ data: rows }, { data: brakes }, { data: evs }, ctx, { data: tried }] = await Promise.all([
-    supabase.from("sheet_rows").select("id, seq, rank, value_raw, experience_value, experience_value_v1, because_phrase").eq("company_id", company.id).eq("status", "active"),
-    supabase.from("brakes").select("id, row_id, counter_message, because, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id).eq("status", "active"),
+    supabase.from("sheet_rows").select("id, seq, rank, value_raw, experience_value, experience_value_v1, because_phrase, because_tag").eq("company_id", company.id).eq("status", "active"),
+    supabase.from("brakes").select("id, row_id, customer_words, counter_message, because, because_tag, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id).eq("status", "active"),
     supabase.from("evidences").select("row_id, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
     loadProfileContext(supabase, company.id),
     supabase.from("activity_log").select("payload").eq("company_id", company.id).eq("event", "evidence.draft"),
@@ -92,10 +92,7 @@ export async function requestEvidenceCandidates() {
     .sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999) || a.seq - b.seq);
   const targets: RowIn[] = ordered.map((r) => ({
     id: r.id, value: r.value_raw as string, experience: r.experience_value ?? r.experience_value_v1,
-    claims: [
-      ...(r.because_phrase ? [{ ref: "row", label: "なぜなら（STEP 5）", text: r.because_phrase }] : []),
-      ...(brakes ?? []).filter((b) => b.row_id === r.id && b.because).map((b) => ({ ref: `brake:${b.id}`, label: "ブレーキへの答えの根拠（STEP 4）", text: `${b.counter_message ?? ""} なぜなら ${b.because}` })),
-    ],
+    claims: buildClaims(r, (brakes ?? []).filter((b) => b.row_id === r.id)).map((c) => ({ ref: c.ref, label: c.label, text: c.text })),
   })).filter((t) => t.claims.length > 0).slice(0, BATCH);
   if (!targets.length) { back(); return; }
   // 材料はお客様の発言・事実だけ（AIの下書きのまま承認されていない説明や、競合の一覧は証拠にならない）
