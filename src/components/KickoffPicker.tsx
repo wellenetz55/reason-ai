@@ -7,7 +7,10 @@ export function KickoffPicker({ dates, action, preview = false, label = "キッ�
   const [picked, setPicked] = useState<string | null>(null);
   const [declining, setDeclining] = useState(false);
   return (
-    <div>
+    <>
+    {/* 日を選ぶ・別日を希望するのは担当者だけ。メンバーにはボタンの代わりに案内を出す（押しても何も起きないボタンを見せない） */}
+    <p data-member-only className="mt-4 rounded-[var(--radius)] border hairline bg-paper px-4 py-3 text-[13px] text-ink-2">{label}の日程は、御社の担当者（主担当）が選びます。候補：{dates.map((d) => fmtMeeting(d)).join("／")}</p>
+    <div data-admin-only>
       <div className="mt-4 flex flex-wrap gap-3">
         {dates.map((iso) => {
           const on = picked === iso;
@@ -53,5 +56,6 @@ export function KickoffPicker({ dates, action, preview = false, label = "キッ�
         </form>
       )}
     </div>
+    </>
   );
 }
