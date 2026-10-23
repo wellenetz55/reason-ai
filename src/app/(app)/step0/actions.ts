@@ -52,10 +52,13 @@ export async function prepareUpload(meta: { name: string; size: number; type: st
   const store = createAdminClient().storage.from("company-docs");
   const { data: stored } = await store.list(company.id, { limit: 1000 });
   // 登録まで済まずに残ったファイル（1時間以上前に置かれ、どの資料にも結びついていないもの）は片づけてから数える
-  const { data: known } = await supabase.from("company_documents").select("storage_path").eq("company_id", company.id).not("storage_path", "is", null);
+  const { data: known, error: kErr } = await supabase.from("company_documents").select("storage_path").eq("company_id", company.id).not("storage_path", "is", null);
   const knownSet = new Set((known ?? []).map((k) => k.storage_path));
   const hourAgo = Date.now() - 3600_000;
-  const orphans = (stored ?? []).filter((o) => o.id && !knownSet.has(`${company.id}/${o.name}`) && new Date(o.created_at ?? Date.now()).getTime() < hourAgo);
+  // 登録済みの一覧が読めなかったときは片づけない（空の一覧で比べると、登録済みのファイルまで消してしまうため）
+  const candidates = kErr || !Array.isArray(known) ? [] : (stored ?? []).filter((o) => o.id && !knownSet.has(`${company.id}/${o.name}`) && new Date(o.created_at ?? Date.now()).getTime() < hourAgo);
+  // 念のため：登録済みのファイルがあるのに、置かれているファイルが全部「結びついていない」と出たら、何かがおかしいので片づけない
+  const orphans = knownSet.size > 0 && candidates.length === (stored ?? []).filter((o) => o.id).length ? [] : candidates;
   if (orphans.length) await store.remove(orphans.map((o) => `${company.id}/${o.name}`));
   const gone = new Set(orphans.map((o) => o.name));
   const files = (stored ?? []).filter((o) => o.id && !gone.has(o.name));
