@@ -21,9 +21,12 @@ export async function loadMeetingAfter(supabase: SupabaseClient, companyId: stri
   if (held) return { kind: def.kind, label: def.label, at: held.held_at, held: true, url: null, candidates: [] };
   const recent = new Date(Date.now() - 3 * 3600_000);
   const upcoming = list.filter((m) => !m.held_at && new Date(m.scheduled_at) >= recent).sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at));
-  if (upcoming.length > 1) {
-    return { kind: def.kind, label: def.label, at: null, held: false, url: null, candidates: [...new Set(upcoming.map((m) => new Date(m.scheduled_at).toISOString()))].slice(0, 5) };
+  // 候補日として数えるのは、これからの日時だけ（選ぶ・別日希望の操作と同じ基準。過ぎた候補は選べない）
+  const future = upcoming.filter((m) => new Date(m.scheduled_at) > new Date());
+  if (future.length > 1) {
+    return { kind: def.kind, label: def.label, at: null, held: false, url: null, candidates: [...new Set(future.map((m) => new Date(m.scheduled_at).toISOString()))].slice(0, 5) };
   }
+  if (future.length === 1) return { kind: def.kind, label: def.label, at: future[0].scheduled_at, held: false, url: future[0].meeting_url ?? null, candidates: [] };
   return { kind: def.kind, label: def.label, at: upcoming[0]?.scheduled_at ?? null, held: false, url: upcoming[0]?.meeting_url ?? null, candidates: [] };
 }
 
