@@ -75,6 +75,7 @@ export async function redraftCounter(formData: FormData) {
   // AIを待つ間に答えが直されていたら上書きしない（そのときはAIの答えを「前に出た答え」に入れて選べるようにする）
   let q = supabase.from("brakes").update({ counter_message: d.counter, because: d.because || null, because_tag: d.tag, counter_by: "ai", counter_approved_at: null, counter_history: history }).eq("id", id);
   q = b.counter_message ? q.eq("counter_message", b.counter_message) : q.is("counter_message", null);
+  q = b.because ? q.eq("because", b.because) : q.is("because", null); // ⑥だけ直された場合も上書きしない
   const { data: upd } = await q.select("id");
   if (!upd?.length) {
     const { data: now } = await supabase.from("brakes").select("counter_history").eq("id", id).maybeSingle();
