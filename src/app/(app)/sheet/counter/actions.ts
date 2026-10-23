@@ -108,11 +108,13 @@ export async function saveCounter(formData: FormData) {
 export async function restoreCounter(formData: FormData) {
   const { supabase, company, user } = await requireStage("counter");
   const id = String(formData.get("id"));
-  const idx = Number(formData.get("idx"));
+  // 位置ではなく中身で探す（別のタブでAIの別案を頼むと履歴の並びがずれるため）
+  const entry = String(formData.get("entry") ?? "");
   const { data: b } = await supabase.from("brakes").select("id, row_id, counter_message, because, because_tag, counter_by, counter_history, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!b) return;
   const hist = ((b.counter_history as string[] | null) ?? []).slice();
-  if (!Number.isInteger(idx) || idx < 0 || idx >= hist.length) return;
+  const idx = hist.lastIndexOf(entry);
+  if (!entry || idx < 0) { revalidatePath("/sheet/counter"); return; }
   const picked = decodeCounter(hist[idx]);
   hist.splice(idx, 1);
   if (b.counter_message) hist.push(encodeCounter({ c: b.counter_message as string, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null }));

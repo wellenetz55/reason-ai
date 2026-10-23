@@ -161,13 +161,13 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
                       <details className="mt-3 text-[12px]">
                         <summary className="cursor-pointer text-navy font-semibold">前に出た案から選ぶ（{d!.redraft_history!.length}）</summary>
                         <ul className="mt-2 space-y-2">
-                          {/* 新しい順に並べる（idx は保存されている並びの位置） */}
+                          {/* 新しい順に並べる。戻すときは位置ではなく中身を送る */}
                           {d!.redraft_history!.map((h, k) => ({ e: decodeVague(h), k })).filter((x): x is { e: VagueEntry; k: number } => !!x.e).reverse().map(({ e, k }) => (
                             <li key={k} className="rounded-[var(--radius)] border hairline bg-paper px-3 py-2">
                               <p className="text-[13px] text-ink leading-snug">{e.v}</p>
                               {e.e && <p className="text-[12px] text-ink-2 leading-snug mt-0.5">だから、お客様は {e.e}</p>}
                               <form action={restoreDiagnosis} className="mt-1.5">
-                                <input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="idx" value={k} />
+                                <input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="v" value={e.v} /><input type="hidden" name="e" value={e.e ?? ""} />
                                 <button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">この案に戻す</button>
                               </form>
                             </li>

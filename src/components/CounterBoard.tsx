@@ -28,13 +28,13 @@ function HistoryPick({ b }: { b: CounterBrake }) {
                             <details className="mt-3 text-[12px]">
                               <summary className="cursor-pointer text-navy font-semibold">前に出た答えから選ぶ（{b.counter_history.length}）</summary>
                               <ul className="mt-2 space-y-2">
-                                {/* 新しい順に並べる（idx は保存されている並びの位置） */}
+                                {/* 新しい順に並べる。戻すときは位置ではなく中身を送る */}
                                 {b.counter_history.map((h, i) => ({ e: decodeCounter(h), i })).reverse().map(({ e, i }) => (
                                   <li key={i} className="rounded-[var(--radius)] border hairline bg-paper-2 px-3 py-2">
                                     <p className="text-[13px] text-ink leading-snug"><span className="text-[11px] text-ink-3 mr-1.5">⑤</span>{e.c}</p>
                                     {e.b && <p className="text-[12px] text-ink-2 leading-snug mt-0.5"><span className="text-[11px] text-ink-3 mr-1.5">⑥ なぜなら</span>{e.b}</p>}
                                     <form action={restoreCounter} className="mt-1.5">
-                                      <input type="hidden" name="id" value={b.id} /><input type="hidden" name="idx" value={i} />
+                                      <input type="hidden" name="id" value={b.id} /><input type="hidden" name="entry" value={b.counter_history[i]} />
                                       <button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">この答えに戻す</button>
                                     </form>
                                   </li>

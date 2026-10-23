@@ -155,16 +155,20 @@ export async function reopenDiagnosis(formData: FormData) {
 export async function restoreDiagnosis(formData: FormData) {
   const { supabase, company, user } = await requireStage("merge");
   const rowId = String(formData.get("row_id"));
-  const idx = Number(formData.get("idx"));
+  // 位置ではなく中身で探す（別のタブで別案を頼むと履歴の並びがずれるため）
+  const wantV = String(formData.get("v") ?? "");
+  const wantE = String(formData.get("e") ?? "");
   const { data: row } = await supabase.from("sheet_rows").select("id").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   if (!row) return;
   const { data: d } = await supabase.from("row_diagnoses").select("suggestion_value, suggestion_experience, redraft_history").eq("row_id", rowId).maybeSingle();
   const list = (Array.isArray(d?.redraft_history) ? d!.redraft_history : []).map(decodeVague).filter((x): x is VagueEntry => !!x);
-  if (!Number.isInteger(idx) || idx < 0 || idx >= list.length) return;
+  let idx = -1;
+  list.forEach((x, i) => { if (x.v === wantV && (x.e ?? "") === wantE) idx = i; });
+  if (!wantV || idx < 0) { revalidatePath("/sheet/merge"); return; }
   const picked = list[idx];
   list.splice(idx, 1);
   if (d?.suggestion_value) list.push({ v: d.suggestion_value as string, e: (d.suggestion_experience as string | null) ?? null });
-  await supabase.from("row_diagnoses").update({ suggestion_value: picked.v, suggestion_experience: picked.e, resolved: null, redraft_history: list.slice(-5) }).eq("row_id", rowId);
+  await supabase.from("row_diagnoses").update({ suggestion_value: picked.v, suggestion_experience: picked.e, redraft_history: list.slice(-5) }).eq("row_id", rowId).is("resolved", null); // 決めたあとの古い画面からは戻さない
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "vague_check.restore", payload: { row_id: rowId } });
   revalidatePath("/sheet/merge");
 }
