@@ -19,3 +19,13 @@ export const cut = (s: string, n: number) => nl(s).slice(0, n);
 /** AIへ送る1項目を切る（DBに長い文が直接書かれていても、指示文が膨らみすぎないように） */
 export const q = (s: string | null | undefined, n: number = 500) => (s ?? "").slice(0, n);
 
+
+/**
+ * 自社の資料ファイルの保管場所として正しい形か（<会社ID>/<uuid>.<拡張子>、または以前の形 <会社ID>/<uuid>-<名前>）。
+ * 「..」などで他社のフォルダや別の保管場所に届く文字は通さない（先頭が会社IDで始まるかだけでは足りない）
+ */
+export function isOwnDocPath(companyId: string, path: string | null | undefined): boolean {
+  if (!path) return false;
+  const re = new RegExp(`^${companyId}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\\.[a-z0-9]{1,5}|-[A-Za-z0-9_][A-Za-z0-9_.-]{0,120})$`);
+  return re.test(path) && !path.includes("..");
+}

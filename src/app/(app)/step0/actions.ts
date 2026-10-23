@@ -7,7 +7,7 @@ const fail = (msg: string): never => redirect(`/step0?error=${encodeURIComponent
 import { randomUUID } from "node:crypto";
 import { requireCustomer, isMember } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { LIMITS, MAX, cut, nl } from "@/lib/limits";
+import { LIMITS, MAX, cut, nl, isOwnDocPath } from "@/lib/limits";
 import { normalizeWebUrl } from "@/lib/url";
 import { PROFILE_ITEMS } from "@/lib/profileItems";
 import { draftProfile } from "@/server/profile";
@@ -161,7 +161,7 @@ export async function removeDocument(formData: FormData) {
     supabase.from("profile_items").select("key", { count: "exact", head: true }).eq("company_id", company.id).in("status", ["approved", "fixed"]),
   ]);
   if (company.status !== "onboarding" && (docs ?? 0) <= 1 && (items ?? 0) === 0) fail("これが最後の資料です。取り下げると STEP 1 以降が開けなくなるので、先に差し替える資料を登録するか、御社の説明を1項目以上承認してから取り下げてください。");
-  if (doc.storage_path?.startsWith(`${company.id}/`)) await createAdminClient().storage.from("company-docs").remove([doc.storage_path]);
+  if (isOwnDocPath(company.id, doc.storage_path)) await createAdminClient().storage.from("company-docs").remove([doc.storage_path]);
   await supabase.from("company_documents").delete().eq("id", doc.id);
   revalidatePath("/step0");
 }

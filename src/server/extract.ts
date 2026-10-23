@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isOwnDocPath } from "@/lib/limits";
 
 const MAX_PER_DOC = 30_000;
 
@@ -340,7 +341,7 @@ export async function extractCompanyDocs(companyId: string): Promise<{ docs: { t
   const results = await mapLimit((data ?? []) as Doc[], 4, async (d) => {
     const errs: string[] = [];
     // 自社のフォルダ以外のファイルは読まない（行の storage_path が書き換えられていても他社の資料に届かないように）
-    if (d.storage_path && !d.storage_path.startsWith(`${companyId}/`)) return { d, text: "", errs, foreign: true };
+    if (d.storage_path && !isOwnDocPath(companyId, d.storage_path)) return { d, text: "", errs, foreign: true };
     let text = d.text_content ?? "";
     if (!text) {
       if (d.url) text = await fetchUrlText(d.url);
