@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireSuperAdmin } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -12,9 +13,13 @@ export async function savePrompt(formData: FormData) {
   const admin = createAdminClient();
   const { data: last } = await admin.from("method_prompts").select("version").eq("key", key).order("version", { ascending: false }).limit(1).maybeSingle();
   const version = (last?.version ?? 0) + 1;
-  await admin.from("method_prompts").update({ is_active: false }).eq("key", key);
-  await admin.from("method_prompts").insert({ key, version, body, is_active: true });
+  // 先に新版を入れてから旧版を外す（入れるのに失敗しても、いま有効な版が残るように）
+  const { data: ins, error } = await admin.from("method_prompts").insert({ key, version, body, is_active: false }).select("id").single();
+  if (error || !ins) redirect("/admin/method?error=" + encodeURIComponent(`保存できませんでした：${error?.message ?? "不明なエラー"}`));
+  await admin.from("method_prompts").update({ is_active: true }).eq("id", ins.id);
+  await admin.from("method_prompts").update({ is_active: false }).eq("key", key).neq("id", ins.id);
   revalidatePath("/admin/method");
+  redirect("/admin/method?notice=" + encodeURIComponent(`${key} を v${version} として保存し、有効にしました`));
 }
 
 export async function saveFixedText(formData: FormData) {

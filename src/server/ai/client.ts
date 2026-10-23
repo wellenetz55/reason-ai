@@ -10,7 +10,7 @@ const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5";
 /** Loads the active system prompt for a key from method_prompts (server only). */
 export async function loadPrompt(key: string): Promise<string> {
   const admin = createAdminClient();
-  const { data } = await admin.from("method_prompts").select("body").eq("key", key).eq("is_active", true).maybeSingle();
+  const { data } = await admin.from("method_prompts").select("body").eq("key", key).eq("is_active", true).order("version", { ascending: false }).limit(1).maybeSingle(); // 版の入れ替え中に有効が2つあっても、新しい版を使う
   return data?.body ?? "";
 }
 

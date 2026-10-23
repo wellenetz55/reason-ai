@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { savePrompt, saveFixedText } from "./actions";
 import { PROFILE_ITEMS } from "@/lib/profileItems";
 import { NOT_READY } from "@/lib/stages";
+import { ClearQuery } from "@/components/ClearQuery";
 
 /** 使っているプロンプトのキーと用途（本文は DB） */
 const PROMPT_KEYS: { key: string; label: string }[] = [
@@ -28,8 +29,11 @@ const FIXED_KEYS: { key: string; label: string; stage?: string }[] = [
   ...PROFILE_ITEMS.filter((i) => i.group === "B").map((i) => ({ key: `step0_${i.key}`, label: `STEP 0 問い：${i.label}` })),
 ];
 
-export default async function MethodPage() {
+export default async function MethodPage({ searchParams }: PageProps<"/admin/method">) {
   await requireSuperAdmin();
+  const sp = await searchParams;
+  const err = typeof sp?.error === "string" ? sp.error : null;
+  const notice = typeof sp?.notice === "string" ? sp.notice : null;
   const admin = createAdminClient();
   const [{ data: prompts }, { data: texts }, { data: facets }, { count: techniques }] = await Promise.all([
     admin.from("method_prompts").select("key, version, body, is_active, created_at").order("key").order("version", { ascending: false }),
@@ -47,6 +51,9 @@ export default async function MethodPage() {
     <div>
       <h1 className="serif text-[28px] leading-tight">メソッド資産</h1>
       <p className="text-sm text-ink-2 mt-2 max-w-[40em]">サーバ側だけで使う資産。顧客画面・顧客向けAPI・リポジトリには出ません。ここで直すと次のAI呼び出しから効きます（プロンプトは版が残ります）。</p>
+      <ClearQuery keys={["error", "notice"]} />
+      {err && <p className="mt-4 rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm max-w-[44em]">{err}</p>}
+      {notice && <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-4 py-3 text-sm max-w-[44em]">{notice}</p>}
 
       <section className="mt-10 space-y-10">
         <h2 className="serif text-[18px]">AIへの指示文（プロンプト）</h2>
