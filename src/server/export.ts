@@ -12,7 +12,7 @@ import { PROFILE_ITEMS } from "@/lib/profileItems";
  */
 const KIND = { distrust: "不信（本当かな）", unnecessary: "不要（必要ないかも）", unfit: "不適（合わないかも）", nourgent: "不急（今じゃなくても）" } as Record<string, string>;
 const TAG = { fact: "事実", verify: "要確認", hypothesis: "仮説" } as Record<string, string>;
-const STATUS = { active: "有効", merged: "統合済", dropped: "保留（落とした）", held: "保留", separate: "別立て" } as Record<string, string>;
+const STATUS = { active: "有効", merged: "統合済", dropped: "却下", held: "保留", separate: "別立て" } as Record<string, string>;
 const VERDICT = { superior: "優位", equal: "同等", inferior: "劣位", unknown: "不明" } as Record<string, string>;
 const EV = { named_voice: "実名の声", public_voice: "公開レビュー", third_party: "第三者評価", own_fact: "自社の事実" } as Record<string, string>;
 const yn = (v: boolean | null | undefined) => (v === true ? "はい" : v === false ? "いいえ" : "");
@@ -95,11 +95,13 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
   // STEP 3〜4 ブレーキ
   if (has("brakes")) {
     const { data: brakes } = await supabase.from("brakes").select("*, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId).eq("status", "active");
-    const cols = [{ header: "行No", key: "seq", width: 6 }, { header: "提供価値", key: "raw", width: 36 }, { header: "種類", key: "kind", width: 18 }, { header: "お客様の言葉（ブレーキ）", key: "words", width: 40 }];
-    if (has("counter")) cols.push({ header: "先回りの答え", key: "counter", width: 44 }, { header: "なぜなら", key: "because", width: 36 }, { header: "根拠", key: "tag", width: 8 });
+    const cols = [{ header: "行No", key: "seq", width: 6 }, { header: "提供価値", key: "raw", width: 36 }, { header: "種類", key: "kind", width: 18 }, { header: "お客様の言葉（ブレーキ）", key: "words", width: 40 }, { header: "ブレーキの確かさ", key: "wtag", width: 10 }];
+    if (has("counter")) cols.push({ header: "先回りの答え", key: "counter", width: 44 }, { header: "なぜなら", key: "because", width: 36 }, { header: "答えの確かさ", key: "tag", width: 10 });
     if (brakes?.length) addSheet(has("counter") ? "3-4 ブレーキ" : "3 ブレーキ", cols, (brakes ?? []).map((b) => ({
       seq: byId.get(b.row_id)?.seq, raw: byId.get(b.row_id)?.value_final ?? byId.get(b.row_id)?.value_raw,
-      kind: KIND[b.kind] ?? b.kind, words: b.customer_words, counter: b.counter_message, because: b.because, tag: TAG[b.because_tag ?? b.evidence_tag] ?? b.because_tag ?? b.evidence_tag,
+      kind: KIND[b.kind] ?? b.kind, words: b.customer_words, wtag: TAG[b.evidence_tag] ?? "",
+      // 答えの印は、答えがあるときだけ（列の既定値「仮説」を、答えの無いブレーキに出さない）
+      counter: b.counter_message, because: b.because, tag: b.counter_message ? (TAG[b.because_tag] ?? "") : "",
     })));
   }
 
