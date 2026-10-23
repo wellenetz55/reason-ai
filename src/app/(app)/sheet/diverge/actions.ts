@@ -60,7 +60,7 @@ export async function reviewRow(formData: FormData) {
     // 体験価値を実際に書き換えたときだけ、STEP 5 で表示する体験価値もそろえる（提供価値だけ直したときは STEP 5 の文を残す）
     if (afterExp !== null && afterExp !== (row.experience_value_v1 ?? "")) { update.experience_value_v1 = afterExp || null; update.experience_value = afterExp || null; }
     update.status = "active";
-    update.confirmed_at = null; // 直したら確定は外れる
+    update.confirmed_at = new Date().toISOString(); // ボタンは「直して確定」：直した文で確定する
   }
   // approving an AI draft converts it to a customer-owned row
   if (action !== "hold") update.created_by = "customer";
