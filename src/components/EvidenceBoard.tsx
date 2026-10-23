@@ -1,5 +1,5 @@
 import { addEvidence, decideEvidence, markClaimFact } from "@/app/(app)/sheet/evidence/actions";
-import { EVIDENCE_KINDS, KIND_SHORT, STRENGTH_LABEL } from "@/lib/evidence";
+import { EVIDENCE_KINDS, KIND_SHORT, STRENGTH_LABEL, claimKey, claimRefOf } from "@/lib/evidence";
 import { EVIDENCE_TAG_LABEL } from "@/lib/brakes";
 
 export type EvClaim = { ref: string; label: string; text: string; tag: string; brakeWords?: string };
@@ -53,7 +53,11 @@ export function EvidenceBoard({ rows, evidences }: { rows: EvRow[]; evidences: E
         const evs = byRow.get(r.id) ?? [];
         const adopted = evs.filter((e) => e.status === "adopted");
         const cands = evs.filter((e) => e.status === "candidate");
-        const label = (ref: string | null) => (ref ? r.claims.find((c) => c.ref === ref)?.label ?? null : null);
+        const label = (key: string | null) => {
+          // 主張を書き直したあとの証拠は「書き直す前の文への証拠」と出す
+          const c = r.claims.find((x) => x.ref === claimRefOf(key));
+          return c ? (key === claimKey(c.ref, c.text) ? c.label : `${c.label}（書き直す前の文）`) : null;
+        };
         return (
           <li key={r.id} className="rounded-[var(--radius)] border hairline overflow-hidden">
             <details open={adopted.length === 0 || cands.length > 0}>
@@ -78,7 +82,7 @@ export function EvidenceBoard({ rows, evidences }: { rows: EvRow[]; evidences: E
                   ) : (
                     <ul className="mt-2 space-y-2">
                       {r.claims.map((c) => {
-                        const n = adopted.filter((e) => e.claim_ref === c.ref).length;
+                        const n = adopted.filter((e) => e.claim_ref === claimKey(c.ref, c.text)).length;
                         return (
                           <li key={c.ref} className="text-[13px] leading-snug border-l-2 hairline pl-3">
                             <span className="text-[11px] text-ink-3">{c.label}{c.brakeWords ? `　ブレーキ「${c.brakeWords}」` : ""}</span>

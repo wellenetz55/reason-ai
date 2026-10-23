@@ -14,6 +14,19 @@ export const STRENGTH_LABEL: Record<string, string> = { strong: "強", mid: "中
 /** 裏づける主張の参照：'row'＝STEP 5 の「なぜなら」、'brake:<id>'＝STEP 4 の⑥ */
 export const CLAIM_RE = /^(row|brake:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
 
+/** 文の短い指紋（同じ文なら同じ値） */
+export function fingerprint(text: string): string {
+  let h = 5381;
+  for (const ch of text) h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0;
+  return h.toString(36);
+}
+/**
+ * 証拠に保存する「どの主張か」：'row#<指紋>' ／ 'brake:<id>#<指紋>'。
+ * 主張の文を書き直すと指紋が変わり、前の文につけた証拠は新しい文の証拠として数えない
+ */
+export const claimKey = (ref: string, text: string) => `${ref}#${fingerprint(text)}`;
+export const claimRefOf = (key: string | null) => (key ? key.split("#")[0] : null);
+
 /** 組の「裏づけたい主張」を作る（画面とAIの対象で同じものを使う）。STEP 5 のなぜなら＋STEP 4 の⑤⑥（答えか根拠のどちらかがあれば） */
 export type Claim = { ref: string; label: string; text: string; tag: string; brakeWords?: string };
 export function buildClaims(
@@ -32,7 +45,5 @@ export function buildClaims(
 
 /** AIが一度探した組の印：組のidと、そのときの主張の中身から作る（主張を書き直したら、もう一度探せる） */
 export function triedKey(rowId: string, claims: { text: string }[]): string {
-  let h = 5381;
-  for (const ch of claims.map((c) => c.text).join("\u0001")) h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0;
-  return `${rowId}:${h.toString(36)}`;
+  return `${rowId}:${fingerprint(claims.map((c) => c.text).join("\u0001"))}`;
 }

@@ -5,18 +5,29 @@ import { isMember } from "@/lib/session";
 import { aiGuard } from "@/server/aiGuard";
 import { loadProfileContext } from "@/server/profile";
 import { findEvidenceCandidates, type RowIn } from "@/server/evidence";
-import { CLAIM_RE, KIND_SET, STRENGTH_OF, buildClaims, triedKey } from "@/lib/evidence";
+import { CLAIM_RE, KIND_SET, STRENGTH_OF, buildClaims, triedKey, claimKey, claimRefOf } from "@/lib/evidence";
 import { cut } from "@/lib/limits";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const BATCH = 6;
 const back = () => revalidatePath("/sheet/evidence");
 
+type Sb = Awaited<ReturnType<typeof requireStage>>["supabase"];
+
 /** 組（と、その組のブレーキ）が御社のものか */
-async function ownRow(supabase: Awaited<ReturnType<typeof requireStage>>["supabase"], companyId: string, rowId: string) {
+async function ownRow(supabase: Sb, companyId: string, rowId: string) {
   if (!UUID.test(rowId)) return null;
   const { data } = await supabase.from("sheet_rows").select("id").eq("id", rowId).eq("company_id", companyId).eq("status", "active").maybeSingle();
   return data;
+}
+
+/** その組の、いまの主張（ref → 文）。ブレーキは、その組のものだけ */
+async function claimsOf(supabase: Sb, companyId: string, rowId: string) {
+  const [{ data: row }, { data: brakes }] = await Promise.all([
+    supabase.from("sheet_rows").select("because_phrase, because_tag").eq("id", rowId).eq("company_id", companyId).maybeSingle(),
+    supabase.from("brakes").select("id, customer_words, counter_message, because, because_tag").eq("row_id", rowId).eq("status", "active"),
+  ]);
+  return row ? buildClaims(row, brakes ?? []) : [];
 }
 
 /** 証拠を自分で入れる（採用済みとして保存） */
@@ -29,10 +40,12 @@ export async function addEvidence(formData: FormData) {
   if (!content || !KIND_SET.has(kind)) return;
   const ref = String(formData.get("claim_ref") ?? "");
   const what = cut(String(formData.get("what") ?? "").trim(), 600);
+  // どの主張かは、その組のいまの主張から決める（他の組のブレーキは選べない。主張の文の指紋もつける）
+  const claim = CLAIM_RE.test(ref) ? (await claimsOf(supabase, company.id, rowId)).find((c) => c.ref === ref) : undefined;
   await supabase.from("evidences").insert({
     row_id: rowId, content, kind, strength: STRENGTH_OF[kind], status: isMember(profile) ? "candidate" : "adopted", created_by: "customer", // メンバーが足した証拠は担当者の採用待ち
     source: cut(String(formData.get("source") ?? "").trim(), 300) || null,
-    claim_ref: CLAIM_RE.test(ref) ? ref : null, what: what || null,
+    claim_ref: claim ? claimKey(claim.ref, claim.text) : null, what: what || null,
   });
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "evidence.add" });
   back();
@@ -45,7 +58,7 @@ export async function decideEvidence(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const action = String(formData.get("action") ?? ""); // accept | drop
   if (!UUID.test(id)) return;
-  const { data: ev } = await supabase.from("evidences").select("id, status, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
+  const { data: ev } = await supabase.from("evidences").select("id, row_id, status, claim_ref, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!ev) return;
   if (action === "accept" && ev.status === "candidate") {
     const kind = String(formData.get("kind") ?? "");
@@ -53,6 +66,15 @@ export async function decideEvidence(formData: FormData) {
   } else if (action === "drop") {
     // 証拠は組（sheet_rows）ではないので、見送り・取り下げは消してよい
     await supabase.from("evidences").delete().eq("id", id);
+    // 採用済みの証拠を取り下げて、その主張の証拠が無くなったら、「事実」の印を「要確認」に戻す
+    const ref = claimRefOf(ev.claim_ref);
+    if (ev.status === "adopted" && ref && ev.claim_ref) {
+      const { count } = await supabase.from("evidences").select("id", { count: "exact", head: true }).eq("row_id", ev.row_id).eq("claim_ref", ev.claim_ref).eq("status", "adopted");
+      if (!count) {
+        if (ref === "row") await supabase.from("sheet_rows").update({ because_tag: "verify" }).eq("id", ev.row_id).eq("company_id", company.id).eq("because_tag", "fact");
+        else await supabase.from("brakes").update({ because_tag: "verify" }).eq("id", ref.slice(6)).eq("row_id", ev.row_id).eq("because_tag", "fact");
+      }
+    }
   } else return;
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: `evidence.${action}` });
   back();
@@ -65,7 +87,10 @@ export async function markClaimFact(formData: FormData) {
   const rowId = String(formData.get("row_id") ?? "");
   const ref = String(formData.get("claim_ref") ?? "");
   if (!CLAIM_RE.test(ref) || !(await ownRow(supabase, company.id, rowId))) return;
-  const { count } = await supabase.from("evidences").select("id", { count: "exact", head: true }).eq("row_id", rowId).eq("claim_ref", ref).eq("status", "adopted");
+  // いまの主張の文につけた証拠だけを数える（書き直す前の文につけた証拠では「事実」にしない）
+  const claim = (await claimsOf(supabase, company.id, rowId)).find((c) => c.ref === ref);
+  if (!claim) { back(); return; }
+  const { count } = await supabase.from("evidences").select("id", { count: "exact", head: true }).eq("row_id", rowId).eq("claim_ref", claimKey(claim.ref, claim.text)).eq("status", "adopted");
   if (!count) { back(); return; }
   if (ref === "row") {
     await supabase.from("sheet_rows").update({ because_tag: "fact" }).eq("id", rowId).eq("company_id", company.id);
@@ -104,7 +129,7 @@ export async function requestEvidenceCandidates() {
   const found = await aiGuard(supabase, company.id, user.id, "evidence.draft", () => findEvidenceCandidates({ companyName: company.name, materials, rows: targets }));
   if (!found) { back(); return; }
   const recs = found.slice(0, BATCH * 3).map((d) => ({
-    row_id: d.row_id, claim_ref: d.claim_ref, what: d.what || null, content: d.content, kind: d.kind, strength: STRENGTH_OF[d.kind],
+    row_id: d.row_id, claim_ref: d.claim_ref ? (() => { const c = targets.find((t) => t.id === d.row_id)?.claims.find((x) => x.ref === d.claim_ref); return c ? claimKey(c.ref, c.text) : null; })() : null, what: d.what || null, content: d.content, kind: d.kind, strength: STRENGTH_OF[d.kind],
     source: d.source || null, status: "candidate", created_by: "ai",
   }));
   // 待つ間に別の画面で候補・証拠が入った組には入れない（同じ候補が二重にならないように）
