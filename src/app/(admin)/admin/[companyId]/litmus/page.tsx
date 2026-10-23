@@ -174,7 +174,7 @@ export default async function LitmusAdmin({ params, searchParams }: PageProps<"/
                               <td className="py-1.5 text-center text-ink-3">{av === null ? "—" : MARK_LABEL[av]}</td>
                               <td className="py-1.5 text-center">{mv === null ? "—" : MARK_LABEL[mv]}</td>
                               <td className="py-1.5 text-center">
-                                <select name={ax.key} defaultValue={ov === null ? "" : String(ov)} className={inp}>
+                                <select key={`${ax.key}:${ov === null ? "" : String(ov)}`} name={ax.key} defaultValue={ov === null ? "" : String(ov)} className={inp}>
                                   <option value="">—</option>
                                   {MARKS.map((x) => <option key={x.v} value={x.v}>{x.label}</option>)}
                                 </select>
@@ -187,7 +187,7 @@ export default async function LitmusAdmin({ params, searchParams }: PageProps<"/
                           <td className="py-1.5 text-center text-ink-3">—</td>
                           <td className="py-1.5 text-center text-ink-3 text-[11px]">メモのみ</td>
                           <td className="py-1.5 text-center">
-                            <select name="magnitude_score" defaultValue={num(o?.magnitude_score) === null ? "" : String(num(o?.magnitude_score))} className={inp}>
+                            <select key={`magnitude_score:${num(o?.magnitude_score) === null ? "" : String(num(o?.magnitude_score))}`} name="magnitude_score" defaultValue={num(o?.magnitude_score) === null ? "" : String(num(o?.magnitude_score))} className={inp}>
                               <option value="">—</option>
                               {MARKS.map((x) => <option key={x.v} value={x.v}>{x.label}</option>)}
                             </select>
@@ -197,7 +197,7 @@ export default async function LitmusAdmin({ params, searchParams }: PageProps<"/
                     </table>
                     <div className="flex flex-wrap gap-6 text-[13px]">
                       <label><span className="text-[11px] text-ink-3 block">回天のステップ（お客様には出ません）</span>
-                        <select name="kaiten_step" defaultValue={num(o?.kaiten_step) === null ? "" : String(num(o?.kaiten_step))} className={inp}>
+                        <select key={`kaiten_step:${num(o?.kaiten_step) === null ? "" : String(num(o?.kaiten_step))}`} name="kaiten_step" defaultValue={num(o?.kaiten_step) === null ? "" : String(num(o?.kaiten_step))} className={inp}>
                           <option value="">—</option>
                           {kaiten.map((k) => <option key={k.n} value={k.n}>{`STEP ${k.n}${k.label ? `　${k.label}` : ""}`}</option>)}
                         </select>

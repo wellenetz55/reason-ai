@@ -198,7 +198,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
                         <input name="ask_whom_hint" defaultValue={h.ask_whom_hint ?? ""} placeholder="誰に聞くか（任意）" className="border-b hairline py-1" />
                         <div className="flex flex-wrap gap-4 items-center">
                           <input type="date" name="due_at" defaultValue={h.due_at ? toDateInput(h.due_at) : ""} className="border-b hairline py-1 num" />
-                          <select name="priority" defaultValue={String(h.priority)} className="border-b hairline py-1">
+                          <select key={`priority:${String(h.priority)}`} name="priority" defaultValue={String(h.priority)} className="border-b hairline py-1">
                             <option value="3">★★★</option><option value="2">★★</option><option value="1">★</option>
                           </select>
                           <button className="btn-text" type="submit">保存</button>
@@ -360,7 +360,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
           return (
         <form action={createMeeting} className="mt-4 flex flex-wrap gap-3 items-center text-sm">
           <input type="hidden" name="company_id" value={c.id} />
-          <select name="kind" className="border-b hairline py-1" defaultValue={defaultKind}>
+          <select key={`kind:${defaultKind}`} name="kind" className="border-b hairline py-1" defaultValue={defaultKind}>
             {kinds.map((k) => <option key={k} value={k}>{MEETING_LABEL[k]}</option>)}
           </select>
           <input type="datetime-local" name="scheduled_at" required className="border-b hairline py-1 num" />

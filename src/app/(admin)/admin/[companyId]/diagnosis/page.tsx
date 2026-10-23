@@ -65,7 +65,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
             <div key={i} className="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_1fr_100px] gap-3 items-start">
               <GrowText name={`seed${i + 1}_feature`} defaultValue={seeds[i]?.feature ?? ""} className={inp} placeholder="〜できる（「御社は」は自動で付きます）" />
               <GrowText name={`seed${i + 1}_experience`} defaultValue={seeds[i]?.experience ?? ""} className={inp} placeholder="〜と感じられる（「だから、お客様は」は自動）" />
-              <select name={`seed${i + 1}_tag`} defaultValue={seeds[i]?.tag ?? "hypothesis"} className="border-b hairline py-2 text-sm">
+              <select key={`seed${i + 1}:${seeds[i]?.tag ?? "hypothesis"}`} name={`seed${i + 1}_tag`} defaultValue={seeds[i]?.tag ?? "hypothesis"} className="border-b hairline py-2 text-sm">
                 <option value="hypothesis">仮説</option><option value="verify">要確認</option><option value="fact">事実</option>
               </select>
             </div>
@@ -77,7 +77,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
           <p className="text-xs text-ink-3 mt-1">御社の「買い手」が、競合でなく御社を選ぶ直前に抱くためらい（4つの不）。面談相手がブランディングに進むことへの迷いではありません。</p>
           {[0, 1].map((i) => (
             <div key={i} className="mt-3 grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3 items-start">
-              <select name={`brake${i + 1}_kind`} defaultValue={brakes[i]?.kind ?? "distrust"} className="border-b hairline py-2 text-sm">
+              <select key={`brake${i + 1}:${brakes[i]?.kind ?? "distrust"}`} name={`brake${i + 1}_kind`} defaultValue={brakes[i]?.kind ?? "distrust"} className="border-b hairline py-2 text-sm">
                 {Object.entries(BRAKE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
               <GrowText name={`brake${i + 1}_words`} defaultValue={brakes[i]?.words ?? ""} className={inp} placeholder="買い手の心の声で（カギ括弧は自動）。例：本当にうちの規模でも頼めるのか" />
@@ -91,7 +91,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
           {[0, 1, 2].map((i) => (
             <div key={i} className="mt-4 space-y-1">
               <span className="block text-[11px] text-ink-3 num">理由 {i + 1}</span>
-              <select name={`fit${i + 1}_condition`} defaultValue={fit[i]?.condition ?? ""} className="block w-full border-b hairline py-2 text-sm">
+              <select key={`fit${i + 1}:${fit[i]?.condition ?? ""}`} name={`fit${i + 1}_condition`} defaultValue={fit[i]?.condition ?? ""} className="block w-full border-b hairline py-2 text-sm">
                 <option value="">（使わない）</option>
                 {FIT_CONDITIONS.map((f) => <option key={f} value={f}>{f}</option>)}
               </select>
@@ -156,7 +156,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
             <form action={setVerdict} className="mt-3 flex flex-wrap items-center gap-3">
               <input type="hidden" name="company_id" value={c.id} />
               <label className="text-sm flex items-center gap-2">判定を決める
-                <select name="verdict" defaultValue={intake?.verdict ?? (aiVerdict === "適合" ? "fit" : aiVerdict === "保留" ? "hold" : aiVerdict === "不適合" ? "unfit" : "")} className="border-b hairline py-1 text-sm bg-transparent" required>
+                <select key={`verdict:${intake?.verdict ?? (aiVerdict === "適合" ? "fit" : aiVerdict === "保留" ? "hold" : aiVerdict === "不適合" ? "unfit" : "")}`} name="verdict" defaultValue={intake?.verdict ?? (aiVerdict === "適合" ? "fit" : aiVerdict === "保留" ? "hold" : aiVerdict === "不適合" ? "unfit" : "")} className="border-b hairline py-1 text-sm bg-transparent" required>
                   <option value="">（選ぶ）</option>
                   {Object.entries(VERDICT_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>

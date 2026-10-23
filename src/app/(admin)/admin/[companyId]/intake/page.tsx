@@ -61,7 +61,7 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
           <h2 className="serif text-[17px]">1. 対象（何の「選ばれる理由」をつくるか）</h2>
           <p className="text-xs text-ink-3 mt-1">会社全体でなく、買収したブランドや一つの商品が対象のときは、ここで決めます。AIは対象以外（親会社・他の事業）の話を混ぜません。</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-[180px_1fr]">
-            <select name="target_kind" defaultValue={intake?.target_kind ?? "company"} className="border-b hairline py-2 text-sm">
+            <select key={`target_kind:${intake?.target_kind ?? "company"}`} name="target_kind" defaultValue={intake?.target_kind ?? "company"} className="border-b hairline py-2 text-sm">
               {Object.entries(TARGET_KIND_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <div>
@@ -109,7 +109,7 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
         <section>
           <h2 className="serif text-[17px]">4. 判定（ベレネッツ用メモ）</h2>
           <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
-            <select name="verdict" defaultValue={intake?.verdict ?? ""} className="border-b hairline py-1 text-sm">
+            <select key={`verdict:${intake?.verdict ?? ""}`} name="verdict" defaultValue={intake?.verdict ?? ""} className="border-b hairline py-1 text-sm">
               <option value="">（未判定）</option>
               {Object.entries(VERDICT_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
