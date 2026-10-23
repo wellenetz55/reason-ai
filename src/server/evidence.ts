@@ -19,8 +19,18 @@ export async function findEvidenceCandidates(opts: { companyName: string; materi
   if (opts.rows.length === 0) return [];
   // 見出しごとに上限を決めて切る（後ろの見出しだけが丸ごと落ちないように）。面談の記録（新しい情報）は先に置く
   const entries = Object.entries(opts.materials).sort(([a], [b]) => Number(b.startsWith("面談の記録")) - Number(a.startsWith("面談の記録")));
-  const per = Math.max(2000, Math.floor(24000 / Math.max(1, entries.length)));
-  const sections = entries.map(([k, v]) => [k, v.slice(0, per)] as const);
+  // 全体24000字を、短い見出しはそのまま、余りを長い見出しで等分する（短い項目が多くても、面談記録や資料が2000字で切れないように）
+  const cap = new Map<string, number>();
+  let budget = 24000;
+  let rest = [...entries].sort(([, a], [, b]) => a.length - b.length);
+  while (rest.length) {
+    const share = Math.floor(budget / rest.length);
+    const [k, v] = rest[0];
+    if (v.length <= share) { cap.set(k, v.length); budget -= v.length; rest = rest.slice(1); continue; }
+    for (const [kk] of rest) cap.set(kk, share);
+    break;
+  }
+  const sections = entries.map(([k, v]) => [k, v.slice(0, cap.get(k) ?? 0)] as const);
   const matText = sections.map(([k, v]) => `【${k}】\n${v}`).join("\n\n");
   const user = `会社: ${opts.companyName}
 
