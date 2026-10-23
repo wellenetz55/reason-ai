@@ -11,8 +11,12 @@ export async function sendErrorReport(formData: FormData) {
   if (!body) return;
   let screenshot_path: string | null = null;
   const file = formData.get("screenshot");
-  if (file instanceof File && file.size > 0 && file.size <= 10 * 1024 * 1024 && file.type.startsWith("image/")) {
-    const path = `${company.id}/error-reports/${randomUUID()}.${file.type.split("/")[1] ?? "png"}`;
+  // 画像は写真の形式だけ（SVG などは中にスクリプトを持てるため受け付けない）。1日の枚数にも上限を設ける（保管場所を埋められないように）
+  const IMG_EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif" };
+  const ext = file instanceof File ? IMG_EXT[file.type] : undefined;
+  const { count: today } = await supabase.from("error_reports").select("id", { count: "exact", head: true }).eq("company_id", company.id).not("screenshot_path", "is", null).gte("created_at", new Date(Date.now() - 24 * 3600_000).toISOString());
+  if (file instanceof File && ext && file.size > 0 && file.size <= 10 * 1024 * 1024 && (today ?? 0) < 20) {
+    const path = `${company.id}/error-reports/${randomUUID()}.${ext}`;
     const { error } = await createAdminClient().storage.from("company-docs").upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type });
     if (!error) screenshot_path = path;
   }
