@@ -3,6 +3,12 @@ import { q } from "@/lib/limits";
 import { complete, parseJson } from "@/server/ai/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+/** AIの返答がJSONの配列として読めなければ失敗にする（途中で切れた返答を「0件成功」にしない） */
+function arrayOrThrow<T>(v: T[] | null | undefined, name: string): T[] {
+  if (!Array.isArray(v)) throw new Error(`${name}: AIの返答を読み取れませんでした`);
+  return v;
+}
+
 type RowIn = { id: string; value: string; experience: string | null };
 export type BecauseDraft = { id: string; experience?: string; because: string; type: "systematic" | "perceived" | "created"; tag: "fact" | "verify" | "hypothesis"; only_us: boolean };
 
@@ -30,5 +36,5 @@ ${opts.rows.map((r) => `- id:${r.id}\n  御社は: ${q(r.value)}\n  だから、
 
 JSONのみで返す: [{"id":"...","because":"...","type":"perceived","tag":"fact","only_us":false,"experience":"..."}]`;
   const text = await complete({ promptKey: "because_draft", user, maxTokens: 5000 });
-  return (parseJson<BecauseDraft[]>(text) ?? []).filter((d) => d && typeof d.id === "string" && d.because);
+  return arrayOrThrow(parseJson<BecauseDraft[]>(text), "because_draft").filter((d) => d && typeof d.id === "string" && d.because);
 }

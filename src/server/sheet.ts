@@ -5,6 +5,12 @@ import { complete, parseJson } from "@/server/ai/client";
 export { FACETS, type FacetKey } from "@/lib/facets";
 import { FACETS, type FacetKey } from "@/lib/facets";
 
+/** AIの返答がJSONの配列として読めなければ失敗にする（途中で切れた返答を「0件成功」にしない） */
+function arrayOrThrow<T>(v: T[] | null | undefined, name: string): T[] {
+  if (!Array.isArray(v)) throw new Error(`${name}: AIの返答を読み取れませんでした`);
+  return v;
+}
+
 /** Today's facet by day index within the divergence period and the current round. */
 export function facetForToday(rowsByFacet: Record<string, number>, maxRound: number) {
   // pick the thinnest facet; ties → facet order
@@ -61,7 +67,7 @@ experience（体験価値）: 主語はお客様、「〜と感じることが�
 「御社は value。だから、お客様は experience」と読んで自然であること。根拠がサマリーに無いものは source に "仮説" と書く。
 JSONのみで返す: [{"value":"...","experience":"...","target":"誰向けか","one_liner":"中学生に説明する一言","source":"サマリーのどこ / 仮説"}]`;
   const text = await complete({ promptKey: "diverge", user, maxTokens: 1500 });
-  return parseJson<DraftRow[]>(text) ?? [];
+  return arrayOrThrow(parseJson<DraftRow[]>(text), "row_draft").filter((d) => d && typeof d === "object");
 }
 
 /** 体験価値が空の行に、「だから、お客様は〜と感じることができる」の下書きを付ける */
@@ -78,5 +84,5 @@ ${opts.rows.map((r) => `- id:${r.id} / ${r.value}${r.target ? "（" + r.target +
 
 JSONのみで返す: [{"id":"...","experience":"..."}]`;
   const text = await complete({ promptKey: "diverge", user, maxTokens: 1500 });
-  return parseJson<{ id: string; experience: string }[]>(text) ?? [];
+  return arrayOrThrow(parseJson<{ id: string; experience: string }[]>(text), "experience_draft").filter((d) => d && typeof d.id === "string" && typeof d.experience === "string");
 }

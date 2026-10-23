@@ -6,6 +6,12 @@ import { PROFILE_ITEMS } from "@/lib/profileItems";
 import { loadIntakeContext, targetRule } from "@/server/intake";
 import { loadMeetingContext } from "@/server/meetingRecords";
 
+/** AIの返答がJSONの配列として読めなければ失敗にする（途中で切れた返答を「0件成功」にしない） */
+function arrayOrThrow<T>(v: T[] | null | undefined, name: string): T[] {
+  if (!Array.isArray(v)) throw new Error(`${name}: AIの返答を読み取れませんでした`);
+  return v;
+}
+
 type DraftItem = { key: string; draft: string; tag: "fact" | "verify" | "hypothesis"; source: string };
 
 /** B の問いの文面（メソッド資産。DBから） */
@@ -47,7 +53,7 @@ ${corpus}
 
 JSONのみで返す: [{"key":"a1","draft":"...","tag":"fact","source":"資料1 会社概要"}, ...]`;
   const text = await complete({ promptKey: "step0_summary", user, maxTokens: 3000 });
-  const items = (parseJson<DraftItem[]>(text) ?? []).filter((x) => x && typeof x.key === "string" && PROFILE_ITEMS.some((i) => i.key === x.key && !i.fixed));
+  const items = arrayOrThrow(parseJson<DraftItem[]>(text), "profile_draft").filter((x) => x && typeof x.key === "string" && PROFILE_ITEMS.some((i) => i.key === x.key && !i.fixed));
   return { items, skipped, errors, docCount: docs.length };
 }
 

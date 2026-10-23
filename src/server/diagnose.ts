@@ -2,6 +2,12 @@ import "server-only";
 import { q } from "@/lib/limits";
 import { complete, parseJson } from "@/server/ai/client";
 
+/** AIの返答がJSONの配列として読めなければ失敗にする（途中で切れた返答を「0件成功」にしない） */
+function arrayOrThrow<T>(v: T[] | null | undefined, name: string): T[] {
+  if (!Array.isArray(v)) throw new Error(`${name}: AIの返答を読み取れませんでした`);
+  return v;
+}
+
 export type RowForCheck = { id: string; value: string; experience: string | null; target: string | null; avoid?: string[] };
 export type Diagnosis = { id: string; vague_score: number; issues: string[]; suggestion_value?: string; suggestion_experience?: string };
 
@@ -28,5 +34,5 @@ ${opts.rows.map((r) => `- id:${r.id}\n  提供価値: ${q(r.value)}\n  体験価
 
 JSONのみで返す: [{"id":"...","vague_score":2,"issues":["数字が無い"],"suggestion_value":"...","suggestion_experience":"..."}]`;
   const text = await complete({ promptKey: "vague_check", user, maxTokens: 6000 });
-  return (parseJson<Diagnosis[]>(text) ?? []).filter((d) => d && typeof d.id === "string");
+  return arrayOrThrow(parseJson<Diagnosis[]>(text), "diagnose").filter((d) => d && typeof d.id === "string");
 }
