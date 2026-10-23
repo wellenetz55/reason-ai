@@ -40,7 +40,7 @@ export async function saveMeetingRecord(formData: FormData) {
     await admin.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("company_id", companyId).is("resolved_at", null).contains("payload", { type: "meeting_chosen", kind: m!.kind });
     advanced = !!(await advanceAfterMeeting(admin, companyId, m!.kind));
   }
-  await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "meeting.record", payload: { meeting_id: meetingId, kind: m!.kind, transcript: !!(tr && "text" in tr) } });
+  await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "admin.meeting.record", payload: { meeting_id: meetingId, kind: m!.kind, transcript: !!(tr && "text" in tr) } });
   revalidatePath(`/admin/${companyId}`);
   revalidatePath(`/admin/${companyId}/meetings/${meetingId}`);
   revalidatePath("/", "layout");
@@ -75,7 +75,7 @@ export async function importPairs(formData: FormData) {
   const { error } = await admin.from("sheet_rows").insert(rows);
   if (error) back(companyId, meetingId, `error=${encodeURIComponent("シートに入れられませんでした：" + error.message)}`);
   await admin.from("meeting_records").update({ pairs_imported_at: new Date().toISOString() }).eq("meeting_id", meetingId);
-  await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "meeting.pairs_import", payload: { meeting_id: meetingId, count: rows.length } });
+  await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "admin.meeting.pairs_import", payload: { meeting_id: meetingId, count: rows.length } });
   revalidatePath(`/admin/${companyId}`);
   revalidatePath(`/admin/${companyId}/meetings/${meetingId}`);
   revalidatePath("/", "layout");
