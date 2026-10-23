@@ -49,7 +49,7 @@ export async function reviewRow(formData: FormData) {
   const after = cut(String(formData.get("after") || "").trim(), MAX.value);
   const afterExp = formData.has("after_experience") ? cut(String(formData.get("after_experience") || "").trim(), MAX.value) : null;
   const dwell = Number(formData.get("dwell_ms") || 0);
-  const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, experience_value, status, created_at").eq("id", rowId).eq("company_id", company.id).single();
+  const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, experience_value, status, target_tag, created_at").eq("id", rowId).eq("company_id", company.id).single();
   if (!row) return;
   // 提供価値を空にして「直して確定」を押したときは何もしない（AIの下書きが承認なしで御社の行になってしまうため）
   if (action === "fix" && !after) { revalidatePath("/sheet/diverge"); return; }
@@ -76,7 +76,11 @@ export async function reviewRow(formData: FormData) {
     update.value_raw = after;
     // STEP 1 で体験価値を直したら、STEP 5 で表示する体験価値も同じにそろえる
     // 体験価値を実際に書き換えたときだけ、STEP 5 で表示する体験価値もそろえる（提供価値だけ直したときは STEP 5 の文を残す）
-    if (afterExp !== null && afterExp !== cut(nl(row.experience_value_v1).trim(), MAX.value)) { update.experience_value_v1 = afterExp || null; update.experience_value = afterExp || null; }
+    if (afterExp !== null && afterExp !== cut(nl(row.experience_value_v1).trim(), MAX.value)) {
+      update.experience_value_v1 = afterExp || null; update.experience_value = afterExp || null;
+      // AIが下書きした体験価値を御社が書き直したら、「仮説（体験価値はAI下書き）」の印を外す（確定した行に「仮説」が残らないように）
+      if (row.target_tag === "仮説（体験価値はAI下書き）") update.target_tag = null;
+    }
     if (!member) {
       update.status = "active";
       update.confirmed_at = new Date().toISOString(); // ボタンは「直して確定」：直した文で確定する
