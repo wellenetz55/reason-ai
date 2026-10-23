@@ -69,8 +69,10 @@ export async function decideEvidence(formData: FormData) {
     // 採用済みの証拠を取り下げて、その主張の証拠が無くなったら、「事実」の印を「要確認」に戻す
     const ref = claimRefOf(ev.claim_ref);
     if (ev.status === "adopted" && ref && ev.claim_ref) {
-      const { count } = await supabase.from("evidences").select("id", { count: "exact", head: true }).eq("row_id", ev.row_id).eq("claim_ref", ev.claim_ref).eq("status", "adopted");
-      if (!count) {
+      // いまの主張の文につけた証拠が残っていれば戻さない（書き直す前の文の証拠を取り下げただけのときは「事実」のまま）
+      const cur = (await claimsOf(supabase, company.id, ev.row_id)).find((c) => c.ref === ref);
+      const { count } = cur ? await supabase.from("evidences").select("id", { count: "exact", head: true }).eq("row_id", ev.row_id).eq("claim_ref", claimKey(cur.ref, cur.text)).eq("status", "adopted") : { count: 0 };
+      if (cur && !count && ev.claim_ref === claimKey(cur.ref, cur.text)) {
         if (ref === "row") await supabase.from("sheet_rows").update({ because_tag: "verify" }).eq("id", ev.row_id).eq("company_id", company.id).eq("because_tag", "fact");
         else await supabase.from("brakes").update({ because_tag: "verify" }).eq("id", ref.slice(6)).eq("row_id", ev.row_id).eq("because_tag", "fact");
       }
