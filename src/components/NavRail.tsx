@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { MEETING_AFTER_STEP, fmtMeeting } from "@/lib/meetings";
 
-type S = { key: string; step: string; label: string; href: string; open: boolean; now: boolean; ready?: boolean };
+type S = { key: string; step: string; label: string; href: string; open: boolean; now: boolean; ready?: boolean; lockNote?: string };
 export type MeetingMark = { at: string | null; held: boolean; candidates?: number };
 
 /** 面談の行（AIの壁打ちステップの間に挟む）。済／予定／未定 */
@@ -61,7 +61,7 @@ export function NavRail({ stages, meetings = {} }: { stages: S[]; meetings?: Rec
                   {inner}
                 </Link>
               ) : (
-                <span className={clsx(base, "border-transparent text-ink-3")} title={s.open ? "この段階の画面は準備中です。できあがりしだいご案内します" : "面談のあと、ベレネッツが開きます"}>
+                <span className={clsx(base, "border-transparent text-ink-3")} title={s.open ? "この段階の画面は準備中です。できあがりしだいご案内します" : s.lockNote ?? "面談のあと、ベレネッツが開きます"}>
                   {inner}
                   {s.open && <span className="ml-auto text-[10px] text-ink-3 border hairline rounded-full px-1.5 py-[1px] shrink-0">準備中</span>}
                 </span>

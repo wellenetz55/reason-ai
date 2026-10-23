@@ -65,10 +65,16 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const nearest = (openHw ?? []).find((h) => h.due_at);
   const nowKey = step0Ready ? (await loadNowStep(supabase, company.id, company.status, progress?.pair_count ?? 0)).key : "step0";
   const pairs = progress?.pair_count ?? 0;
+  // まとめて絞る（STEP 2）は、1〜2週目のうちは20組そろってから開く。いったんレビューを始めた会社は、却下で20組を割っても閉じない（画面・サーバ側と同じ）
+  let mergeLocked = company.status === "week1_2" && pairs < 20;
+  if (mergeLocked) {
+    const { count: started } = await supabase.from("row_diagnoses").select("row_id, sheet_rows!inner(company_id)", { count: "exact", head: true }).eq("sheet_rows.company_id", company.id);
+    if (started) mergeLocked = false;
+  }
   const stages = STAGES.map((s) => ({
     ...s,
-    // まとめて絞る（STEP 2）は、1〜2週目のうちは20組そろってから開く（次へボタンの条件と同じ）
-    open: isStageOpen(s, company.status) && !(s.key === "merge" && company.status === "week1_2" && pairs < 20) && (s.key === "step0" || step0Ready),
+    open: isStageOpen(s, company.status) && !(s.key === "merge" && mergeLocked) && (s.key === "step0" || step0Ready),
+    lockNote: s.key === "merge" && mergeLocked ? `STEP 1 で組があと${20 - pairs}組そろうと開きます` : s.key !== "step0" && !step0Ready && isStageOpen(s, company.status) ? "STEP 0 で会社の資料か説明を入れると開きます" : undefined,
     ready: !NOT_READY.has(s.key),
     now: s.key === nowKey,
   }));
