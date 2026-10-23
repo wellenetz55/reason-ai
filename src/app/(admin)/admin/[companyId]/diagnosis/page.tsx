@@ -125,7 +125,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
         </section>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button className="btn-primary" type="submit">保存する</button>
+          <button className="btn-primary" type="submit" data-confirm={d?.published_at ? "この結果は公開中です。保存すると、お客様の画面にすぐ反映されます。よろしいですか？" : undefined}>{d?.published_at ? "保存する（公開中の画面にすぐ反映）" : "保存する"}</button>
           {d?.updated_at && <span className="text-xs text-ink-3 num">保存 {fmtMeeting(d.updated_at)}</span>}
         </div>
       </form>
@@ -146,7 +146,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
             <input type="hidden" name="company_id" value={c.id} />
             <label className="flex-1 min-w-[240px]"><span className="text-xs text-ink-2">担当者メール</span><input type="email" name="email" className={inp} /></label>
             <label className="w-48"><span className="text-xs text-ink-2">お名前</span><input name="display_name" className={inp} /></label>
-            <button className="btn-primary" type="submit" disabled={!d}>{d?.published_at ? "公開を更新（メールがあれば招待も）" : "公開して招待する"}</button>
+            <button className="btn-primary" type="submit" disabled={!d}>{d?.published_at ? "招待を送る（内容は「保存する」の時点で反映済み）" : "公開して招待する"}</button>
             {!d && <p className="w-full text-xs text-warm">先に上の内容を「保存する」で保存してください。</p>}
           </form>
         ) : (
