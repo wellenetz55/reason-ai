@@ -1,6 +1,6 @@
 "use server";
 import { isMember } from "@/lib/session";
-import { MAX, cut } from "@/lib/limits";
+import { MAX, cut, nl } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
 import { draftBecause } from "@/server/because";
@@ -56,6 +56,8 @@ export async function saveTriple(formData: FormData) {
     patch.trust_axis = String(formData.get("type") || "") || null;
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "because_phrase", action: "fix", before_text: row.because_phrase, after_text: because, reviewer_id: user.id });
   } else {
+    // 画面で見ていた「なぜなら」と、いまの文が違う（別の画面でメンバーが直した等）ときは承認しない
+    if (nl(String(formData.get("shown") ?? "")) !== nl(row.because_phrase)) { revalidatePath("/sheet/trust"); return; }
     if (!row.experience_value) patch.experience_value = row.experience_value_v1;
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "because_phrase", action: "approve", before_text: row.because_phrase, after_text: row.because_phrase, reviewer_id: user.id });
   }

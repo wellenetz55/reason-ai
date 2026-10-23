@@ -208,7 +208,7 @@ export async function reviewProfileItem(formData: FormData) {
   if (isMember(profile)) {
     if (action !== "fix" && action !== "answer") { revalidatePath("/step0"); return; }
     if (!after) return;
-    const settled = ["approved", "fixed"].includes(cur?.status ?? "");
+    const settled = ["approved", "fixed"].includes(cur?.status ?? "") || !!cur?.value; // 保留中でも確定した文があれば消さない
     await supabase.from("profile_items").upsert(settled
       ? { ...(cur ?? {}), ...patch, draft: after }
       : { ...(cur ?? {}), ...patch, draft: after, value: null, status: "draft", source: OWN_SOURCE, ...(action === "answer" ? { tag: "fact" } : {}) }, { onConflict: "company_id,key" });

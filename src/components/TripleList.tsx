@@ -63,7 +63,7 @@ export function TripleList({ rows }: { rows: Row[] }) {
                     <div className="mt-2 flex flex-wrap gap-1">
                       <button type="button" className="btn-text" onClick={() => setEditing(r.id)}>直す</button>
                       {aiB && (
-                        <form action={saveTriple}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="approve" /><button className="btn-text text-navy" type="submit">承認</button></form>
+                        <form action={saveTriple}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="approve" /><input type="hidden" name="shown" value={r.because_phrase ?? ""} /><button className="btn-text text-navy" type="submit">承認</button></form>
                       )}
                     </div>
                   </>
