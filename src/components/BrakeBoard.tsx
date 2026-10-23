@@ -108,7 +108,7 @@ export function BrakeBoard({ rows, brakes }: { rows: BrakeRow[]; brakes: Brake[]
                   {dropped.map((b) => (
                     <li key={b.id} className="flex flex-wrap items-center gap-x-3">
                       <span className="line-through">{BRAKE_KINDS.find((k) => k.key === b.kind)?.label}：{b.customer_words}</span>
-                      <form action={saveBrake}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="restore" /><button className="btn-text text-xs" type="submit">戻す</button></form>
+                      {b.sealed ? <span className="text-[11px] text-navy">{b.sealed}の封の時点で外していたため、戻せません</span> : <form action={saveBrake}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="restore" /><button className="btn-text text-xs" type="submit">戻す</button></form>}
                     </li>
                   ))}
                 </ul>

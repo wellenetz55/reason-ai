@@ -61,7 +61,8 @@ export async function saveBrake(formData: FormData) {
   const { data: b } = await supabase.from("brakes").select("id, row_id, customer_words, counter_message, because, because_tag, counter_by, counter_approved_at, counter_history, created_at, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!b) return;
   // 封（確認セッション②）：封の時点であったブレーキは外せず、言葉を変えるときは理由が要る
-  if (action === "drop" && (await isSealed(supabase, company.id, "brakes.status", b.created_at))) { revalidatePath("/sheet/brakes"); return; }
+  // 外したブレーキを戻すのも、封の時点の状態を変えることになるので止める（必要ならベレネッツが封をし直す）
+  if ((action === "drop" || action === "restore") && (await isSealed(supabase, company.id, "brakes.status", b.created_at))) { revalidatePath("/sheet/brakes"); return; }
   const patch: Record<string, unknown> = {};
   if (action === "fix") {
     const words = nl(String(formData.get("words") || "")).trim().slice(0, 400);

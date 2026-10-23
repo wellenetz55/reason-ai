@@ -57,7 +57,7 @@ export async function reviewRow(formData: FormData) {
   const member = isMember(profile);
   if (member && action !== "fix") { revalidatePath("/sheet/diverge"); return; }
   // 封（確認セッション①）：封の時点であった組は、保留にできず、直すときは理由が要る（理由と変更前後を記録）
-  if (action === "hold" && (await isSealed(supabase, company.id, "sheet_rows.status", row.created_at))) { revalidatePath("/sheet/diverge"); return; }
+  if ((action === "hold" || ((action === "approve" || action === "confirm") && row.status === "held")) && (await isSealed(supabase, company.id, "sheet_rows.status", row.created_at))) { revalidatePath("/sheet/diverge"); return; }
   if (action === "fix") {
     const ok = await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
       { column: "sheet_rows.value_raw", rowId, createdAt: row.created_at, before: row.value_raw, after },

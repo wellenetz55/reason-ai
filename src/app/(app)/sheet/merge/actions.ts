@@ -157,8 +157,10 @@ export async function reopenDiagnosis(formData: FormData) {
   const { supabase, company, user, profile } = await requireStage("merge");
   if (isMember(profile)) { revalidatePath("/sheet/merge"); return; } // 決定・却下・保留・戻すは担当者だけ
   const rowId = String(formData.get("row_id"));
-  const { data: row } = await supabase.from("sheet_rows").select("id, status").eq("id", rowId).eq("company_id", company.id).maybeSingle();
+  const { data: row } = await supabase.from("sheet_rows").select("id, status, created_at").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   if (!row) return;
+  // 封の時点で外していた・保留だった組は戻せない（封をした状態を変えることになる）
+  if (row.status !== "active" && (await isSealed(supabase, company.id, "sheet_rows.status", row.created_at))) { revalidatePath("/sheet/merge"); return; }
   // 却下・保留から戻すときは行を active に戻す
   if (row.status === "dropped" || row.status === "held") await supabase.from("sheet_rows").update({ status: "active" }).eq("id", rowId);
   await supabase.from("row_diagnoses").update({ resolved: null }).eq("row_id", rowId);
