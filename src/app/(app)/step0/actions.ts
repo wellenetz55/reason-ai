@@ -146,14 +146,18 @@ export async function removeDocument(formData: FormData) {
 
 // ---------- 御社の説明（profile_items） ----------
 
+/** 「戻す」で下書きに戻した、御社が書いた（承認した）文の印。AIの作り直しの対象にしない */
+const OWN_SOURCE = "御社が書いた文";
+
 /** 資料から AI が下書きを作る。承認済み・直した・保留の項目は上書きしない */
 export async function requestProfileDraft() {
   const { supabase, company, user } = await requireStage("step0");
   const res = await aiGuard(supabase, company.id, user.id, "profile.draft", () => draftProfile(company.id, company.name));
   if (!res) { revalidatePath("/step0"); return; }
   const { items, skipped, errors } = res;
-  const { data: existing } = await supabase.from("profile_items").select("key, status").eq("company_id", company.id);
-  const locked = new Set((existing ?? []).filter((e) => ["approved", "fixed", "held"].includes(e.status)).map((e) => e.key));
+  const { data: existing } = await supabase.from("profile_items").select("key, status, source").eq("company_id", company.id);
+  // 承認・直した・保留の項目に加え、「戻す」で下書きに戻した御社の文も上書きしない
+  const locked = new Set((existing ?? []).filter((e) => ["approved", "fixed", "held"].includes(e.status) || e.source === OWN_SOURCE).map((e) => e.key));
   const rows = items.filter((i) => !locked.has(i.key)).map((i) => ({
     company_id: company.id, key: i.key, draft: i.draft || null, tag: i.tag || "hypothesis", source: i.source || null,
     status: i.draft ? "draft" : "empty", updated_at: new Date().toISOString(),
@@ -179,7 +183,11 @@ export async function reviewProfileItem(formData: FormData) {
   else if (action === "hold") { patch.status = "held"; }
   // 戻す：自分で書いた（または承認した）文は残す
   // 戻す：確定・承認した文は消さずに下書きへ戻す（状態は「下書き」。もう一度承認・修正できる）
-  else if (action === "reopen") { const keep = cur?.value ?? cur?.draft ?? null; patch.draft = keep; patch.value = null; patch.status = keep ? "draft" : "empty"; }
+  else if (action === "reopen") {
+    const keep = cur?.value ?? cur?.draft ?? null; patch.draft = keep; patch.value = null; patch.status = keep ? "draft" : "empty";
+    // 御社が承認・修正した文を戻したときは印をつけ、AIの作り直しで上書きされないようにする
+    if (cur?.value) patch.source = OWN_SOURCE;
+  }
   await supabase.from("profile_items").upsert({ ...(cur ?? {}), ...patch }, { onConflict: "company_id,key" });
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "profile.review" });
   revalidatePath("/step0");

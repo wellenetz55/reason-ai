@@ -165,7 +165,7 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
         </div>
         {!docs?.length && <p className="text-[12px] text-warm mt-2">まず資料を1つ以上登録してください。</p>}
         <AiNotice message={aiErr} />
-        {drafted && <p className="text-[12px] text-ink-3 mt-2">作り直しても、承認済み・直した・保留の項目は変わりません。画像の資料は読めないので、文字はテキストで貼ってください。</p>}
+        {drafted && <p className="text-[12px] text-ink-3 mt-2">作り直しても、承認済み・直した・保留の項目と、「戻す」で直し中の御社の文は変わりません。画像の資料は読めないので、文字はテキストで貼ってください。</p>}
         <div className="mt-6 max-w-[880px]">
           <ProfileItems items={items ?? []} bq={bq} oneLiner={summary?.q1_before ?? null} review={reviewProfileItem} drafted={!!drafted} />
         </div>
