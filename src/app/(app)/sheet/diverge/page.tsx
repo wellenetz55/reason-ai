@@ -107,13 +107,13 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
 
         <AiNotice message={aiErr} />
         <div className="mt-4 flex flex-wrap gap-3">
-          <form action={requestDraft}>
+          <form action={requestDraft} data-busy-timeout="300000">
             <input type="hidden" name="facet" value={facet.key} />
             <input type="hidden" name="round" value={round} />
             <button className="rounded-[var(--radius)] border-2 border-navy bg-paper text-navy px-4 py-2 text-[14px] font-semibold hover:bg-navy-soft transition-colors" type="submit">この面でAIに下書きを出させる（対で）</button>
           </form>
           {missingActive > 0 && (
-            <form action={requestExperienceDrafts}>
+            <form action={requestExperienceDrafts} data-busy-timeout="300000">
               <button className="rounded-[var(--radius)] border-2 border-navy bg-paper text-navy px-4 py-2 text-[14px] font-semibold hover:bg-navy-soft transition-colors" type="submit">{missingActive > 10 ? `体験価値が空の${missingActive}行のうち、まず10行にAIの下書きを付ける` : `体験価値が空の${missingActive}行に、AIの下書きを付ける`}</button>
             </form>
           )}

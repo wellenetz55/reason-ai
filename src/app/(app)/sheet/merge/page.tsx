@@ -63,7 +63,7 @@ export default async function Page() {
               <h2 className="serif text-[20px]">ふわっと診断</h2>
               <p className="text-sm text-ink-2 mt-1 max-w-[40em]">入力した提供価値・体験価値を、選ばれる理由AIが1組ずつレビューします。「どの会社でも言える言葉になっていないか」「数字や固有名詞があるか」「体験価値が機能の言い換えになっていないか」を見て、ふわっとしている組には言い直し案を出します。直すかどうかは御社が決めます。どの会社でも言える語には、レビュー前から黄色の印がつきます。</p>
             </div>
-            <form action={runVagueCheck}>
+            <form action={runVagueCheck} data-busy-timeout="300000">
               <button className="btn-primary" type="submit" disabled={active.length === 0}>{lastChecked ? "AIにもう一度レビューしてもらう" : "入力した組をAIにレビューしてもらう"}</button>
             </form>
           </div>

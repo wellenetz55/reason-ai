@@ -77,7 +77,7 @@ export default async function Page() {
         {hasPublic && <p className="mt-3 rounded-[var(--radius)] bg-warm-soft px-4 py-3 text-[13px] max-w-[44em]">出所が「公開の声（レビュー・コメント）」のブレーキがあります。原文はこのシートの中だけで使い、営業資料・Webなどの販促物に転載しないでください。</p>}
         <AiNotice message={loadErr ?? aiErr} />
         {missing > 0 && (
-          <form action={requestBrakeDrafts} className="mt-4" data-busy-timeout="120000">
+          <form action={requestBrakeDrafts} className="mt-4" data-busy-timeout="300000">
             <button className="btn-primary" type="submit">{missing > 6 ? `ブレーキが無い${missing}組のうち、まず6組にAIの下書きを付ける` : `ブレーキが無い${missing}組に、AIの下書きを付ける`}</button>
             <p className="text-[12px] text-ink-3 mt-2">{missing > 6 ? "AIは一度に6組ずつ進めます（1組に4種類×数枚を書くため）。押すたびに次の6組に下書きが付きます。" : ""}御社の説明・適合診断の聞き取り・面談記録・資料から、お客様の言葉を拾います。材料に無いものは「仮説」として出します。直すかどうかは御社が決めます。</p>
           </form>

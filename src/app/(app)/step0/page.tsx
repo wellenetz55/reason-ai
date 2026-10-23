@@ -159,7 +159,7 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
             <h2 className="serif text-[22px]">御社の説明</h2>
             <p className="text-sm text-ink-2 mt-1 max-w-[40em]">上の資料をAIが読んで下書きします。項目ごとに「直す／承認／保留」してください。一括承認はありません。</p>
           </div>
-          <form action={requestProfileDraft}>
+          <form action={requestProfileDraft} data-busy-timeout="300000">
             <button className="btn-primary" type="submit" disabled={!docs?.length && !hasIntake}>{drafted ? "資料から下書きを作り直す" : "資料から下書きを作る"}</button>
           </form>
         </div>

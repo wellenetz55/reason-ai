@@ -76,7 +76,7 @@ export default async function Page() {
         </div>
         <AiNotice message={loadErr ?? aiErr} />
         {empty > 0 && (
-          <form action={requestCounterDrafts} className="mt-4" data-busy-timeout="120000">
+          <form action={requestCounterDrafts} className="mt-4" data-busy-timeout="300000">
             <button className="btn-primary" type="submit">{empty > 8 ? `答えが無い${empty}件のうち、まず8件にAIの下書きを付ける` : `答えが無い${empty}件に、AIの下書きを付ける`}</button>
             <p className="text-[12px] text-ink-3 mt-2">{empty > 8 ? "AIは一度に8件ずつ進めます。押すたびに次の8件に下書きが付きます。" : ""}御社の説明・聞き取り・面談記録から答えと根拠を拾います。分からない数字は「○」の穴のまま出します。直すかどうかは御社が決めます。</p>
           </form>

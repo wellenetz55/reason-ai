@@ -78,7 +78,7 @@ export default async function Page() {
           </p>
         )}
         {noAi > 0 && (
-          <form action={requestLitmusDrafts} className="mt-4" data-busy-timeout="120000">
+          <form action={requestLitmusDrafts} className="mt-4" data-busy-timeout="300000">
             <button className="btn-primary" type="submit">{noAi > 8 ? `AIの仮判定が無い${noAi}組のうち、まず8組に付ける` : `AIの仮判定が無い${noAi}組に付ける`}</button>
             <p className="text-[12px] text-ink-3 mt-2">{noAi > 8 ? "AIは一度に8組ずつ進めます。" : ""}御社の説明・面談記録・競合の情報から判定します。材料が足りない項目は判定しません。</p>
           </form>
