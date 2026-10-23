@@ -39,7 +39,8 @@ export default async function Page() {
   const seals = await loadSeals(supabase, company.id);
   const blist: CounterBrake[] = (brakes ?? []).map((b) => {
     // 封（確認セッション②）：根拠が「事実」の答えだけが封の対象（事実でなければ仮封で、理由なしで直せる）
-    const x = b.counter_message ? sealOn(seals, "brakes.counter_message", b.created_at, b.because_tag ?? "hypothesis") : null;
+    // 承認前のAIの答えは封の対象にしない（封のあとにAIが付けた答えを、理由なしで直せるように）
+    const x = b.counter_message ? sealOn(seals, "brakes.counter_message", b.created_at, b.counter_by === "ai" && !b.counter_approved_at ? "hypothesis" : b.because_tag ?? "hypothesis") : null;
     return {
       id: b.id, row_id: b.row_id, kind: b.kind, customer_words: b.customer_words, counter_message: b.counter_message, because: b.because,
       because_tag: b.because_tag ?? "hypothesis", counter_by: b.counter_by, counter_approved_at: b.counter_approved_at, counter_history: (b.counter_history ?? []) as string[],

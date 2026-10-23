@@ -33,7 +33,7 @@ export default async function Page() {
   const seals = await loadSeals(supabase, company.id);
   // 封（確認セッション②）：磨いた体験価値、または根拠が「事実」のなぜなら が封の対象
   const list = (rows ?? []).map((r) => {
-    const x = (r.experience_value ? sealOn(seals, "sheet_rows.experience_value", r.created_at) : null) ?? (r.because_phrase ? sealOn(seals, "sheet_rows.because_phrase", r.created_at, r.because_tag ?? "hypothesis") : null);
+    const x = (r.experience_value ? sealOn(seals, "sheet_rows.experience_value", r.created_at) : null) ?? (r.because_phrase ? sealOn(seals, "sheet_rows.because_phrase", r.created_at, r.because_by === "ai" ? "hypothesis" : r.because_tag ?? "hypothesis") : null);
     return { ...r, because_only_us: !!r.because_only_us, sealed: x ? SEAL_LABEL[x.session] : null };
   });
   const withB = list.filter((r) => r.because_phrase).length;

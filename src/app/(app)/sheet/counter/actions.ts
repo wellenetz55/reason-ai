@@ -10,14 +10,16 @@ import { MAX, cut, nl } from "@/lib/limits";
 import { decodeCounter, encodeCounter } from "@/lib/history";
 
 const TAGS = ["fact", "verify", "hypothesis"];
+/** 封の判定に使う印：承認前のAIの答えは仮封（封の対象にしない） */
+const sealTag = (b: { because_tag?: string | null; counter_by?: string | null; counter_approved_at?: string | null }) => (b.counter_by === "ai" && !b.counter_approved_at ? "hypothesis" : b.because_tag ?? "hypothesis");
 const COUNTER_BATCH = 8; // 1回のAI呼び出しで扱うブレーキの枚数
 
-type BrakeRow = { id: string; row_id: string; kind: string; customer_words: string | null; counter_message: string | null; because?: string | null; because_tag?: string | null; counter_by?: string | null; counter_history: string[] | null; sheet_rows: { value_raw: string | null; experience_value: string | null; experience_value_v1: string | null; status: string } };
+type BrakeRow = { id: string; row_id: string; kind: string; customer_words: string | null; counter_message: string | null; because?: string | null; because_tag?: string | null; counter_by?: string | null; counter_approved_at?: string | null; counter_history: string[] | null; sheet_rows: { value_raw: string | null; experience_value: string | null; experience_value_v1: string | null; status: string } };
 
 async function loadOpenBrakes(supabase: Awaited<ReturnType<typeof requireStage>>["supabase"], companyId: string) {
   const { data } = await supabase
     .from("brakes")
-    .select("id, row_id, kind, customer_words, counter_message, because, because_tag, counter_by, counter_history, created_at, sheet_rows!inner(company_id, status, seq, value_raw, experience_value, experience_value_v1)")
+    .select("id, row_id, kind, customer_words, counter_message, because, because_tag, counter_by, counter_approved_at, counter_history, created_at, sheet_rows!inner(company_id, status, seq, value_raw, experience_value, experience_value_v1)")
     .eq("sheet_rows.company_id", companyId)
     .eq("sheet_rows.status", "active")
     .eq("status", "active")
@@ -69,7 +71,7 @@ export async function redraftCounter(formData: FormData) {
   const b = all.find((x) => x.id === id);
   if (!b || !b.customer_words) return;
   // 封をした答え（根拠が事実）は、AIの案で置き換えない（直すときは「直す」から理由を書く）
-  if (b.counter_message && (await isSealed(supabase, company.id, "brakes.counter_message", b.created_at, b.because_tag))) { revalidatePath("/sheet/counter"); return; }
+  if (b.counter_message && (await isSealed(supabase, company.id, "brakes.counter_message", b.created_at, sealTag(b)))) { revalidatePath("/sheet/counter"); return; }
   // 前の答えは ⑥なぜなら・印ごと履歴に残す（あとで「この答えに戻す」で選び直せるように）
   const history = [...(b.counter_history ?? []), ...(b.counter_message ? [encodeCounter({ c: b.counter_message, b: b.because ?? null, t: b.because_tag ?? null, a: b.counter_by ?? null })] : [])].slice(-5);
   const profile = await loadProfileContext(supabase, company.id);
@@ -96,7 +98,7 @@ export async function saveCounter(formData: FormData) {
   const action = String(formData.get("action")); // fix | approve | reopen
   // メンバーは承認・承認を外すができない（直すだけ。直した答えは担当者の承認待ち）
   if (isMember(profile) && action !== "fix") { revalidatePath("/sheet/counter"); return; }
-  const { data: b } = await supabase.from("brakes").select("id, row_id, counter_message, because, because_tag, counter_by, counter_history, created_at, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
+  const { data: b } = await supabase.from("brakes").select("id, row_id, counter_message, because, because_tag, counter_by, counter_approved_at, counter_history, created_at, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!b) return;
   if (action === "fix") {
     const counter = cut(String(formData.get("counter") || "").trim(), MAX.value);
@@ -105,9 +107,9 @@ export async function saveCounter(formData: FormData) {
     if (!counter) return;
     // 封（確認セッション②）：根拠が「事実」の答えは、変えるときに理由が要る（理由と変更前後を記録）
     if (!(await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
-      { column: "brakes.counter_message", rowId: b.row_id, createdAt: b.created_at, before: b.counter_message, after: counter, tag: b.because_tag },
-      { column: "brakes.because", rowId: b.row_id, createdAt: b.created_at, before: b.because, after: because, tag: b.because_tag },
-      { column: "brakes.because_tag", rowId: b.row_id, createdAt: b.created_at, before: b.because_tag, after: TAGS.includes(tag) ? tag : "hypothesis", tag: b.because_tag },
+      { column: "brakes.counter_message", rowId: b.row_id, createdAt: b.created_at, before: b.counter_message, after: counter, tag: sealTag(b) },
+      { column: "brakes.because", rowId: b.row_id, createdAt: b.created_at, before: b.because, after: because, tag: sealTag(b) },
+      { column: "brakes.because_tag", rowId: b.row_id, createdAt: b.created_at, before: b.because_tag, after: TAGS.includes(tag) ? tag : "hypothesis", tag: sealTag(b) },
     ] }))) { revalidatePath("/sheet/counter"); return; }
     // 直す前の答えも履歴に残す（直したあとで、前の答えに戻したくなったとき用）
     const changed = !!b.counter_message && (nl(b.counter_message) !== counter || nl(b.because) !== because);
@@ -132,9 +134,9 @@ export async function restoreCounter(formData: FormData) {
   const id = String(formData.get("id"));
   // 位置ではなく中身で探す（別のタブでAIの別案を頼むと履歴の並びがずれるため）
   const entry = String(formData.get("entry") ?? "");
-  const { data: b } = await supabase.from("brakes").select("id, row_id, counter_message, because, because_tag, counter_by, counter_history, created_at, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
+  const { data: b } = await supabase.from("brakes").select("id, row_id, counter_message, because, because_tag, counter_by, counter_approved_at, counter_history, created_at, sheet_rows!inner(company_id)").eq("id", id).eq("sheet_rows.company_id", company.id).maybeSingle();
   if (!b) return;
-  if (b.counter_message && (await isSealed(supabase, company.id, "brakes.counter_message", b.created_at, b.because_tag))) { revalidatePath("/sheet/counter"); return; } // 封をした答えは戻さない
+  if (b.counter_message && (await isSealed(supabase, company.id, "brakes.counter_message", b.created_at, sealTag(b)))) { revalidatePath("/sheet/counter"); return; } // 封をした答えは戻さない
   const hist = ((b.counter_history as string[] | null) ?? []).slice();
   const idx = hist.lastIndexOf(entry);
   if (!entry || idx < 0) { revalidatePath("/sheet/counter"); return; }

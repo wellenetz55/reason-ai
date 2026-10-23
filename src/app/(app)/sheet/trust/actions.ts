@@ -53,8 +53,8 @@ export async function saveTriple(formData: FormData) {
     // 封（確認セッション②）：磨いた体験価値と、根拠が「事実」のなぜなら は、変えるときに理由が要る
     if (!(await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
       { column: "sheet_rows.experience_value", rowId, createdAt: row.created_at, before: row.experience_value, after: exp },
-      { column: "sheet_rows.because_phrase", rowId, createdAt: row.created_at, before: row.because_phrase, after: because, tag: row.because_tag ?? "hypothesis" },
-      { column: "sheet_rows.because_tag", rowId, createdAt: row.created_at, before: row.because_tag, after: ["fact", "verify", "hypothesis"].includes(tag) ? tag : "hypothesis", tag: row.because_tag ?? "hypothesis" },
+      { column: "sheet_rows.because_phrase", rowId, createdAt: row.created_at, before: row.because_phrase, after: because, tag: row.because_by === "ai" ? "hypothesis" : row.because_tag ?? "hypothesis" } /* 承認前のAIの下書きは仮封 */,
+      { column: "sheet_rows.because_tag", rowId, createdAt: row.created_at, before: row.because_tag, after: ["fact", "verify", "hypothesis"].includes(tag) ? tag : "hypothesis", tag: row.because_by === "ai" ? "hypothesis" : row.because_tag ?? "hypothesis" } /* 承認前のAIの下書きは仮封 */,
     ] }))) { revalidatePath("/sheet/trust"); return; }
     patch.experience_value = exp || null;
     patch.because_phrase = because || null;
