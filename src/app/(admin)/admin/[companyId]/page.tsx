@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ClearIssuedLink } from "@/components/ClearIssuedLink";
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
-import { setStatus, setReaccess, setPhaseEnd, resolveAlert, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink, setContractStep, inviteCustomer } from "../actions";
+import { setStatus, setReaccess, setPhaseEnd, resolveAlert, createMeeting, updateMeeting, answerQuestion, resolveErrorReport, issueSignInLink, setContractStep, inviteCustomer, disableCustomer, setMainContact } from "../actions";
 import { MEETING_LABEL, ADVANCE_AFTER_MEETING, fmtMeeting, toLocalInput } from "@/lib/meetings";
 import { createHomework, updateHomework, withdrawHomework, reopenHomework } from "./homework-actions";
 import { ClearQuery } from "@/components/ClearQuery";
@@ -40,7 +40,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   ]);
   // 1回の往復でまとめて読む（順番に待つと会社が増えたときに遅くなる）
   const [{ data: members }, intake, { data: openAlerts }, gate, { data: diag }, kickoff] = await Promise.all([
-    supabase.from("profiles").select("id, display_name, role, created_at").eq("company_id", companyId).order("created_at"),
+    supabase.from("profiles").select("id, display_name, role, disabled_at, created_at").eq("company_id", companyId).order("created_at"),
     loadIntake(companyId).catch(() => null),
     supabase.from("alerts").select("id, kind, payload, created_at").eq("company_id", companyId).is("resolved_at", null).order("created_at", { ascending: false }),
     c ? inviteGate(companyId, c.status) : Promise.resolve({ ok: false, reason: "" }),
@@ -287,10 +287,16 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
         {(members ?? []).length > 0 && (
           <ul className="mt-3 text-sm space-y-1">
             {(members ?? []).map((m) => (
-              <li key={m.id} className="flex items-center gap-3">
+              <li key={m.id} className={`flex flex-wrap items-center gap-3 ${m.disabled_at ? "text-ink-3 line-through" : ""}`}>
                 <span>{m.display_name || "（名前未設定）"}</span>
                 <span className="num text-xs text-ink-3">{emailOf(m.id)}</span>
-                <span className="text-[11px] text-ink-3">{m.role === "customer_admin" ? "主担当" : "担当者"}</span>
+                <span className="text-[11px] text-ink-3 no-underline">{m.disabled_at ? "外しました（追加し直すと戻ります）" : m.role === "customer_admin" ? "主担当" : "担当者"}</span>
+                {!m.disabled_at && m.role !== "customer_admin" && (
+                  <>
+                    <form action={setMainContact}><input type="hidden" name="id" value={m.id} /><input type="hidden" name="company_id" value={c.id} /><button className="btn-text text-xs" type="submit" data-confirm={`${m.display_name || "この人"}さんを主担当にします（いまの主担当は担当者になります）。よろしいですか？`}>主担当にする</button></form>
+                    <form action={disableCustomer}><input type="hidden" name="id" value={m.id} /><input type="hidden" name="company_id" value={c.id} /><button className="btn-text text-xs text-ink-3" type="submit" data-confirm={`${m.display_name || "この人"}さんを外します。サインインできなくなります。よろしいですか？`}>外す</button></form>
+                  </>
+                )}
               </li>
             ))}
           </ul>

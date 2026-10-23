@@ -46,7 +46,9 @@ export async function inviteCustomer(formData: FormData) {
     const { data: prof } = await admin.from("profiles").select("role, company_id, display_name").eq("id", existing.id).maybeSingle();
     if (prof?.role === "operator") redirect(`/admin/${companyId}?member_error=${encodeURIComponent("そのメールアドレスは運営者です。顧客の担当者には登録できません")}`);
     if (prof?.company_id && prof.company_id !== companyId) redirect(`/admin/${companyId}?member_error=${encodeURIComponent("そのメールアドレスは別の会社の担当者として登録済みです")}`);
-    await admin.from("profiles").upsert({ id: existing.id, company_id: companyId, role: prof?.role ?? firstRole, display_name: name || prof?.display_name || existing.email });
+    await admin.from("profiles").upsert({ id: existing.id, company_id: companyId, role: prof?.role ?? firstRole, display_name: name || prof?.display_name || existing.email, disabled_at: null });
+    // 外していた人を追加し直したときは、サインインの停止も解く
+    await admin.auth.admin.updateUserById(existing.id, { ban_duration: "none" });
     await admin.auth.signInWithOtp({ email, options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`, shouldCreateUser: false } });
   } else {
     const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback` });
@@ -55,6 +57,41 @@ export async function inviteCustomer(formData: FormData) {
   }
   revalidatePath(`/admin/${companyId}`);
   redirect(`/admin/${companyId}?member_ok=1`);
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** お客様の担当者を外す（退職など）。サインインを止める。追加し直せば戻せる。主担当は外せない（先に別の人を主担当にする） */
+export async function disableCustomer(formData: FormData) {
+  await requireOperator();
+  const id = String(formData.get("id") || "");
+  const companyId = String(formData.get("company_id") || "");
+  if (!UUID_RE.test(id) || !UUID_RE.test(companyId)) return;
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+  const { data: p } = await admin.from("profiles").select("role, company_id").eq("id", id).maybeSingle();
+  if (!p || p.company_id !== companyId || p.role === "operator") return;
+  if (p.role === "customer_admin") redirect(`/admin/${companyId}?member_error=${encodeURIComponent("主担当は外せません。先に別の人を主担当にしてください")}`);
+  await admin.from("profiles").update({ disabled_at: new Date().toISOString() }).eq("id", id);
+  await admin.auth.admin.updateUserById(id, { ban_duration: "876000h" }); // 約100年サインインを止める
+  revalidatePath(`/admin/${companyId}`);
+}
+
+/** 主担当を替える。選んだ人を主担当に、それまでの主担当はメンバーにする（主担当は1人） */
+export async function setMainContact(formData: FormData) {
+  await requireOperator();
+  const id = String(formData.get("id") || "");
+  const companyId = String(formData.get("company_id") || "");
+  if (!UUID_RE.test(id) || !UUID_RE.test(companyId)) return;
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+  const { data: p } = await admin.from("profiles").select("role, company_id, disabled_at").eq("id", id).maybeSingle();
+  if (!p || p.company_id !== companyId || p.role === "operator" || p.disabled_at) return;
+  // 先に新しい主担当を立ててから、ほかの主担当を外す（途中で失敗しても主担当がいなくならないように）
+  const { error } = await admin.from("profiles").update({ role: "customer_admin" }).eq("id", id);
+  if (error) redirect(`/admin/${companyId}?member_error=${encodeURIComponent("主担当を替えられませんでした")}`);
+  await admin.from("profiles").update({ role: "customer_member" }).eq("company_id", companyId).eq("role", "customer_admin").neq("id", id);
+  revalidatePath(`/admin/${companyId}`);
 }
 
 const CONTRACT_COLS = { applied: "applied_at", contracted: "contracted_at", paid: "paid_at" } as const;
