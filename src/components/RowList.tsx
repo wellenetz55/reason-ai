@@ -58,7 +58,7 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
               <textarea name="after_experience" value={exp} onChange={(e) => setExp(e.target.value)} rows={2} placeholder="〜と感じることができる" className="w-full text-[16px] leading-snug border-b hairline" />
               {row.sealed && <SealReason />}
               <div className="mt-2 flex gap-2">
-                <button className="btn-primary" type="submit">直して確定</button>
+                <button className="btn-primary" type="submit"><span data-admin-only>直して確定</span><span data-member-only>直す（担当者の確定待ち）</span></button>
                 <button className="btn-text" type="button" onClick={() => setEditing(false)}>やめる</button>
               </div>
             </form>

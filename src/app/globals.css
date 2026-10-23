@@ -210,7 +210,7 @@ button[data-busy="short"]::after { content: "…"; }
 
 /* メンバーにだけ出す案内（担当者の操作の代わりに「担当者が行います」と出す） */
 [data-member-only] { display: none; }
-[data-member] [data-member-only] { display: block; }
+[data-member] [data-member-only] { display: revert; }
 
 /* 担当者以外のメンバー：承認・確定・決定・保留・却下・戻す・日程の選択・申し込みのフォームを隠す（サーバ側でも止めている） */
 [data-member] [data-admin-only],
