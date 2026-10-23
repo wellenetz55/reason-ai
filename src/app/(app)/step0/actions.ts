@@ -265,7 +265,11 @@ export async function addCompetitor(formData: FormData) {
   if (!isReference && n >= 3) await fail("競合は3社までです。参考にしたい会社は「参考」として1社入れられます。");
   if (isReference && n >= 1) await fail("参考の会社は1社までです。");
   const { error } = await supabase.from("competitors").insert({ company_id: company.id, name, product: product || null, website, is_reference: isReference, created_by: user.id });
-  if (error) await fail("登録できませんでした" + (/product|created_by/.test(error.message) ? "（SQL 0027 が未実行の可能性があります）" : "") + "：" + error.message);
+  if (error) {
+    // データベースの生のエラー文はお客様に見せず、サーバの記録に残す
+    console.error("[step0.addCompetitor]", error.message);
+    await fail("登録できませんでした。時間をおいてもう一度お試しください。続く場合は「ベレネッツに質問を残す」からお知らせください。");
+  }
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "competitor.add", payload: { name, reference: isReference } });
   revalidatePath("/step0");
 }
