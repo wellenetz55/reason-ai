@@ -32,5 +32,9 @@ export async function GET(request: Request) {
       await admin.from("alerts").update({ resolved_at: iso }).eq("company_id", c.id).eq("kind", "stale7").is("resolved_at", null);
     }
   }
+  // 手動バックアップのダウンロード用の一時ファイル（全社のデータを含む）は、1時間を過ぎたら消す
+  const { data: dl } = await admin.storage.from("backups").list("downloads", { limit: 100 });
+  const stale = (dl ?? []).filter((o) => o.id && new Date(o.created_at ?? 0).getTime() < now.getTime() - 3600_000);
+  if (stale.length) await admin.storage.from("backups").remove(stale.map((o) => `downloads/${o.name}`));
   return NextResponse.json({ ok: true, at: iso });
 }

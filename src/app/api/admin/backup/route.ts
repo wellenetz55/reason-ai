@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
   // 前回の一時ファイルは消す（置きっぱなしにしない）
   const { data: olds } = await admin.storage.from("backups").list("downloads", { limit: 100 });
   if (olds?.length) await admin.storage.from("backups").remove(olds.map((o) => `downloads/${o.name}`));
-  const key = `downloads/backup_${Date.now()}.zip`;
+  const key = `downloads/backup_${Date.now()}_${randomUUID()}.zip`; // 名前を推測できないようにする
   const { error } = await admin.storage.from("backups").upload(key, b.zip, { contentType: "application/zip", upsert: true });
   if (!error) {
     const { data: signed } = await admin.storage.from("backups").createSignedUrl(key, 300, { download: b.filename });
