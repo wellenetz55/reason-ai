@@ -129,7 +129,7 @@ export default async function Page({ searchParams }: PageProps<"/step0">) {
       <section className="mt-14">
         <h2 className="serif text-[18px]">競合他社 <span className="num text-ink-3 text-[14px]">{competitors.filter((c) => !c.is_reference).length}/3</span></h2>
         <p className="text-sm text-ink-2 mt-1 max-w-[40em]">お客様が御社と比べる相手を、最大3社。加えて「こうなりたい」参考の会社を1社入れられます。AIが「競合の弱みの裏返し」や競合比較の材料に使います。会社名だけでも構いません。</p>
-        {compRes.error && <p className="text-[12px] text-warm mt-2">競合の登録先に不足があります（SQL 0027 が未実行の可能性があります）。</p>}
+        {compRes.error && <p className="text-[12px] text-warm mt-2">競合の一覧を読み込めませんでした。時間をおいて開き直してください。</p>}
         {competitors.length > 0 && (
           <ul className="mt-3 divide-y divide-hair">
             {competitors.map((c) => (
