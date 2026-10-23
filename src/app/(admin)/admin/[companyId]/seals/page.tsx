@@ -70,9 +70,10 @@ export default async function SealsAdmin({ params, searchParams }: PageProps<"/a
                   <button className="btn-primary" type="submit">{l ? "いまの内容で封をし直す" : `${s.label}の封をする`}</button>
                 </form>
                 {l && (
-                  <form action={unsealSession}>
+                  <form action={unsealSession} className="flex flex-wrap items-center gap-2">
                     <input type="hidden" name="company_id" value={c.id} /><input type="hidden" name="session" value={s.key} />
-                    <button className="btn-text text-xs" type="submit">封を解く（この封の変更の記録も消えます）</button>
+                    <label className="text-[11px] text-ink-3 flex items-center gap-1"><input type="checkbox" name="confirm" value="yes" required />変更の記録も消えることを確認しました</label>
+                    <button className="btn-text text-xs" type="submit">封を解く</button>
                   </form>
                 )}
               </div>

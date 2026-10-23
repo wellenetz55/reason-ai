@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOperator } from "@/lib/session";
 import { SEAL_SESSIONS } from "@/lib/seals";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const back = (companyId: string, q: string) => redirect(`/admin/${companyId}/seals?${q}`);
@@ -38,11 +39,20 @@ export async function sealSession(formData: FormData) {
 
 /** 封を解く（間違えて封をしたとき）。その封についた変更の記録も一緒に消える */
 export async function unsealSession(formData: FormData) {
-  const { supabase, user } = await requireOperator();
+  const { supabase, user, isSuper } = await requireOperator();
   const companyId = String(formData.get("company_id") ?? "");
   const key = String(formData.get("session") ?? "");
   if (!UUID.test(companyId) || !SEAL_SESSIONS.some((s) => s.key === key)) return;
-  await supabase.from("sheet_locks").delete().eq("company_id", companyId).eq("session", key);
+  // 押し間違いで封と記録が消えないように、確認のチェックを必須にする。記録がある封を解けるのはスーパー管理者だけ
+  if (formData.get("confirm") !== "yes") return back(companyId, "error=" + encodeURIComponent("封を解くには、「変更の記録も消えることを確認しました」にチェックを入れてください"));
+  const { data: locks } = await supabase.from("sheet_locks").select("id").eq("company_id", companyId).eq("session", key);
+  const ids = (locks ?? []).map((l) => l.id);
+  if (ids.length && !isSuper) {
+    const { count } = await createAdminClient().from("sheet_lock_history").select("id", { count: "exact", head: true }).in("lock_id", ids);
+    if ((count ?? 0) > 0) return back(companyId, "error=" + encodeURIComponent("この封には変更の記録があるため、封を解けるのはスーパー管理者だけです（「いまの内容で封をし直す」なら記録は残ります）"));
+  }
+  const { error } = await supabase.from("sheet_locks").delete().eq("company_id", companyId).eq("session", key);
+  if (error) return back(companyId, "error=" + encodeURIComponent(`封を解けませんでした：${error.message}`));
   await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "admin.unseal", payload: { session: key } });
   revalidatePath(`/admin/${companyId}`);
   revalidatePath("/", "layout");
