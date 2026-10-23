@@ -63,7 +63,11 @@ export async function confirmRanking(formData: FormData) {
   if (rankOf.size === 0) return back(companyId, "error=" + encodeURIComponent("いまある組に、仮順位がまだ1つも入っていません"));
   const nums = [...rankOf.values()];
   if (new Set(nums).size !== nums.length) return back(companyId, "error=" + encodeURIComponent("同じ順位が2つ以上あります。重ならないように直してから確定してください"));
-  const top = Math.min(...nums);
+  // 仮順位が 2,3,4 のように1から始まらない・飛んでいるときは、並びのまま 1,2,3… に詰める（1位＝主役の組が必ずできるように）
+  const order = [...rankOf.entries()].sort((a, b) => a[1] - b[1]);
+  const renumbered = order.some(([, v], i) => v !== i + 1);
+  order.forEach(([id], i) => rankOf.set(id, i + 1));
+  const top = 1;
   // 全行を一度外してから付け直す（順位は active の行だけ）
   const { error: e1 } = await supabase.from("sheet_rows").update({ rank: null, is_primary: false }).eq("company_id", companyId);
   if (e1) return back(companyId, "error=" + encodeURIComponent(`確定できませんでした：${e1.message}`));
@@ -75,7 +79,7 @@ export async function confirmRanking(formData: FormData) {
   await supabase.from("activity_log").insert({ company_id: companyId, user_id: user.id, event: "admin.litmus.rank", payload: { n: rankOf.size } });
   revalidatePath(`/admin/${companyId}/litmus`);
   revalidatePath(`/admin/${companyId}`);
-  back(companyId, `notice=${encodeURIComponent(`${rankOf.size}組の順位をお客様のシートに確定しました`)}`);
+  back(companyId, `notice=${encodeURIComponent(`${rankOf.size}組の順位をお客様のシートに確定しました${renumbered ? "（仮順位が1から続いていなかったため、並びのまま1・2・3…に詰めました）" : ""}`)}`);
 }
 
 /** ベレネッツの合計点が高い順に仮順位を入れ直す（同点は御社の自己評価の合計で。2問とも「いいえ」の保留候補と、未採点の組は順位を外す） */
