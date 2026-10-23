@@ -72,7 +72,7 @@ export default async function Page() {
           ))}
         </dl>
         <p className="text-[12px] text-ink-3 mt-3 max-w-[44em]">
-          根拠タグ：<span className="text-fact">事実</span>＝実際に言われた言葉がある／<span className="text-verify">要確認</span>＝ありそうだが確かめていない／<span className="text-hypo">仮説</span>＝推測。仮説は承認しても黄色のままで、STEP 7 で証拠がつくと事実に変わります。
+          根拠タグ：<span className="text-fact">事実</span>＝実際に言われた言葉がある／<span className="text-verify">要確認</span>＝ありそうだが確かめていない／<span className="text-hypo">仮説</span>＝推測。仮説は承認しても黄色のままです。お客様に実際に言われたと確かめられたら、「直す」で事実に変えてください。
         </p>
         {hasPublic && <p className="mt-3 rounded-[var(--radius)] bg-warm-soft px-4 py-3 text-[13px] max-w-[44em]">出所が「公開の声（レビュー・コメント）」のブレーキがあります。原文はこのシートの中だけで使い、営業資料・Webなどの販促物に転載しないでください。</p>}
         <AiNotice message={loadErr ?? aiErr} />
