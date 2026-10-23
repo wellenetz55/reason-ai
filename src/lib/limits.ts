@@ -10,10 +10,12 @@ export const MAX = {
   answer: 3000,    // 宿題の答え
   pasted: 50000,   // 貼り付けテキスト（議事録など）。AIへ送るときはさらに切る
 } as const;
-export const cut = (s: string, n: number) => s.slice(0, n);
+/** 改行をLFにそろえる。ブラウザのフォーム送信は改行をCRLFにするため、保存前と、保存済みの文と比べる前に通す */
+export const nl = (s: string | null | undefined) => (s ?? "").replace(/\r\n?/g, "\n");
+
+/** 入力を上限の長さで切る（改行もLFにそろえて保存する） */
+export const cut = (s: string, n: number) => nl(s).slice(0, n);
 
 /** AIへ送る1項目を切る（DBに長い文が直接書かれていても、指示文が膨らみすぎないように） */
 export const q = (s: string | null | undefined, n: number = 500) => (s ?? "").slice(0, n);
 
-/** 改行をLFにそろえる。ブラウザのフォーム送信は改行をCRLFにするため、保存済みの文（LF）と比べる前に両方に通す */
-export const nl = (s: string | null | undefined) => (s ?? "").replace(/\r\n?/g, "\n");

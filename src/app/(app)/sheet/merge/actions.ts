@@ -93,7 +93,7 @@ export async function resolveDiagnosis(formData: FormData) {
     const after = cut(nl(String(formData.get("after") || d.suggestion_value || "")).trim(), MAX.value);
     const afterExp = cut(nl(String(formData.get("after_experience") || d.suggestion_experience || row.experience_value_v1 || "")).trim(), MAX.value);
     if (!after) return;
-    const expChanged = afterExp !== (row.experience_value_v1 ?? "");
+    const expChanged = afterExp !== nl(row.experience_value_v1);
     await supabase.from("sheet_rows").update({ value_raw: after, experience_value_v1: afterExp || null, ...(expChanged ? { experience_value: afterExp || null } : {}), created_by: "customer" }).eq("id", rowId);
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "value_raw", action: "fix", before_text: row.value_raw, after_text: after, reviewer_id: user.id });
     await supabase.from("row_diagnoses").update({ resolved: "accepted", vague_score: 0 }).eq("row_id", rowId);

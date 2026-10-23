@@ -6,6 +6,7 @@ import { loadProfileContext } from "@/server/profile";
 import { aiGuard } from "@/server/aiGuard";
 import { BRAKE_KINDS, BRAKE_SOURCES } from "@/lib/brakes";
 import { encodeCounter } from "@/lib/history";
+import { nl } from "@/lib/limits";
 
 const KINDS = new Set<string>(BRAKE_KINDS.map((k) => k.key));
 const SOURCES = new Set<string>(BRAKE_SOURCES.map((s) => s.key));
@@ -56,7 +57,7 @@ export async function saveBrake(formData: FormData) {
   if (!b) return;
   const patch: Record<string, unknown> = {};
   if (action === "fix") {
-    const words = String(formData.get("words") || "").trim().slice(0, 400);
+    const words = nl(String(formData.get("words") || "")).trim().slice(0, 400);
     if (!words) return;
     const source = String(formData.get("source") || "own");
     const tag = String(formData.get("tag") || "hypothesis");
@@ -66,7 +67,7 @@ export async function saveBrake(formData: FormData) {
     patch.created_by = "customer";
     patch.approved_at = new Date().toISOString();
     // ブレーキの言葉が変わったら、STEP 4 の答えは別の言葉に向けて書いたものなので外す（前の答えは履歴に残す）
-    if (words !== (b.customer_words ?? "") && b.counter_message?.trim()) {
+    if (words !== nl(b.customer_words) && b.counter_message?.trim()) {
       patch.counter_history = [...((b.counter_history as string[] | null) ?? []), encodeCounter({ c: b.counter_message, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null, a: (b.counter_by as string | null) ?? null })].slice(-5);
       patch.counter_message = null;
       patch.because = null;
@@ -96,7 +97,7 @@ export async function addBrake(formData: FormData) {
   const { supabase, company, user } = await requireStage("brakes");
   const rowId = String(formData.get("row_id"));
   const kind = String(formData.get("kind") || "");
-  const words = String(formData.get("words") || "").trim().slice(0, 400);
+  const words = nl(String(formData.get("words") || "")).trim().slice(0, 400);
   const source = String(formData.get("source") || "own");
   const tag = String(formData.get("tag") || "hypothesis");
   if (!KINDS.has(kind) || !words) return;
