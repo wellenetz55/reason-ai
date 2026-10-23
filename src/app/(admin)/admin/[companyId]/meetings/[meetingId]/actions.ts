@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { requireOperator } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readTranscript, MAX_TRANSCRIPT } from "@/server/transcript";
-import { advanceAfterMeeting } from "@/app/(admin)/admin/actions";
+import { advanceAfterMeeting } from "@/server/statusAdvance";
 
 const back = (companyId: string, meetingId: string, q: string): never => redirect(`/admin/${companyId}/meetings/${meetingId}?${q}`);
 const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
