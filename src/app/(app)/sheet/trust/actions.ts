@@ -16,6 +16,8 @@ export async function requestBecauseDrafts() {
   const profile: Record<string, string> = {};
   for (const it of items ?? []) { const def = PROFILE_ITEMS.find((d) => d.key === it.key); if (def && it.value) profile[def.label] = it.value; }
   const targets = (rows ?? []).filter((r) => r.value_raw).map((r) => ({ id: r.id, value: r.value_raw as string, experience: r.experience_value ?? r.experience_value_v1 }));
+  // 「なぜなら」が空の組が無ければAIを呼ばない（呼び出し回数の上限を無駄に使わない）
+  if (!targets.length) { revalidatePath("/sheet/trust"); return; }
   const drafts = await aiGuard(supabase, company.id, user.id, "because.draft", () => draftBecause({ companyName: company.name, profile, rows: targets }));
   if (!drafts) { revalidatePath("/sheet/trust"); return; }
   const TAGS = ["fact", "verify", "hypothesis"];
