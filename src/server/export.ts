@@ -62,7 +62,7 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
     const rows = PROFILE_ITEMS.map((d) => {
       const it = byKey.get(d.key);
       const text = d.fixed ? (sum?.q1_after ?? sum?.q1_before ?? "") : (["approved", "fixed"].includes(it?.status ?? "") ? it?.value : it?.status === "held" ? (it?.value ?? it?.draft) : it?.draft) ?? "";
-      return { group: d.group === "A" ? "資料から" : "御社に聞く", item: d.label, value: text, status: d.fixed ? (text ? "適合診断の記録" : "") : STATUS_I[it?.status ?? "empty"], tag: d.fixed ? "" : TAG[it?.tag ?? ""] ?? "", source: it?.source ?? "" };
+      return { group: d.group === "A" ? "資料から" : "御社に聞く", item: d.label, value: text, status: d.fixed ? (text ? "適合診断の記録" : "") : STATUS_I[it?.status ?? "empty"], tag: d.fixed ? "" : TAG[it?.status === "fixed" ? "fact" : (it?.tag ?? "")] ?? "", // 画面と同じ：御社が直した項目は事実 source: it?.source ?? "" };
     });
     addSheet("0 会社", [{ header: "区分", key: "group", width: 10 }, { header: "項目", key: "item", width: 26 }, { header: "内容", key: "value", width: 80 }, { header: "状態", key: "status", width: 12 }, { header: "根拠", key: "tag", width: 8 }, { header: "出所", key: "source", width: 24 }], rows);
     if (comps?.length) addSheet("0 競合", [{ header: "競合", key: "name", width: 30 }, { header: "Web", key: "website", width: 40 }, { header: "参考", key: "ref", width: 8 }], comps.map((c) => ({ name: c.name, website: c.website, ref: c.is_reference ? "○" : "" })));
