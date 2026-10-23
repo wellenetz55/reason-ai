@@ -107,6 +107,7 @@ export async function saveCounter(formData: FormData) {
     if (!(await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
       { column: "brakes.counter_message", rowId: b.row_id, createdAt: b.created_at, before: b.counter_message, after: counter, tag: b.because_tag },
       { column: "brakes.because", rowId: b.row_id, createdAt: b.created_at, before: b.because, after: because, tag: b.because_tag },
+      { column: "brakes.because_tag", rowId: b.row_id, createdAt: b.created_at, before: b.because_tag, after: TAGS.includes(tag) ? tag : "hypothesis", tag: b.because_tag },
     ] }))) { revalidatePath("/sheet/counter"); return; }
     // 直す前の答えも履歴に残す（直したあとで、前の答えに戻したくなったとき用）
     const changed = !!b.counter_message && (nl(b.counter_message) !== counter || nl(b.because) !== because);

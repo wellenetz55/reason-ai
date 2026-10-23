@@ -10,7 +10,7 @@ export const SEAL_SESSIONS = [
   },
   {
     key: "s2", label: "確認セッション②", what: "ブレーキと先回りの答え（STEP 3・4）、磨いた体験価値となぜなら（STEP 5）、順位",
-    columns: ["brakes.customer_words", "brakes.counter_message", "brakes.because", "brakes.status", "sheet_rows.experience_value", "sheet_rows.because_phrase", "sheet_rows.rank"],
+    columns: ["brakes.customer_words", "brakes.counter_message", "brakes.because", "brakes.because_tag", "brakes.status", "sheet_rows.experience_value", "sheet_rows.because_phrase", "sheet_rows.because_tag", "sheet_rows.rank"],
   },
   {
     key: "s3", label: "確認セッション③", what: "すべての列（証拠を含む）",
@@ -23,7 +23,8 @@ export const SEAL_LABEL: Record<string, string> = Object.fromEntries(SEAL_SESSIO
 export type Seal = { id: string; session: string; columns: string[]; locked_at: string; is_provisional: boolean };
 
 /** 根拠の印で「仮封」になる列（印が事実でなければ、理由なしで直せる） */
-export const TAGGED_COLUMNS = new Set(["brakes.counter_message", "brakes.because", "sheet_rows.because_phrase"]);
+// 印そのもの（because_tag）も封の対象。「事実」を下げると仮封になって理由なしで直せてしまうので、事実からの変更は理由が要る
+export const TAGGED_COLUMNS = new Set(["brakes.counter_message", "brakes.because", "brakes.because_tag", "sheet_rows.because_phrase", "sheet_rows.because_tag"]);
 
 /**
  * その列・その行に効いている封（無ければ null）。

@@ -1,4 +1,5 @@
 "use server";
+import { isSealed } from "@/server/seals";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
 import { isMember } from "@/lib/session";
@@ -72,7 +73,9 @@ export async function decideEvidence(formData: FormData) {
       // いまの主張の文につけた証拠が残っていれば戻さない（書き直す前の文の証拠を取り下げただけのときは「事実」のまま）
       const cur = (await claimsOf(supabase, company.id, ev.row_id)).find((c) => c.ref === ref);
       const { count } = cur ? await supabase.from("evidences").select("id", { count: "exact", head: true }).eq("row_id", ev.row_id).eq("claim_ref", claimKey(cur.ref, cur.text)).eq("status", "adopted") : { count: 0 };
-      if (cur && !count && ev.claim_ref === claimKey(cur.ref, cur.text)) {
+      // 封をした「事実」は、証拠を取り下げても下げない（下げると仮封になり、理由なしで書き換えられてしまうため）
+      const sealedFact = cur ? await isSealed(supabase, company.id, ref === "row" ? "sheet_rows.because_tag" : "brakes.because_tag", null, "fact") : false;
+      if (cur && !count && ev.claim_ref === claimKey(cur.ref, cur.text) && !sealedFact) {
         if (ref === "row") await supabase.from("sheet_rows").update({ because_tag: "verify" }).eq("id", ev.row_id).eq("company_id", company.id).eq("because_tag", "fact");
         else await supabase.from("brakes").update({ because_tag: "verify" }).eq("id", ref.slice(6)).eq("row_id", ev.row_id).eq("because_tag", "fact");
       }
