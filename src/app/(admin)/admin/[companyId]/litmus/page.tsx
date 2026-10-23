@@ -9,7 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { saveOperatorScore, confirmRanking, autoRank } from "./actions";
 
 type M = Record<string, unknown> & { row_id: string; scored_by: string; total: number | null; rank?: number | null; kaiten_step?: number | null; magnitude_score?: number | null; magnitude_text?: string | null; zougenjofu?: string | null };
-type N = { row_id: string; q1_pain_urgency: boolean | null; q2_actively_seeking: boolean | null; ai_q1: boolean | null; ai_q2: boolean | null; ai_note: string | null };
+type N = { row_id: string; judged_by: string | null; q1_pain_urgency: boolean | null; q2_actively_seeking: boolean | null; ai_q1: boolean | null; ai_q2: boolean | null; ai_note: string | null };
 
 const num = (v: unknown) => (v === null || v === undefined || v === "" ? null : Number(v));
 const yn = (b: boolean | null | undefined) => (b === true ? "はい" : b === false ? "いいえ" : "—");
@@ -25,7 +25,7 @@ export default async function LitmusAdmin({ params, searchParams }: PageProps<"/
   const [{ data: c }, { data: rows }, { data: niche }, { data: market, error: mErr }, kaitenText] = await Promise.all([
     supabase.from("companies").select("id, name, status").eq("id", companyId).maybeSingle(),
     supabase.from("sheet_rows").select("id, seq, value_raw, experience_value, experience_value_v1, because_phrase, rank").eq("company_id", companyId).eq("status", "active").order("seq"),
-    supabase.from("litmus_niche").select("row_id, q1_pain_urgency, q2_actively_seeking, ai_q1, ai_q2, ai_note, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId),
+    supabase.from("litmus_niche").select("row_id, judged_by, q1_pain_urgency, q2_actively_seeking, ai_q1, ai_q2, ai_note, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId),
     // 回天のステップ・仮順位はログイン中のロールでは読めない列。ベレネッツであることは上で確かめ済みなのでサーバ側で読む
     createAdminClient().from("litmus_market").select("*, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId),
     loadFixedText("kaiten_steps"),
@@ -95,7 +95,7 @@ export default async function LitmusAdmin({ params, searchParams }: PageProps<"/
                     <td className="py-1.5 pr-2 num whitespace-nowrap">{m ? `${marketTotal(m as never).total}/${AXES_MAX}` : <span className="text-ink-3">未</span>}</td>
                     <td className="py-1.5 pr-2 num whitespace-nowrap text-ink-3">{a ? marketTotal(a as never).total : "—"}</td>
                     <td className="py-1.5 pr-2 num whitespace-nowrap">{num(o?.kaiten_step) ?? "—"}</td>
-                    <td className="py-1.5 whitespace-nowrap text-[12px]">{hold(r.id) ? <span className="font-semibold">保留候補</span> : n && (n.q1_pain_urgency !== null || n.q2_actively_seeking !== null) ? `${yn(n.q1_pain_urgency)}／${yn(n.q2_actively_seeking)}` : <span className="text-ink-3">未回答</span>}</td>
+                    <td className="py-1.5 whitespace-nowrap text-[12px]">{hold(r.id) ? <span className="font-semibold">保留候補</span> : n?.judged_by === "customer" ? `${yn(n.q1_pain_urgency)}／${yn(n.q2_actively_seeking)}` : <span className="text-ink-3">未回答</span>}</td>
                   </tr>
                 );
               })}

@@ -36,3 +36,9 @@ export function marketTotal(r: Partial<Record<AxisKey, number | string | null>>)
   }
   return { total, filled };
 }
+
+/** 2問に御社が答えたか。「わからない」は null で保存されるので、値ではなく「御社が保存したか」（judged_by）で見る */
+export function nicheAnswered(n: { judged_by?: string | null } | null | undefined): boolean {
+  return n?.judged_by === "customer";
+}
+

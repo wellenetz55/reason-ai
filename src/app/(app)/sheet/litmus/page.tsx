@@ -10,7 +10,7 @@ import { stepGate } from "@/lib/gates";
 import { loadGateCtx } from "@/server/gates";
 import { requireCustomer } from "@/lib/session";
 import { loadFixedText } from "@/server/ai/client";
-import { MARKET_AXES, MARKS } from "@/lib/litmus";
+import { MARKET_AXES, MARKS, nicheAnswered } from "@/lib/litmus";
 import { requestLitmusDrafts } from "./actions";
 import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
@@ -26,7 +26,7 @@ export default async function Page() {
   if (!(await isStep0Ready(supabase, company.id))) return <Step0Required stageKey="litmus" />;
   const [{ data: rows }, { data: niche, error: nErr }, { data: market }, ctx, fixed, meeting] = await Promise.all([
     supabase.from("sheet_rows").select("id, seq, value_raw, experience_value, experience_value_v1, because_phrase").eq("company_id", company.id).eq("status", "active").order("seq"),
-    supabase.from("litmus_niche").select("row_id, q1_pain_urgency, q2_actively_seeking, ai_q1, ai_q2, ai_note, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
+    supabase.from("litmus_niche").select("row_id, judged_by, q1_pain_urgency, q2_actively_seeking, ai_q1, ai_q2, ai_note, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
     supabase.from("litmus_market").select("row_id, scored_by, common_sense, investment, strength_asset, feasibility, beat_competitor, internal_passion, brand_purpose_fit, magnitude_text, magnitude_score, zougenjofu, total, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
     loadGateCtx(supabase, company.id, company.status),
     loadFixedText("round2_litmus_intro"),
@@ -40,7 +40,7 @@ export default async function Page() {
   const mlist = (market ?? []) as unknown as Market[];
   const aiDone = new Set(nlist.filter((n) => n.ai_note).map((n) => n.row_id));
   const noAi = list.filter((r) => r.value_raw && !aiDone.has(r.id)).length;
-  const answered = new Set(nlist.filter((n) => n.q1_pain_urgency !== null || n.q2_actively_seeking !== null).map((n) => n.row_id));
+  const answered = new Set(nlist.filter((n) => nicheAnswered(n)).map((n) => n.row_id));
   const scored = new Set(mlist.filter((m) => m.scored_by === "customer").map((m) => m.row_id));
   const doneRows = list.filter((r) => answered.has(r.id) && scored.has(r.id)).length;
   const done = list.length > 0 && doneRows === list.length;

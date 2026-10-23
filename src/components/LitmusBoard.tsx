@@ -1,8 +1,8 @@
 import { answerNiche, saveMarket } from "@/app/(app)/sheet/litmus/actions";
-import { MARKS, MARK_LABEL, NICHE_QUESTIONS, MARKET_AXES, marketTotal, type AxisKey } from "@/lib/litmus";
+import { MARKS, MARK_LABEL, NICHE_QUESTIONS, MARKET_AXES, marketTotal, nicheAnswered, type AxisKey } from "@/lib/litmus";
 
 export type LitmusRow = { id: string; seq: number; value_raw: string | null; experience: string | null; because: string | null };
-export type Niche = { row_id: string; q1_pain_urgency: boolean | null; q2_actively_seeking: boolean | null; ai_q1: boolean | null; ai_q2: boolean | null; ai_note: string | null };
+export type Niche = { row_id: string; judged_by?: string | null; q1_pain_urgency: boolean | null; q2_actively_seeking: boolean | null; ai_q1: boolean | null; ai_q2: boolean | null; ai_note: string | null };
 export type Market = { row_id: string; scored_by: string; magnitude_text: string | null; zougenjofu: string | null } & Partial<Record<AxisKey, number | string | null>>;
 
 const yn = (b: boolean | null | undefined) => (b === true ? "yes" : b === false ? "no" : "");
@@ -23,8 +23,8 @@ export function LitmusBoard({ rows, niche, market }: { rows: LitmusRow[]; niche:
         const m = mine.get(r.id);
         const a = ai.get(r.id);
         const o = op.get(r.id);
-        const answered = n && (n.q1_pain_urgency !== null || n.q2_actively_seeking !== null);
-        const hold = n && n.q1_pain_urgency === false && n.q2_actively_seeking === false;
+        const answered = nicheAnswered(n);
+        const hold = answered && n!.q1_pain_urgency === false && n!.q2_actively_seeking === false;
         const t = m ? marketTotal(m) : null;
         return (
           <li key={r.id} className={`rounded-[var(--radius)] border hairline overflow-hidden ${hold ? "opacity-60" : ""}`}>
