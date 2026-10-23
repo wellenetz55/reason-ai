@@ -42,7 +42,7 @@ export function ProfileItems({ items, bq, oneLiner, review, drafted = true }: {
           </form>
         ) : (
           <>
-            {(status === "approved" || status === "fixed") && it?.draft && it.draft !== it.value && (
+            {(status === "approved" || status === "fixed" || (status === "held" && !!it?.value)) && it?.draft && it.draft !== it.value && (
               <div className="mt-2 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-4 py-3 text-sm">
                 <p className="text-[11px] font-semibold text-navy">メンバーの修正案（担当者の承認待ち）</p>
                 <p className="mt-1 whitespace-pre-line leading-relaxed">{it.draft}</p>

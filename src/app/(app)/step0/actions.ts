@@ -232,7 +232,7 @@ export async function reviewProfileItem(formData: FormData) {
   // 直す・答える（メンバーの修正案を採用するときも、この文で直す）。下書きは空にする（承認・修正済みの項目に残った下書き＝メンバーの修正案、と見分けるため）
   else if (action === "fix" || action === "answer") { if (!after) return; patch.value = after; patch.draft = null; patch.status = "fixed"; patch.source = OWN_SOURCE; if (action === "answer") patch.tag = "fact"; }
   // メンバーの修正案を見送る（確定した文はそのまま）
-  else if (action === "dismiss") { if (!["approved", "fixed"].includes(cur?.status ?? "")) return; patch.draft = null; }
+  else if (action === "dismiss") { if (!["approved", "fixed"].includes(cur?.status ?? "") && !cur?.value) return; patch.draft = null; }
   else if (action === "hold") { patch.status = "held"; }
   // 戻す：自分で書いた（または承認した）文は残す
   // 戻す：確定・承認した文は消さずに下書きへ戻す（状態は「下書き」。もう一度承認・修正できる）
