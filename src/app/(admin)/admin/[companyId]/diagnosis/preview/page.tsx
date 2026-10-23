@@ -1,3 +1,4 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOperator } from "@/lib/session";
@@ -13,7 +14,7 @@ export default async function DiagnosisPreview({ params }: PageProps<"/admin/[co
   const { supabase } = await requireOperator();
   const [{ data: c }, { data: d }, kickoff] = await Promise.all([
     supabase.from("companies").select("id, name, status, applied_at, contracted_at, paid_at").eq("id", companyId).single(),
-    supabase.from("diagnosis_results").select("*").eq("company_id", companyId).maybeSingle(),
+    createAdminClient().from("diagnosis_results").select("*").eq("company_id", companyId).maybeSingle(),
     loadKickoff(companyId),
   ]);
   if (!c) notFound();

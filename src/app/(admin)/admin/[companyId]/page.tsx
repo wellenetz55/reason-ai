@@ -44,7 +44,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
     loadIntake(companyId).catch(() => null),
     supabase.from("alerts").select("id, kind, payload, created_at").eq("company_id", companyId).is("resolved_at", null).order("created_at", { ascending: false }),
     c ? inviteGate(companyId, c.status) : Promise.resolve({ ok: false, reason: "" }),
-    supabase.from("diagnosis_results").select("published_at, first_viewed_at, last_viewed_at, view_count, chosen_at").eq("company_id", companyId).maybeSingle(),
+    createAdminClient().from("diagnosis_results").select("published_at, first_viewed_at, last_viewed_at, view_count, chosen_at").eq("company_id", companyId).maybeSingle(),
     loadKickoff(companyId),
   ]);
   // メールアドレスは、この会社の担当者の分だけ取る（全ユーザー一覧は読まない）

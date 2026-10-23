@@ -5,7 +5,7 @@ import { loadKickoff } from "@/server/kickoff";
 
 export default async function DiagnosisPage() {
   const { supabase, company } = await requireCustomer();
-  const { data: d } = await supabase.from("diagnosis_results").select("*").eq("company_id", company.id).maybeSingle();
+  const { data: d } = await supabase.from("diagnosis_results").select("company_id, one_liner_before, seeds, brakes, fit_reasons, competitor, candidate_dates, operator_note, chosen_date, chosen_at, published_at, expires_at, updated_at, summary").eq("company_id", company.id).maybeSingle();
   if (!d) {
     return (
       <div>

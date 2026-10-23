@@ -37,7 +37,7 @@ export async function saveDiagnosis(formData: FormData) {
   const competitor = compName && claims.length ? { name: compName, claims } : null;
   const dates = [1, 2, 3].map((i) => jst(s(formData, `date${i}`))).filter(Boolean);
   const expiresLocal = s(formData, "expires_at");
-  const { error: se } = await supabase.from("diagnosis_results").upsert({
+  const { error: se } = await createAdminClient().from("diagnosis_results").upsert({ // 列の権限（SQL 0044）に左右されないよう service role で書く（ベレネッツの確認は済み）
     company_id: companyId,
     summary: s(formData, "summary").slice(0, 2000) || null,
     one_liner_before: strip(s(formData, "one_liner_before"), []) || null,

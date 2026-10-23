@@ -1,3 +1,4 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import { ClearQuery } from "@/components/ClearQuery";
 import { GrowText } from "@/components/GrowText";
@@ -21,7 +22,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
   const { supabase } = await requireOperator();
   const [{ data: c }, { data: d }, { data: members }] = await Promise.all([
     supabase.from("companies").select("id, name, status").eq("id", companyId).single(),
-    supabase.from("diagnosis_results").select("*").eq("company_id", companyId).maybeSingle(),
+    createAdminClient().from("diagnosis_results").select("*") /* 閲覧の記録の列はお客様のロールで読めないため（SQL 0044）、service role で読む */.eq("company_id", companyId).maybeSingle(),
     supabase.from("profiles").select("display_name").eq("company_id", companyId),
   ]);
   if (!c) notFound();
