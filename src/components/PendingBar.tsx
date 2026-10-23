@@ -38,6 +38,13 @@ export function PendingBar({ stamp }: { stamp: number }) {
         e.stopImmediatePropagation();
         return;
       }
+      // 取り消しにくい操作は、押したボタンかフォームの data-confirm の文で確かめる
+      const asked = ((e as SubmitEvent).submitter as HTMLElement | null)?.dataset.confirm ?? form.dataset.confirm;
+      if (asked && !window.confirm(asked)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
       setPending(true);
       form.dataset.busy = "1";
       const submitter = (e as SubmitEvent).submitter as HTMLElement | null;

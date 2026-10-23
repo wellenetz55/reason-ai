@@ -146,10 +146,10 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
                   <span className="font-semibold">{label} ✓</span>
                   <span className="num text-xs text-ink-3">{fmtMeeting(at)}</span>
                   <input type="hidden" name="clear" value="1" />
-                  <button className="btn-text text-xs" type="submit">取り消す</button>
+                  <button className="btn-text text-xs" type="submit" data-confirm={step === "applied" ? "申込を取り消します。契約済・入金済の記録も一緒に消えます。よろしいですか？" : `${label}を取り消します。よろしいですか？`}>取り消す</button>
                 </>
               ) : (
-                <button className="btn-text" type="submit">{label}にする</button>
+                <button className="btn-text" type="submit" data-confirm={step === "paid" ? "入金済にすると、お客様の担当者全員にメールが送られます。よろしいですか？" : undefined}>{label}にする</button>
               )}
             </form>
           ))}
@@ -206,7 +206,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
                       </form>
                       <form action={withdrawHomework} className="mt-2">
                         <input type="hidden" name="id" value={h.id} /><input type="hidden" name="company_id" value={c.id} />
-                        <button className="btn-text text-xs text-ink-3" type="submit">この宿題を取り下げる</button>
+                        <button className="btn-text text-xs text-ink-3" type="submit" data-confirm="この宿題を取り下げます（元に戻せません）。よろしいですか？">この宿題を取り下げる</button>
                       </form>
                     </details>
                   ) : (
@@ -233,7 +233,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
 
       <section className="mt-10">
         <h2 className="text-sm text-ink-2">状態を変える</h2>
-        <form action={setStatus} className="mt-2 flex gap-3 items-center">
+        <form action={setStatus} className="mt-2 flex gap-3 items-center" data-confirm="会社の状態を変えます。お客様の画面で開くステップや、書き込みの可否が変わります。よろしいですか？">
           <input type="hidden" name="company_id" value={c.id} />
           <select key={c.status} name="status" defaultValue={c.status} className="border-b hairline py-1 text-sm">{/* key：変更後に新しい状態で選び直す（フォーム送信後のリセットで古い値に戻って見えないように） */}
             {Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -342,8 +342,8 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
                 <input type="datetime-local" name="scheduled_at" defaultValue={toLocalInput(m.scheduled_at)} className="border-b hairline py-1 num" />
                 <input type="url" name="meeting_url" defaultValue={m.meeting_url ?? ""} placeholder="会議URL（Zoom / Meet など）" className="border-b hairline py-1 flex-1 min-w-[260px]" />
                 <button className="btn-text" type="submit">保存</button>
-                {m.held_at ? <span className="text-xs inline-flex items-center gap-2">実施済 {fmtMeeting(m.held_at)}<button className="btn-text text-xs" type="submit" name="unheld" value="1" title="押し間違いのとき。記録は残ります">戻す</button></span> : (
-                  <button className="btn-text" type="submit" name="held" value="1">実施済にする</button>
+                {m.held_at ? <span className="text-xs inline-flex items-center gap-2">実施済 {fmtMeeting(m.held_at)}<button className="btn-text text-xs" type="submit" name="unheld" value="1" title="押し間違いのとき。記録は残ります" data-confirm="実施済を戻します。面談で自動で進んだ会社の状態は戻りません（必要なら下の「状態を変える」で戻してください）。よろしいですか？">戻す</button></span> : (
+                  <button className="btn-text" type="submit" name="held" value="1" data-confirm="実施済にすると、会社の状態が次の段階に進み、お客様の画面で次のステップが開くことがあります。よろしいですか？">実施済にする</button>
                 )}
                 <Link href={`/admin/${c.id}/meetings/${m.id}`} className={`rounded-[var(--radius)] border px-3 py-1 text-xs ${recordIds.has(m.id) ? "border-navy text-navy hover:bg-navy-soft" : "border-warm text-warm hover:bg-warm-soft"}`}>{recordIds.has(m.id) ? "記録を見る・直す" : "記録を書く"}</Link>
               </form>

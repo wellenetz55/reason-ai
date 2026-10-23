@@ -23,7 +23,9 @@ export async function saveFixedText(formData: FormData) {
   const body = String(formData.get("body") || "").trim();
   if (!key) return;
   const admin = createAdminClient();
-  if (!body) await admin.from("method_fixed_texts").delete().eq("key", key);
+  // 空の保存で消えないように、消すのは「消す」ボタン（delete=1）のときだけ
+  if (formData.get("delete") === "1") await admin.from("method_fixed_texts").delete().eq("key", key);
+  else if (!body) return;
   else await admin.from("method_fixed_texts").upsert({ key, body, updated_at: new Date().toISOString() });
   revalidatePath("/admin/method");
 }

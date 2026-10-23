@@ -66,8 +66,9 @@ export default async function MethodPage() {
           <form key={key} action={saveFixedText} className="max-w-[820px]">
             <input type="hidden" name="key" value={key} />
             <p className="text-sm">{label} <span className="num text-[11px] text-ink-3 ml-2">{key}{fixed.get(key) ? "" : "（未設定）"}</span></p>
-            <textarea name="body" defaultValue={fixed.get(key)?.body ?? ""} rows={key.startsWith("step0_b") || /^diag_q\d$/.test(key) ? 2 : 5} className={ta + " mt-2"} />
+            <textarea name="body" defaultValue={fixed.get(key)?.body ?? ""} rows={key.startsWith("step0_b") || /^diag_q\d$/.test(key) ? 2 : 5} className={ta + " mt-2"} required />
             <button className="btn-text mt-2 -ml-1.5" type="submit">保存</button>
+            {fixed.get(key) && <button className="btn-text mt-2 text-xs text-ink-3" type="submit" name="delete" value="1" formNoValidate data-confirm="この固定文を消します（お客様の画面から消えます）。よろしいですか？">消す</button>}
           </form>
         ))}
         <details className="max-w-[820px] text-ink-3">
@@ -77,8 +78,9 @@ export default async function MethodPage() {
               <form key={key} action={saveFixedText}>
                 <input type="hidden" name="key" value={key} />
                 <p className="text-sm">{label} <span className="text-[11px] ml-1">準備中</span> <span className="num text-[11px] ml-2">{key}{fixed.get(key) ? "" : "（未設定）"}</span></p>
-                <textarea name="body" defaultValue={fixed.get(key)?.body ?? ""} rows={5} className={ta + " mt-2"} />
+                <textarea name="body" defaultValue={fixed.get(key)?.body ?? ""} rows={5} className={ta + " mt-2"} required />
                 <button className="btn-text mt-2 -ml-1.5" type="submit">保存（画面ができたら使われます）</button>
+                {fixed.get(key) && <button className="btn-text mt-2 text-xs text-ink-3" type="submit" name="delete" value="1" formNoValidate data-confirm="この固定文を消します（お客様の画面から消えます）。よろしいですか？">消す</button>}
               </form>
             ))}
           </div>

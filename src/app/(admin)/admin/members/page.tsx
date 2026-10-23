@@ -123,7 +123,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
               <div className="flex flex-wrap gap-3 items-center pt-1">
                 <form action={backupNow} data-busy-timeout="300000"><button className="btn-primary" type="submit">今すぐDropboxに保存</button></form>
                 <a href="/api/admin/dropbox/connect" className="btn-text">接続し直す</a>
-                <form action={disconnectDropbox}><button className="btn-text" type="submit">接続を切る</button></form>
+                <form action={disconnectDropbox}><button className="btn-text" type="submit" data-confirm="Dropboxとの接続を切ります。バックアップが止まります。よろしいですか？">接続を切る</button></form>
               </div>
             </div>
           ) : (
