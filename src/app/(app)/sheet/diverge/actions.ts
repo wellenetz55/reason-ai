@@ -49,7 +49,7 @@ export async function reviewRow(formData: FormData) {
   const after = cut(String(formData.get("after") || "").trim(), MAX.value);
   const afterExp = formData.has("after_experience") ? cut(String(formData.get("after_experience") || "").trim(), MAX.value) : null;
   const dwell = Number(formData.get("dwell_ms") || 0);
-  const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, status, created_at").eq("id", rowId).eq("company_id", company.id).single();
+  const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, experience_value, status, created_at").eq("id", rowId).eq("company_id", company.id).single();
   if (!row) return;
   // 提供価値を空にして「直して確定」を押したときは何もしない（AIの下書きが承認なしで御社の行になってしまうため）
   if (action === "fix" && !after) { revalidatePath("/sheet/diverge"); return; }
@@ -62,6 +62,8 @@ export async function reviewRow(formData: FormData) {
     const ok = await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
       { column: "sheet_rows.value_raw", rowId, createdAt: row.created_at, before: row.value_raw, after },
       ...(afterExp !== null ? [{ column: "sheet_rows.experience_value_v1", rowId, createdAt: row.created_at, before: row.experience_value_v1, after: afterExp }] : []),
+      // 体験価値を変えると STEP 5 の体験価値も同じ文にそろえるので、そちらの封（確認セッション②）も確かめる
+      ...(afterExp !== null && afterExp !== cut(nl(row.experience_value_v1).trim(), MAX.value) ? [{ column: "sheet_rows.experience_value", rowId, createdAt: row.created_at, before: row.experience_value, after: afterExp }] : []),
     ] });
     if (!ok) { revalidatePath("/sheet/diverge"); return; }
   }

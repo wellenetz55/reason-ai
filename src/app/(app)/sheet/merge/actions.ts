@@ -86,7 +86,7 @@ export async function resolveDiagnosis(formData: FormData) {
   if (isMember(profile)) { revalidatePath("/sheet/merge"); return; } // 決定・却下・保留・戻すは担当者だけ
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")); // accept | keep | hold | drop
-  const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, created_at").eq("id", rowId).eq("company_id", company.id).maybeSingle();
+  const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, experience_value, created_at").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   const { data: d0 } = await supabase.from("row_diagnoses").select("*").eq("row_id", rowId).maybeSingle();
   if (!row) return;
   // 辞書の印だけでAIのレビュー行が無い組でも決められるよう、無ければ作る
@@ -101,6 +101,7 @@ export async function resolveDiagnosis(formData: FormData) {
     const ok = await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
       { column: "sheet_rows.value_raw", rowId, createdAt: row.created_at, before: row.value_raw, after },
       { column: "sheet_rows.experience_value_v1", rowId, createdAt: row.created_at, before: row.experience_value_v1, after: afterExp },
+      ...(afterExp !== cut(nl(row.experience_value_v1).trim(), MAX.value) ? [{ column: "sheet_rows.experience_value", rowId, createdAt: row.created_at, before: row.experience_value, after: afterExp }] : []),
     ] });
     if (!ok) { revalidatePath("/sheet/merge"); return; }
     const expChanged = afterExp !== cut(nl(row.experience_value_v1).trim(), MAX.value); // 保存済みの側も、入力と同じ形（前後の空白なし・上限の長さ）にそろえて比べる
