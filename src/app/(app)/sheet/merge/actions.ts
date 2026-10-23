@@ -1,5 +1,5 @@
 "use server";
-import { MAX, cut } from "@/lib/limits";
+import { MAX, cut, nl } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
 import { diagnoseRows } from "@/server/diagnose";
@@ -90,8 +90,8 @@ export async function resolveDiagnosis(formData: FormData) {
   const d = d0 ?? (await supabase.from("row_diagnoses").upsert({ row_id: rowId, vague_score: 0, issues: [], suggestion_value: null, suggestion_experience: null, resolved: null, checked_at: new Date().toISOString() }, { onConflict: "row_id" }).select("*").single()).data;
   if (!d) return;
   if (action === "accept") {
-    const after = cut(String(formData.get("after") || d.suggestion_value || "").trim(), MAX.value);
-    const afterExp = cut(String(formData.get("after_experience") || d.suggestion_experience || row.experience_value_v1 || "").trim(), MAX.value);
+    const after = cut(nl(String(formData.get("after") || d.suggestion_value || "")).trim(), MAX.value);
+    const afterExp = cut(nl(String(formData.get("after_experience") || d.suggestion_experience || row.experience_value_v1 || "")).trim(), MAX.value);
     if (!after) return;
     const expChanged = afterExp !== (row.experience_value_v1 ?? "");
     await supabase.from("sheet_rows").update({ value_raw: after, experience_value_v1: afterExp || null, ...(expChanged ? { experience_value: afterExp || null } : {}), created_by: "customer" }).eq("id", rowId);
@@ -156,14 +156,14 @@ export async function restoreDiagnosis(formData: FormData) {
   const { supabase, company, user } = await requireStage("merge");
   const rowId = String(formData.get("row_id"));
   // 位置ではなく中身で探す（別のタブで別案を頼むと履歴の並びがずれるため）
-  const wantV = String(formData.get("v") ?? "");
-  const wantE = String(formData.get("e") ?? "");
+  const wantV = nl(String(formData.get("v") ?? ""));
+  const wantE = nl(String(formData.get("e") ?? ""));
   const { data: row } = await supabase.from("sheet_rows").select("id").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   if (!row) return;
   const { data: d } = await supabase.from("row_diagnoses").select("suggestion_value, suggestion_experience, redraft_history").eq("row_id", rowId).maybeSingle();
   const list = (Array.isArray(d?.redraft_history) ? d!.redraft_history : []).map(decodeVague).filter((x): x is VagueEntry => !!x);
   let idx = -1;
-  list.forEach((x, i) => { if (x.v === wantV && (x.e ?? "") === wantE) idx = i; });
+  list.forEach((x, i) => { if (nl(x.v) === wantV && nl(x.e) === wantE) idx = i; });
   if (!wantV || idx < 0) { revalidatePath("/sheet/merge"); return; }
   const picked = list[idx];
   list.splice(idx, 1);

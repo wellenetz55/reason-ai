@@ -4,7 +4,7 @@ import { requireStage } from "@/server/stageGuard";
 import { draftCounters, type CounterIn } from "@/server/counter";
 import { loadProfileContext } from "@/server/profile";
 import { aiGuard } from "@/server/aiGuard";
-import { MAX, cut } from "@/lib/limits";
+import { MAX, cut, nl } from "@/lib/limits";
 import { decodeCounter, encodeCounter } from "@/lib/history";
 
 const TAGS = ["fact", "verify", "hypothesis"];
@@ -96,7 +96,7 @@ export async function saveCounter(formData: FormData) {
     await supabase.from("sheet_row_reviews").insert({ row_id: b.row_id, column_key: "counter_message", action: "fix", before_text: b.counter_message, after_text: counter, reviewer_id: user.id });
   } else if (action === "approve") {
     // 画面で見ていた答えと、いまの答えが違う（別のタブでAIの別案などに変わった）ときは承認しない
-    if (String(formData.get("shown") ?? "") !== (b.counter_message ?? "")) { revalidatePath("/sheet/counter"); return; }
+    if (nl(String(formData.get("shown") ?? "")) !== nl(b.counter_message)) { revalidatePath("/sheet/counter"); return; }
     await supabase.from("brakes").update({ counter_approved_at: new Date().toISOString() }).eq("id", id);
     await supabase.from("sheet_row_reviews").insert({ row_id: b.row_id, column_key: "counter_message", action: "approve", before_text: b.counter_message, after_text: b.counter_message, reviewer_id: user.id });
   } else if (action === "reopen") {

@@ -7,7 +7,7 @@ const fail = (msg: string): never => redirect(`/step0?error=${encodeURIComponent
 import { randomUUID } from "node:crypto";
 import { requireCustomer } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { LIMITS, MAX, cut } from "@/lib/limits";
+import { LIMITS, MAX, cut, nl } from "@/lib/limits";
 import { normalizeWebUrl } from "@/lib/url";
 import { PROFILE_ITEMS } from "@/lib/profileItems";
 import { draftProfile } from "@/server/profile";
@@ -191,7 +191,7 @@ export async function reviewProfileItem(formData: FormData) {
   const patch: Record<string, unknown> = { company_id: company.id, key, updated_at: new Date().toISOString() };
   if (action === "approve") {
     // 画面で見ていた下書きと、いまの下書きが違う（別のタブで作り直された）ときは承認しない
-    if (String(formData.get("shown") ?? "") !== (cur?.draft ?? "")) { revalidatePath("/step0"); return; }
+    if (nl(String(formData.get("shown") ?? "")) !== nl(cur?.draft)) { revalidatePath("/step0"); return; }
     patch.value = cur?.draft ?? null; patch.status = "approved";
   }
   else if (action === "fix" || action === "answer") { if (!after) return; patch.value = after; patch.status = "fixed"; if (action === "answer") patch.tag = "fact"; }

@@ -14,3 +14,6 @@ export const cut = (s: string, n: number) => s.slice(0, n);
 
 /** AIへ送る1項目を切る（DBに長い文が直接書かれていても、指示文が膨らみすぎないように） */
 export const q = (s: string | null | undefined, n: number = 500) => (s ?? "").slice(0, n);
+
+/** 改行をLFにそろえる。ブラウザのフォーム送信は改行をCRLFにするため、保存済みの文（LF）と比べる前に両方に通す */
+export const nl = (s: string | null | undefined) => (s ?? "").replace(/\r\n?/g, "\n");
