@@ -138,7 +138,7 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
 
   // STEP 7 証拠
   if (has("evidence")) {
-    const { data: ev } = await supabase.from("evidences").select("*, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId);
+    const { data: ev } = await supabase.from("evidences").select("*, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId).eq("status", "adopted"); // AIの候補（未採用）は出さない
     if (ev?.length) addSheet("7 証拠", [{ header: "行No", key: "seq", width: 6 }, { header: "提供価値", key: "raw", width: 36 }, { header: "何の証拠か", key: "what", width: 24 }, { header: "内容", key: "content", width: 50 }, { header: "種類", key: "kind", width: 14 }, { header: "出どころ", key: "source", width: 24 }, { header: "強さ", key: "strength", width: 8 }],
       (ev ?? []).map((e) => ({ seq: byId.get(e.row_id)?.seq, raw: byId.get(e.row_id)?.value_final ?? byId.get(e.row_id)?.value_raw, what: e.what, content: e.content, kind: EV[e.kind] ?? e.kind, source: e.source, strength: e.strength })));
   }
