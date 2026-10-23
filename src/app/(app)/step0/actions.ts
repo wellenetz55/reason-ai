@@ -139,6 +139,12 @@ export async function removeDocument(formData: FormData) {
   const id = String(formData.get("id"));
   const { data: doc } = await supabase.from("company_documents").select("id, storage_path").eq("id", id).eq("company_id", company.id).maybeSingle();
   if (!doc) return;
+  // 最後の1件を取り下げると STEP 0 が空になり、STEP 1 以降が開けなくなる。御社の説明を1項目も承認していなければ止める
+  const [{ count: docs }, { count: items }] = await Promise.all([
+    supabase.from("company_documents").select("id", { count: "exact", head: true }).eq("company_id", company.id),
+    supabase.from("profile_items").select("key", { count: "exact", head: true }).eq("company_id", company.id).in("status", ["approved", "fixed"]),
+  ]);
+  if (company.status !== "onboarding" && (docs ?? 0) <= 1 && (items ?? 0) === 0) fail("これが最後の資料です。取り下げると STEP 1 以降が開けなくなるので、先に差し替える資料を登録するか、御社の説明を1項目以上承認してから取り下げてください。");
   if (doc.storage_path?.startsWith(`${company.id}/`)) await createAdminClient().storage.from("company-docs").remove([doc.storage_path]);
   await supabase.from("company_documents").delete().eq("id", doc.id);
   revalidatePath("/step0");
