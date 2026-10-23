@@ -57,7 +57,7 @@ export function ProfileItems({ items, bq, oneLiner, review, drafted = true }: {
             </p>
             {!def.fixed && (
               <div className="mt-2 flex gap-1">
-                <button type="button" className="btn-text" onClick={() => setEditing(def.key)}>直す</button>
+                <button type="button" data-edit className="btn-text" onClick={() => setEditing(def.key)}>直す</button>
                 {status === "draft" && (
                   <form action={review}><input type="hidden" name="key" value={def.key} /><input type="hidden" name="action" value="approve" /><input type="hidden" name="shown" value={it?.draft ?? ""} /><button className="btn-text text-navy" type="submit">承認</button></form>
                 )}
@@ -109,7 +109,7 @@ export function ProfileItems({ items, bq, oneLiner, review, drafted = true }: {
         ) : (
           <>
             {answered && <p className="tag-line tag-fact pl-4 mt-2 text-sm leading-relaxed whitespace-pre-line">{it!.value}</p>}
-            <div className="mt-2"><button type="button" className="btn-text" onClick={() => setEditing(def.key)}>{answered ? "書き直す" : "答える"}</button></div>
+            <div className="mt-2"><button type="button" data-edit className="btn-text" onClick={() => setEditing(def.key)}>{answered ? "書き直す" : "答える"}</button></div>
           </>
         )}
       </li>
