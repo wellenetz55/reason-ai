@@ -40,7 +40,7 @@ export async function saveTriple(formData: FormData) {
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")); // fix | approve
   if (isMember(profile) && action !== "fix") { revalidatePath("/sheet/trust"); return; } // 承認は担当者だけ
-  const { data: row } = await supabase.from("sheet_rows").select("id, experience_value, experience_value_v1, because_phrase").eq("id", rowId).eq("company_id", company.id).maybeSingle();
+  const { data: row } = await supabase.from("sheet_rows").select("id, experience_value, experience_value_v1, because_phrase, because_tag, because_by").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   if (!row) return;
   const member = isMember(profile);
   // メンバーの修正は承認待ち（because_by を "ai" のままにして「承認」ボタンを残す）。印を「事実」にするのは担当者だけ
@@ -52,6 +52,11 @@ export async function saveTriple(formData: FormData) {
     patch.experience_value = exp || null;
     patch.because_phrase = because || null;
     patch.because_tag = member && tag === "fact" ? "verify" : ["fact", "verify", "hypothesis"].includes(tag) ? tag : "hypothesis";
+    // メンバーが体験価値だけを直したとき（なぜならの文も印も変えていない）は、なぜならの承認と「事実」の印をそのまま残す
+    if (member && nl(because) === nl(row.because_phrase) && tag === (row.because_tag ?? "hypothesis")) {
+      patch.because_tag = row.because_tag;
+      patch.because_by = row.because_by;
+    }
     patch.because_only_us = formData.get("only_us") === "1";
     patch.trust_axis = String(formData.get("type") || "") || null;
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "because_phrase", action: "fix", before_text: row.because_phrase, after_text: because, reviewer_id: user.id });
