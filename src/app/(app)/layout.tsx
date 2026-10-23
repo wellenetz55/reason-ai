@@ -56,7 +56,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   // 次の面談：一番近い予定。同じ種類の未実施が2件以上あるときは「候補日」なので、確定として見せず、選ぶ画面へ案内する
   const nextMeeting = (upcomingMeetings ?? [])[0] ?? null;
   // 候補日を選べる場所：確認セッション①は STEP 2 の出口、それ以外はホーム上部（#meeting-pick）。キックオフはホーム（契約前）
-  const PICK_HREF: Record<string, string> = { kickoff: "/", session1: "/sheet/merge", midcheck: "/#meeting-pick", session2: "/#meeting-pick", session3: "/#meeting-pick" };
+  const PICK_HREF: Record<string, string> = { kickoff: "/", session1: "/#meeting-pick", midcheck: "/#meeting-pick", session2: "/#meeting-pick", session3: "/#meeting-pick" };
   // 候補日として扱うのはベレネッツとの面談だけ（社内打合せ・顧問月次は、何件あっても候補ではない）
   const pickable = !!nextMeeting && !!PICK_HREF[nextMeeting.kind] && (nextMeeting.kind !== "kickoff" || company.status === "diagnosed" || company.status === "onboarding");
   const candidateCount = nextMeeting && pickable ? (upcomingMeetings ?? []).filter((m) => m.kind === nextMeeting.kind && new Date(m.scheduled_at) > new Date()).length : 0;
