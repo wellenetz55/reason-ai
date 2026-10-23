@@ -130,7 +130,7 @@ export async function saveCounter(formData: FormData) {
 
 /** 前に出た答え（履歴）の1つを、いまの答えに戻す。いまの答えは履歴に回す */
 export async function restoreCounter(formData: FormData) {
-  const { supabase, company, user } = await requireStage("counter");
+  const { supabase, company, user, profile } = await requireStage("counter");
   const id = String(formData.get("id"));
   // 位置ではなく中身で探す（別のタブでAIの別案を頼むと履歴の並びがずれるため）
   const entry = String(formData.get("entry") ?? "");
@@ -145,7 +145,8 @@ export async function restoreCounter(formData: FormData) {
   if (b.counter_message) hist.push(encodeCounter({ c: b.counter_message as string, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null, a: (b.counter_by as string | null) ?? null }));
   await supabase.from("brakes").update({
     counter_message: cut(picked.c, MAX.value), because: picked.b ? cut(picked.b, MAX.value) : null,
-    because_tag: picked.t && TAGS.includes(picked.t) ? picked.t : "hypothesis",
+    // メンバーは「事実」を付けられない（直すときと同じ。戻した答えも「確認中」にして担当者の承認を待つ）
+    because_tag: picked.t && TAGS.includes(picked.t) ? (isMember(profile) && picked.t === "fact" ? "verify" : picked.t) : "hypothesis",
     counter_by: picked.a === "customer" ? "customer" : "ai", counter_approved_at: null, counter_history: hist.slice(-5),
   }).eq("id", id);
   await supabase.from("sheet_row_reviews").insert({ row_id: b.row_id, column_key: "counter_message", action: "fix", before_text: b.counter_message, after_text: picked.c, reviewer_id: user.id });
