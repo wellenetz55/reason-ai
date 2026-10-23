@@ -18,7 +18,10 @@ export async function aiGuard<T>(supabase: SupabaseClient, companyId: string, us
   // 呼び出しを先に記録する（成功・失敗の記録が無い呼び出しも回数に数える）
   await supabase.from("activity_log").insert({ company_id: companyId, user_id: userId, event: `${event}.start` });
   try {
-    return await fn();
+    const out = await fn();
+    // 終わった記録（成功）。始めた記録だけが残っていれば、時間切れで打ち切られたと分かる
+    await supabase.from("activity_log").insert({ company_id: companyId, user_id: userId, event: `${event}.done` });
+    return out;
   } catch (e) {
     const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
     await supabase.from("activity_log").insert({ company_id: companyId, user_id: userId, event: `${event}.error`, payload: { msg: msg.slice(0, 500) } });
@@ -28,8 +31,13 @@ export async function aiGuard<T>(supabase: SupabaseClient, companyId: string, us
 
 /** 直近のAIエラーを顧客向けの文にする */
 export async function lastAiError(supabase: SupabaseClient, companyId: string, event: string): Promise<string | null> {
-  const { data } = await supabase.from("activity_log").select("event, payload, created_at").eq("company_id", companyId).in("event", [event, `${event}.error`]).order("created_at", { ascending: false }).limit(1).maybeSingle();
-  if (!data || data.event !== `${event}.error`) return null;
+  const { data } = await supabase.from("activity_log").select("event, payload, created_at").eq("company_id", companyId).in("event", [event, `${event}.error`, `${event}.start`, `${event}.done`]).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!data) return null;
+  // 始めた記録だけが残り、6分たっても結果が無い＝サーバの時間切れで打ち切られた（エラーの記録も残らない）
+  if (data.event === `${event}.start`) {
+    return Date.now() - new Date(data.created_at).getTime() > 6 * 60_000 ? "時間内に下書きを作れませんでした。資料やURLを減らすか、しばらくしてからもう一度お試しください。" : null;
+  }
+  if (data.event !== `${event}.error`) return null;
   const msg = String((data.payload as { msg?: string })?.msg ?? "");
   if (/credit balance/i.test(msg)) return "AIの利用枠が不足しているため、下書きを作れませんでした。ベレネッツ側で補充します。お手数ですが「ベレネッツに質問を残す」からお知らせください。";
   if (msg === "rate_limited") return "短い時間にAIへの依頼が続いたため、いったん止めています。10分ほど置いてから、もう一度お試しください。";

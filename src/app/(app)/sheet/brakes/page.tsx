@@ -15,7 +15,7 @@ import { requestBrakeDrafts } from "./actions";
 import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
 
-export const maxDuration = 90;
+export const maxDuration = 300; // AIの下書き（資料・URLの読み込みを含む）が画面側の待ち時間より先に打ち切られないように
 
 export default async function Page() {
   const { supabase, company } = await requireCustomer();

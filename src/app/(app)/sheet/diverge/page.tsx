@@ -16,6 +16,8 @@ import { StepGuide } from "@/components/StepGuide";
 import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
 
+export const maxDuration = 300; // AIの下書きが画面側の待ち時間より先に打ち切られないように
+
 export default async function DivergePage({ searchParams }: PageProps<"/sheet/diverge">) {
   const sp = await searchParams;
   const { supabase, company } = await requireCustomer();

@@ -17,7 +17,7 @@ import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const maxDuration = 60;
+export const maxDuration = 300; // AIの下書き（資料・URLの読み込みを含む）が画面側の待ち時間より先に打ち切られないように
 
 const KIND_LABEL: Record<string, string> = {
   brochure: "会社案内・製品パンフ", sales_deck: "営業資料", website: "Webサイト", recruit: "採用ページ",

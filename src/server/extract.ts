@@ -320,22 +320,34 @@ type Doc = { id: string; title: string; kind: string; storage_path: string | nul
  * 会社の資料をテキスト化して返す。抽出結果は company_documents.text_content にキャッシュ。
  * 画像は読まない（note に残す）。
  */
+/** 同時に limit 件までで順に処理し、結果は元の順番で返す */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (x: T) => Promise<R>): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) { const i = next++; out[i] = await fn(items[i]); }
+  }));
+  return out;
+}
+
 export async function extractCompanyDocs(companyId: string): Promise<{ docs: { title: string; kind: string; text: string }[]; skipped: string[]; errors: string[] }> {
   const admin = createAdminClient();
   const { data } = await admin.from("company_documents").select("id, title, kind, storage_path, url, text_content, mime_type").eq("company_id", companyId).order("created_at");
   const out: { title: string; kind: string; text: string }[] = [];
   const skipped: string[] = [];
   const errors: string[] = [];
-  for (const d of (data ?? []) as Doc[]) {
+  // 資料・URLは4件ずつ並行して読む（URLが1件15秒で打ち切られても全体が積み上がらない。PDFを一度に開きすぎない。順番は登録順のまま）
+  const results = await mapLimit((data ?? []) as Doc[], 4, async (d) => {
+    const errs: string[] = [];
     // 自社のフォルダ以外のファイルは読まない（行の storage_path が書き換えられていても他社の資料に届かないように）
-    if (d.storage_path && !d.storage_path.startsWith(`${companyId}/`)) { skipped.push(d.title); continue; }
+    if (d.storage_path && !d.storage_path.startsWith(`${companyId}/`)) return { d, text: "", errs, foreign: true };
     let text = d.text_content ?? "";
     if (!text) {
       if (d.url) text = await fetchUrlText(d.url);
       else if (d.storage_path && d.mime_type === "application/pdf") {
         const { data: f, error: dlErr } = await admin.storage.from("company-docs").download(d.storage_path);
-        if (dlErr) errors.push(`${d.title}: download ${dlErr.message}`);
-        if (f) { const r = await pdfText(Buffer.from(await f.arrayBuffer())); text = r.text; if (r.error) errors.push(`${d.title}: ${r.error}`); }
+        if (dlErr) errs.push(`${d.title}: download ${dlErr.message}`);
+        if (f) { const r = await pdfText(Buffer.from(await f.arrayBuffer())); text = r.text; if (r.error) errs.push(`${d.title}: ${r.error}`); }
       } else if (d.storage_path && d.mime_type === "text/plain") {
         const { data: f } = await admin.storage.from("company-docs").download(d.storage_path);
         if (f) {
@@ -347,8 +359,12 @@ export async function extractCompanyDocs(companyId: string): Promise<{ docs: { t
       }
       if (text) await admin.from("company_documents").update({ text_content: text.slice(0, 200_000) }).eq("id", d.id);
     }
-    if (text) out.push({ title: d.title, kind: d.kind, text: text.slice(0, MAX_PER_DOC) });
-    else skipped.push(d.title);
+    return { d, text, errs, foreign: false };
+  });
+  for (const r of results) {
+    errors.push(...r.errs);
+    if (r.text && !r.foreign) out.push({ title: r.d.title, kind: r.d.kind, text: r.text.slice(0, MAX_PER_DOC) });
+    else skipped.push(r.d.title);
   }
   return { docs: out, skipped, errors };
 }

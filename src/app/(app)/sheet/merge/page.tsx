@@ -17,7 +17,7 @@ import { AiNotice } from "@/components/AiNotice";
 import { loadMeetingAfter } from "@/server/meetingNext";
 import { MeetingNextBlock } from "@/components/MeetingNext";
 
-export const maxDuration = 60;
+export const maxDuration = 300; // AIの下書き（資料・URLの読み込みを含む）が画面側の待ち時間より先に打ち切られないように
 
 export default async function Page() {
   const { supabase, company } = await requireCustomer();
