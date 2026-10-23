@@ -21,7 +21,7 @@ async function ownRow(supabase: Awaited<ReturnType<typeof requireStage>>["supaba
 
 /** 証拠を自分で入れる（採用済みとして保存） */
 export async function addEvidence(formData: FormData) {
-  const { supabase, company, user } = await requireStage("evidence");
+  const { supabase, company, user, profile } = await requireStage("evidence");
   const rowId = String(formData.get("row_id") ?? "");
   if (!(await ownRow(supabase, company.id, rowId))) return;
   const content = cut(String(formData.get("content") ?? "").trim(), 2000);
@@ -30,7 +30,7 @@ export async function addEvidence(formData: FormData) {
   const ref = String(formData.get("claim_ref") ?? "");
   const what = cut(String(formData.get("what") ?? "").trim(), 600);
   await supabase.from("evidences").insert({
-    row_id: rowId, content, kind, strength: STRENGTH_OF[kind], status: "adopted", created_by: "customer",
+    row_id: rowId, content, kind, strength: STRENGTH_OF[kind], status: isMember(profile) ? "candidate" : "adopted", created_by: "customer", // メンバーが足した証拠は担当者の採用待ち
     source: cut(String(formData.get("source") ?? "").trim(), 300) || null,
     claim_ref: CLAIM_RE.test(ref) ? ref : null, what: what || null,
   });

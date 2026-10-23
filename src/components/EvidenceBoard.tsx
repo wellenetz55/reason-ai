@@ -15,7 +15,7 @@ function EvItem({ e, claimLabel }: { e: Ev; claimLabel: string | null }) {
   return (
     <li className={`rounded-[var(--radius)] border px-4 py-3 ${cand ? "border-navy/40 bg-navy-soft" : "hairline bg-paper"}`}>
       <p className="text-[11px] text-ink-3 flex flex-wrap gap-x-3">
-        {cand && <span className="font-semibold text-navy">AIが資料から見つけた候補</span>}
+        {cand && <span className="font-semibold text-navy">{e.created_by === "ai" ? "AIが資料から見つけた候補" : "メンバーが足した候補（担当者の採用待ち）"}</span>}
         <span>{KIND_SHORT[e.kind] ?? e.kind}</span>
         {e.strength && <span>強さ {STRENGTH_LABEL[e.strength] ?? e.strength}</span>}
         {claimLabel && <span>裏づけ：{claimLabel}</span>}
@@ -102,7 +102,7 @@ export function EvidenceBoard({ rows, evidences }: { rows: EvRow[]; evidences: E
 
                 {cands.length > 0 && (
                   <div>
-                    <p className="text-[12px] font-semibold text-navy">AIが見つけた候補（採用するまで証拠になりません）</p>
+                    <p className="text-[12px] font-semibold text-navy">候補（担当者が採用するまで証拠になりません）</p>
                     <ul className="mt-2 space-y-2">{cands.map((e) => <EvItem key={e.id} e={e} claimLabel={label(e.claim_ref)} />)}</ul>
                   </div>
                 )}

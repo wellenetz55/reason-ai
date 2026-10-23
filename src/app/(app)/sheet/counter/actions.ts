@@ -103,7 +103,7 @@ export async function saveCounter(formData: FormData) {
     // 直す前の答えも履歴に残す（直したあとで、前の答えに戻したくなったとき用）
     const changed = !!b.counter_message && (nl(b.counter_message) !== counter || nl(b.because) !== because);
     const history = changed ? [...((b.counter_history as string[] | null) ?? []), encodeCounter({ c: b.counter_message as string, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null, a: (b.counter_by as string | null) ?? null })].slice(-5) : undefined;
-    await supabase.from("brakes").update({ counter_message: counter, because: because || null, because_tag: TAGS.includes(tag) ? tag : "hypothesis", counter_by: "customer", counter_approved_at: isMember(profile) ? null : new Date().toISOString(), ...(history ? { counter_history: history } : {}) }).eq("id", id);
+    await supabase.from("brakes").update({ counter_message: counter, because: because || null, because_tag: isMember(profile) && tag === "fact" ? "verify" : TAGS.includes(tag) ? tag : "hypothesis", counter_by: "customer", counter_approved_at: isMember(profile) ? null : new Date().toISOString(), ...(history ? { counter_history: history } : {}) }).eq("id", id);
     await supabase.from("sheet_row_reviews").insert({ row_id: b.row_id, column_key: "counter_message", action: "fix", before_text: b.counter_message, after_text: counter, reviewer_id: user.id });
   } else if (action === "approve") {
     // 画面で見ていた答えと、いまの答えが違う（別のタブでAIの別案などに変わった）ときは承認しない

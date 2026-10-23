@@ -57,7 +57,7 @@ export function TripleList({ rows }: { rows: Row[] }) {
                     <p className="text-[11px] text-ink-3 mt-1.5 flex flex-wrap gap-x-3">
                       {hasB && <span>{TAG[r.because_tag ?? "hypothesis"]}</span>}
                       {r.trust_axis && <span>{BECAUSE_TYPES.find((t) => t.key === r.trust_axis)?.label}</span>}
-                      {aiB && <span className="text-verify">なぜならはAIの下書き</span>}
+                      {aiB && <span className="text-verify">なぜならは承認待ち（AIの下書き、またはメンバーの修正）</span>}
                       {r.because_only_us && <span className="text-navy font-medium">当社しかありません</span>}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1">

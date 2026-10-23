@@ -42,14 +42,16 @@ export async function saveTriple(formData: FormData) {
   if (isMember(profile) && action !== "fix") { revalidatePath("/sheet/trust"); return; } // 承認は担当者だけ
   const { data: row } = await supabase.from("sheet_rows").select("id, experience_value, experience_value_v1, because_phrase").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   if (!row) return;
-  const patch: Record<string, unknown> = { because_by: "customer" };
+  const member = isMember(profile);
+  // メンバーの修正は承認待ち（because_by を "ai" のままにして「承認」ボタンを残す）。印を「事実」にするのは担当者だけ
+  const patch: Record<string, unknown> = { because_by: member ? "ai" : "customer" };
   if (action === "fix") {
     const exp = cut(String(formData.get("experience") || "").trim(), MAX.value);
     const because = cut(String(formData.get("because") || "").trim(), MAX.value);
     const tag = String(formData.get("tag") || "hypothesis");
     patch.experience_value = exp || null;
     patch.because_phrase = because || null;
-    patch.because_tag = ["fact", "verify", "hypothesis"].includes(tag) ? tag : "hypothesis";
+    patch.because_tag = member && tag === "fact" ? "verify" : ["fact", "verify", "hypothesis"].includes(tag) ? tag : "hypothesis";
     patch.because_only_us = formData.get("only_us") === "1";
     patch.trust_axis = String(formData.get("type") || "") || null;
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "because_phrase", action: "fix", before_text: row.because_phrase, after_text: because, reviewer_id: user.id });

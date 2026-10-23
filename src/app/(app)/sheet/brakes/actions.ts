@@ -97,7 +97,7 @@ export async function saveBrake(formData: FormData) {
 
 /** 御社がブレーキを自分で1枚追加する */
 export async function addBrake(formData: FormData) {
-  const { supabase, company, user } = await requireStage("brakes");
+  const { supabase, company, user, profile } = await requireStage("brakes");
   const rowId = String(formData.get("row_id"));
   const kind = String(formData.get("kind") || "");
   const words = nl(String(formData.get("words") || "")).trim().slice(0, 400);
@@ -106,7 +106,7 @@ export async function addBrake(formData: FormData) {
   if (!KINDS.has(kind) || !words) return;
   const { data: row } = await supabase.from("sheet_rows").select("id").eq("id", rowId).eq("company_id", company.id).maybeSingle();
   if (!row) return;
-  await supabase.from("brakes").insert({ row_id: rowId, kind, customer_words: words, source_tag: SOURCES.has(source) ? source : "own", evidence_tag: TAGS.includes(tag) ? tag : "hypothesis", created_by: "customer", status: "active", approved_at: new Date().toISOString() });
+  await supabase.from("brakes").insert({ row_id: rowId, kind, customer_words: words, source_tag: SOURCES.has(source) ? source : "own", evidence_tag: TAGS.includes(tag) ? tag : "hypothesis", created_by: "customer", status: "active", approved_at: isMember(profile) ? null : new Date().toISOString() }); // メンバーが足したブレーキは担当者の承認待ち
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "brakes.add", payload: { kind } });
   revalidatePath("/sheet/brakes");
 }
