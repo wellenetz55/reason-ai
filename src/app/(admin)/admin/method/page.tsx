@@ -9,13 +9,18 @@ const PROMPT_KEYS: { key: string; label: string }[] = [
   { key: "step0_summary", label: "STEP 0 御社の説明の下書き" },
   { key: "diverge", label: "STEP 1 提供価値・体験価値の下書き" },
   { key: "vague_check", label: "STEP 2 ふわっと診断（点検と言い直し案）" },
+  { key: "brakes_draft", label: "STEP 3 お客様のブレーキの下書き" },
+  { key: "counter_draft", label: "STEP 4 先回りの答えの下書き" },
   { key: "because_draft", label: "STEP 5 なぜなら（根拠）の下書き" },
+  { key: "litmus_draft", label: "STEP 6 選ばれる理由の見極め（AIの仮判定）" },
+  { key: "evidence_draft", label: "STEP 7 証拠の候補探し" },
 ];
 const FIXED_KEYS: { key: string; label: string; stage?: string }[] = [
   { key: "round1_intro", label: "STEP 1 冒頭の固定文（提供価値／体験価値の書き方）", stage: "diverge" },
   { key: "round2_brakes_intro", label: "STEP 3 冒頭の固定文（4つの不）", stage: "brakes" },
   { key: "round2_counter_intro", label: "STEP 4 冒頭の固定文", stage: "counter" },
   { key: "round2_trust_intro", label: "STEP 5 冒頭の固定文", stage: "trust" },
+  { key: "round2_litmus_intro", label: "STEP 6 冒頭の固定文", stage: "litmus" },
   { key: "round3_evidence_intro", label: "STEP 7 冒頭の固定文", stage: "evidence" },
   { key: "diag_intro", label: "適合診断 冒頭の説明（読み上げ用）" },
   ...["q1", "q2", "q3", "q4", "q5", "q6", "q7"].map((k, i) => ({ key: `diag_${k}`, label: `適合診断 問${i + 1}` })),

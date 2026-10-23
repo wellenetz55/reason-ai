@@ -10,7 +10,7 @@ export async function loadGateCtx(supabase: SupabaseClient, companyId: string, s
     supabase.from("v_divergence_progress").select("row_count, pair_count").eq("company_id", companyId).maybeSingle(),
     // 却下・保留した組のブレーキは数えない（使わない組で「4種類そろった」にしない）
     supabase.from("brakes").select("kind, counter_message, because, status, sheet_rows!inner(company_id, status)").eq("sheet_rows.company_id", companyId).eq("sheet_rows.status", "active").eq("status", "active"),
-    supabase.from("evidences").select("id, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId).eq("status", "adopted"), // AIの候補は数えない
+    supabase.from("evidences").select("id, sheet_rows!inner(company_id, status)").eq("sheet_rows.company_id", companyId).eq("sheet_rows.status", "active").eq("status", "adopted"), // AIの候補は数えない
     isStep0Ready(supabase, companyId),
   ]);
   const kinds = new Set((brakes ?? []).map((b) => b.kind));
