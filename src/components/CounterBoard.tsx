@@ -106,7 +106,7 @@ export function CounterBoard({ rows, brakes }: { rows: CounterRow[]; brakes: Cou
                             {b.counter_approved_at && done ? <span className="text-navy">承認済</span> : b.counter_by === "ai" ? <span className="text-ink-3">AIの下書き</span> : null}
                           </p>
                           <div className="flex flex-wrap gap-2 mt-2">
-                            {!b.counter_approved_at && <form action={saveCounter}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="approve" /><button className={OPT + " border-navy bg-navy text-on-accent font-semibold hover:brightness-110"} type="submit">このままでよい</button></form>}
+                            {!b.counter_approved_at && <form action={saveCounter}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="approve" /><input type="hidden" name="shown" value={b.counter_message ?? ""} /><button className={OPT + " border-navy bg-navy text-on-accent font-semibold hover:brightness-110"} type="submit">このままでよい</button></form>}
                             <button type="button" className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} onClick={() => setEditing(b.id)}>{hole ? "穴を埋める・直す" : "直す"}</button>
                             <form action={redraftCounter} data-busy-timeout="90000"><input type="hidden" name="id" value={b.id} /><button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">AIに別の答えを頼む</button></form>
                             {b.counter_approved_at && <form action={saveCounter}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="reopen" /><button className="btn-text text-xs" type="submit">承認を外す</button></form>}

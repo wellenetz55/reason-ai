@@ -178,7 +178,11 @@ export async function reviewProfileItem(formData: FormData) {
   if (!def || def.fixed) return;
   const { data: cur } = await supabase.from("profile_items").select("*").eq("company_id", company.id).eq("key", key).maybeSingle();
   const patch: Record<string, unknown> = { company_id: company.id, key, updated_at: new Date().toISOString() };
-  if (action === "approve") { patch.value = cur?.draft ?? null; patch.status = "approved"; }
+  if (action === "approve") {
+    // 画面で見ていた下書きと、いまの下書きが違う（別のタブで作り直された）ときは承認しない
+    if (String(formData.get("shown") ?? "") !== (cur?.draft ?? "")) { revalidatePath("/step0"); return; }
+    patch.value = cur?.draft ?? null; patch.status = "approved";
+  }
   else if (action === "fix" || action === "answer") { if (!after) return; patch.value = after; patch.status = "fixed"; if (action === "answer") patch.tag = "fact"; }
   else if (action === "hold") { patch.status = "held"; }
   // 戻す：自分で書いた（または承認した）文は残す

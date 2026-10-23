@@ -49,7 +49,7 @@ export function ProfileItems({ items, bq, oneLiner, review, drafted = true }: {
               <div className="mt-2 flex gap-1">
                 <button type="button" className="btn-text" onClick={() => setEditing(def.key)}>直す</button>
                 {status === "draft" && (
-                  <form action={review}><input type="hidden" name="key" value={def.key} /><input type="hidden" name="action" value="approve" /><button className="btn-text text-navy" type="submit">承認</button></form>
+                  <form action={review}><input type="hidden" name="key" value={def.key} /><input type="hidden" name="action" value="approve" /><input type="hidden" name="shown" value={it?.draft ?? ""} /><button className="btn-text text-navy" type="submit">承認</button></form>
                 )}
                 {status !== "held" && status !== "empty" && (
                   <form action={review}><input type="hidden" name="key" value={def.key} /><input type="hidden" name="action" value="hold" /><button className="btn-text" type="submit">保留</button></form>

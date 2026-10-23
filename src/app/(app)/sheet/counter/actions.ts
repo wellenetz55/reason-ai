@@ -95,6 +95,8 @@ export async function saveCounter(formData: FormData) {
     await supabase.from("brakes").update({ counter_message: counter, because: because || null, because_tag: TAGS.includes(tag) ? tag : "hypothesis", counter_by: "customer", counter_approved_at: new Date().toISOString(), ...(history ? { counter_history: history } : {}) }).eq("id", id);
     await supabase.from("sheet_row_reviews").insert({ row_id: b.row_id, column_key: "counter_message", action: "fix", before_text: b.counter_message, after_text: counter, reviewer_id: user.id });
   } else if (action === "approve") {
+    // 画面で見ていた答えと、いまの答えが違う（別のタブでAIの別案などに変わった）ときは承認しない
+    if (String(formData.get("shown") ?? "") !== (b.counter_message ?? "")) { revalidatePath("/sheet/counter"); return; }
     await supabase.from("brakes").update({ counter_approved_at: new Date().toISOString() }).eq("id", id);
     await supabase.from("sheet_row_reviews").insert({ row_id: b.row_id, column_key: "counter_message", action: "approve", before_text: b.counter_message, after_text: b.counter_message, reviewer_id: user.id });
   } else if (action === "reopen") {
