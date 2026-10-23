@@ -1,6 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { loginErrorUrl } from "@/lib/loginErrors";
 
 export type Profile = {
   id: string;
@@ -40,10 +41,10 @@ export async function requireUser() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-  if (!profile) redirect("/login?error=" + encodeURIComponent("アカウント設定が完了していません。ベレネッツにお問い合わせください。"));
+  if (!profile) redirect(loginErrorUrl("noprofile"));
   if (profile.disabled_at) {
     await supabase.auth.signOut();
-    redirect("/login?error=" + encodeURIComponent("このアカウントは使えなくなっています。"));
+    redirect(loginErrorUrl("disabled"));
   }
   return { supabase, user, profile: profile as Profile };
 }
@@ -51,7 +52,7 @@ export async function requireUser() {
 export async function requireCustomer() {
   const ctx = await requireUser();
   if (ctx.profile.role === "operator") redirect("/admin");
-  if (!ctx.profile.company_id) redirect("/login?error=" + encodeURIComponent("会社が紐づいていません。"));
+  if (!ctx.profile.company_id) redirect(loginErrorUrl("nocompany"));
   const { data } = await ctx.supabase.from("companies").select("*").eq("id", ctx.profile.company_id).single();
   let company = data as Company;
   // 解約後でも、ベレネッツが再アクセスを許可した期間は「編集終了（ダウンロードのみ）」と同じ扱いにする

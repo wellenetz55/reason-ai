@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { loginErrorUrl } from "@/lib/loginErrors";
 
 const FAIL = (origin: string, detail?: string) => {
   if (detail) console.warn("[auth/callback]", detail);
-  return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent("リンクが無効か、有効期限（5分）が過ぎています。メールを受け取った端末とは別のブラウザで開いた場合も無効になります。もう一度メールアドレスを入力してください。")}`);
+  return NextResponse.redirect(`${origin}${loginErrorUrl("expired")}`);
 };
 
 /**

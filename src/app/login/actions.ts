@@ -1,10 +1,11 @@
 "use server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { loginErrorUrl } from "@/lib/loginErrors";
 
 export async function sendMagicLink(formData: FormData) {
   const email = String(formData.get("email") || "").trim();
-  if (!email) redirect("/login?error=メールアドレスを入力してください");
+  if (!email) redirect(loginErrorUrl("noemail"));
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
@@ -18,7 +19,7 @@ export async function sendMagicLink(formData: FormData) {
     const code = (error as { code?: string }).code ?? "";
     console.error("login.sendMagicLink", { status: error.status, code: code || "(none)", name: error.name });
     const emailLimit = code === "over_email_send_rate_limit" || /rate limit|after \d+ seconds/i.test(error.message ?? "");
-    if (error.status === 429 && !emailLimit) redirect(`/login?error=${encodeURIComponent("ただいま混み合っています。1分ほど待ってから、もう一度お試しください。")}`);
+    if (error.status === 429 && !emailLimit) redirect(loginErrorUrl("busy"));
     redirect(`/login?sent=1&t=${Date.now()}`);
   }
   redirect(`/login?sent=1&t=${Date.now()}`);

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { APP_VERSION } from "@/lib/version";
 export const instant = false;
 import { sendMagicLink } from "./actions";
+import { LOGIN_ERRORS, type LoginErrorCode } from "@/lib/loginErrors";
 import { ReasonLogo, OperatedBy } from "@/components/Brand";
 
 import { PendingBar } from "@/components/PendingBar";
@@ -10,7 +11,9 @@ import { LinkCountdown } from "@/components/LinkCountdown";
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const sp = await searchParams;
   const sent = sp?.sent === "1";
-  const error = typeof sp?.error === "string" ? sp.error : null;
+  // 文はURLから受け取らず、決まった記号から引く（偽の案内を出させないため）
+  const code = typeof sp?.e === "string" ? sp.e : null;
+  const error = code && Object.hasOwn(LOGIN_ERRORS, code) ? LOGIN_ERRORS[code as LoginErrorCode] : null;
   const t = typeof sp?.t === "string" ? Number(sp.t) : NaN;
   const sentAt = Number.isFinite(t) ? t : null;
   return (
