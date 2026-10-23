@@ -9,7 +9,7 @@ const PICKABLE = ["session1", "midcheck", "session2", "session3"];
 
 /** 書き込みできる会社か。編集終了・解約（再アクセス中も含む）は不可。契約前（diagnosed）はキックオフだけ可 */
 function canTouch(status: string, kind: string) {
-  if (["locked", "cancelled"].includes(status)) return false;
+  if (["grace", "locked", "cancelled"].includes(status)) return false; // 猶予期間も面談日程は動かさない（閲覧のみ）
   if (status === "diagnosed" && kind !== "kickoff") return false;
   return true;
 }

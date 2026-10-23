@@ -53,7 +53,7 @@ export default async function Home() {
   const [{ data: progress }, { data: hw }, pick] = await Promise.all([
     supabase.from("v_divergence_progress").select("pair_count").eq("company_id", company.id).maybeSingle(),
     supabase.from("homeworks").select("id, title, why, due_at, priority").eq("company_id", company.id).eq("status", "open").order("priority", { ascending: false }).order("due_at").limit(3),
-    ["locked", "cancelled"].includes(company.status) ? Promise.resolve(null) : loadPendingCandidates(supabase, company.id),
+    ["grace", "locked", "cancelled"].includes(company.status) ? Promise.resolve(null) : loadPendingCandidates(supabase, company.id),
   ]);
   const openHomework = hw?.length ?? 0;
   const rows = progress?.pair_count ?? 0;

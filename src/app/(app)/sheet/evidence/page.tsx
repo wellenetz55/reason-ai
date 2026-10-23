@@ -7,7 +7,7 @@ import { NextStepBar } from "@/components/NextStepBar";
 import { StepGuide } from "@/components/StepGuide";
 import { EvidenceBoard, type EvRow, type EvClaim, type Ev } from "@/components/EvidenceBoard";
 import { stepGate } from "@/lib/gates";
-import { requireCustomer } from "@/lib/session";
+import { requireCustomer, isMember } from "@/lib/session";
 import { loadFixedText } from "@/server/ai/client";
 import { requestEvidenceCandidates } from "./actions";
 import { lastAiError } from "@/server/aiGuard";
@@ -17,7 +17,8 @@ import { EVIDENCE_KINDS, buildClaims, triedKey } from "@/lib/evidence";
 export const maxDuration = 300; // AIが資料から候補を探す時間を取る
 
 export default async function Page() {
-  const { supabase, company } = await requireCustomer();
+  const { supabase, company, profile } = await requireCustomer();
+  const member = isMember(profile);
   const stage = STAGES.find((x) => x.key === "evidence")!;
   if (!isStageOpen(stage, company.status)) return <ClosedStage stageKey="evidence" status={company.status} />;
   if (!(await isStep0Ready(supabase, company.id))) return <Step0Required stageKey="evidence" />;
@@ -81,7 +82,7 @@ export default async function Page() {
             <p className="text-[12px] text-ink-3 mt-2">会社の資料・面談の記録・適合診断の中から、「なぜなら」を裏づけそうな箇所をそのまま抜き出します。材料に無いことは作りません。採用するかどうかは御社が決めます。</p>
           </form>
         ) : list.length > 0 && (
-          <p className="mt-5 text-[12px] text-ink-3">{candidates > 0 ? `AIが見つけた候補が${candidates}件あります。下の組ごとに、採用するか見送るかを決めてください。` : "AIが探せる組は探し終えました。見つからなかった組は、お客様の声や数字を集めて、下の「証拠を足す」から入れてください。"}</p>
+          <p className="mt-5 text-[12px] text-ink-3">{candidates > 0 ? `証拠の候補が${candidates}件あります。下の組ごとに、${member ? "担当者が" : ""}採用するか見送るかを決めてください。` : (list.some((r) => r.claims.length > 0) ? "AIが探せる組は探し終えました。見つからなかった組は、お客様の声や数字を集めて、下の「証拠を足す」から入れてください。" : "AIが探すには、組に「なぜなら」（STEP 4・5）が必要です。先に STEP 4・5 で書くか、下の「証拠を足す」から入れてください。")}</p>
         )}
       </section>
 

@@ -10,7 +10,7 @@ export async function answerHomework(formData: FormData) {
   const answer = cut(String(formData.get("answer") || "").trim(), MAX.answer);
   const askedWhom = cut(String(formData.get("asked_whom") || "").trim(), MAX.title);
   // 早く戻るときも画面を描き直す（送信中表示が残らないように）
-  if (["diagnosed", "locked", "cancelled"].includes(company.status)) {
+  if (["diagnosed", "grace", "locked", "cancelled"].includes(company.status)) {
     revalidatePath("/homework");
     return;
   }
