@@ -112,7 +112,7 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
     </details>
   );
 
-  if (flaggedList.length === 0) return <><p className="text-sm text-ink-2 mt-3">言い直しが必要な組はありません。</p>{aiOkBlock}{decidedBlock}</>;
+  if (flaggedList.length === 0) return <><p className="text-sm text-ink-2 mt-3">言い直しが必要な組はありません。</p>{aiOkBlock}{decidedBlock}{droppedBlock}</>;
   return (
     <>
     <p className="mt-4 text-[12px] text-ink-3">まだ決めていない組（{flaggedList.length}）── 印がついた理由と、AIの言い直し案。どれかを選ぶと下の「決めた組」に移ります</p>
