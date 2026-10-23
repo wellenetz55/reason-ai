@@ -24,11 +24,11 @@ export function BiasReport({ rows }: { rows: Row[] }) {
     return [...seen.values()].filter((c) => c > 1).length;
   })();
 
-  const lines: { text: string; href?: string; warn: boolean }[] = [];
+  const lines: { text: string; href?: string; linkLabel?: string; warn: boolean }[] = [];
   if (top.n / n >= 0.5) lines.push({ text: `「${top.label}」に${Math.round((top.n / n) * 100)}%が集中しています。`, warn: true });
   else lines.push({ text: `面の偏りは大きくありません（最多は「${top.label}」${Math.round((top.n / n) * 100)}%）。`, warn: false });
-  if (empty.length) lines.push({ text: `まだ0組の面：${empty.map((f) => f.label).join("・")}。`, href: "/sheet/diverge", warn: true });
-  if (thin.length) lines.push({ text: `薄い面：${thin.map((f) => `${f.label}（${f.n}）`).join("・")}。`, href: "/sheet/diverge", warn: true });
+  if (empty.length) lines.push({ text: `まだ0組の面：${empty.map((f) => f.label).join("・")}。`, href: `/sheet/diverge?facet=${empty[0].key}`, linkLabel: `「${empty[0].label}」の問いを開く`, warn: true }); // 名前を挙げた面（先頭）の問いを開く
+  if (thin.length) lines.push({ text: `薄い面：${thin.map((f) => `${f.label}（${f.n}）`).join("・")}。`, href: `/sheet/diverge?facet=${thin[0].key}`, linkLabel: `「${thin[0].label}」の問いを開く`, warn: true });
   lines.push({ text: `機能寄り ${n - emo}組／情緒寄り ${emo}組。${emo / n < 0.25 ? "お客様の気持ちの変化を書いた組が少なめです。" : ""}`, warn: emo / n < 0.25 });
   if (noTarget / n > 0.6) lines.push({ text: `「誰向け」が空の組が${noTarget}組。相手を決めると言葉が具体的になります。`, warn: true });
   if (dup) lines.push({ text: `同じ提供価値の組が${dup}通りあります（体験価値違い）。統合のときに束ねます。`, warn: false });
@@ -52,7 +52,7 @@ export function BiasReport({ rows }: { rows: Row[] }) {
           <li key={i} className={l.warn ? "text-ink" : "text-ink-2"}>
             {l.warn && <span className="inline-block w-1.5 h-1.5 rounded-full bg-warm mr-2 align-middle" />}
             {l.text}
-            {l.href && <Link href={l.href} className="ml-2 text-navy underline underline-offset-4">その面の問いに戻る</Link>}
+            {l.href && <Link href={l.href} className="ml-2 text-navy underline underline-offset-4">{l.linkLabel ?? "その面の問いを開く"}</Link>}
           </li>
         ))}
       </ul>
