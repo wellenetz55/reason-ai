@@ -32,6 +32,10 @@ export default async function SealsAdmin({ params, searchParams }: PageProps<"/a
     lockIds.length ? createAdminClient().from("sheet_lock_history").select("id, lock_id, row_id, column_key, before_text, after_text, reason, changed_at").in("lock_id", lockIds).order("changed_at", { ascending: false }).limit(50) : Promise.resolve({ data: [] as { id: string; lock_id: string; row_id: string | null; column_key: string; before_text: string | null; after_text: string | null; reason: string | null; changed_at: string }[] }),
     top ? supabase.from("brakes").select("because_tag, counter_message").eq("row_id", top.id).eq("status", "active") : Promise.resolve({ data: [] as { because_tag: string; counter_message: string | null }[] }),
   ]);
+  // 記録がどの組のものか分かるように、組の番号を引く
+  const histRowIds = [...new Set((hist ?? []).map((h) => h.row_id).filter((x): x is string => !!x))];
+  const { data: histRows } = histRowIds.length ? await supabase.from("sheet_rows").select("id, seq").in("id", histRowIds) : { data: [] as { id: string; seq: number }[] };
+  const seqOf = new Map((histRows ?? []).map((r) => [r.id, r.seq]));
   const bySession = new Map((locks ?? []).map((l) => [l.session as string, l]));
   const lockSession = new Map((locks ?? []).map((l) => [l.id, l.session as string]));
   // 仕様 00 §5：⑤⑥の根拠が「事実」1件もない行を1位にしようとしている（警告のみ。強制はしない）
@@ -88,7 +92,7 @@ export default async function SealsAdmin({ params, searchParams }: PageProps<"/a
           <ul className="mt-3 divide-y divide-hair text-[13px]">
             {(hist ?? []).map((h) => (
               <li key={h.id} className="py-3">
-                <p className="text-[11px] text-ink-3"><span className="num">{fmtMeeting(h.changed_at)}</span> · {SEAL_LABEL[lockSession.get(h.lock_id) ?? ""] ?? ""} · {COLUMN_LABEL[h.column_key] ?? h.column_key}</p>
+                <p className="text-[11px] text-ink-3"><span className="num">{fmtMeeting(h.changed_at)}</span> · {SEAL_LABEL[lockSession.get(h.lock_id) ?? ""] ?? ""} · {h.row_id && seqOf.has(h.row_id) ? <span className="num">組 No.{seqOf.get(h.row_id)} · </span> : null}{COLUMN_LABEL[h.column_key] ?? h.column_key}</p>
                 <p className="mt-1"><span className="text-ink-3 mr-1">前：</span>{h.before_text || "（空）"}</p>
                 <p><span className="text-ink-3 mr-1">後：</span>{h.after_text || "（空）"}</p>
                 <p className="mt-0.5 text-navy"><span className="text-ink-3 mr-1">理由：</span>{h.reason}</p>
