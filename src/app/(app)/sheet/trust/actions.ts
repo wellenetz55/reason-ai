@@ -3,18 +3,17 @@ import { MAX, cut } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
 import { draftBecause } from "@/server/because";
-import { PROFILE_ITEMS } from "@/lib/profileItems";
+import { loadProfileContext } from "@/server/profile";
 import { aiGuard } from "@/server/aiGuard";
 
 /** なぜならが空の行（最大10）に AI の下書きを付ける */
 export async function requestBecauseDrafts() {
   const { supabase, company, user } = await requireStage("trust");
-  const [{ data: items }, { data: rows }] = await Promise.all([
-    supabase.from("profile_items").select("key, value, status").eq("company_id", company.id).in("status", ["approved", "fixed"]),
+  // 材料は他のステップと同じ（御社の説明の下書き・資料・適合診断・面談記録も含む）。承認済みの項目だけだと、資料はあるのに根拠が拾えない
+  const [profile, { data: rows }] = await Promise.all([
+    loadProfileContext(supabase, company.id),
     supabase.from("sheet_rows").select("id, value_raw, experience_value, experience_value_v1").eq("company_id", company.id).eq("status", "active").or("because_phrase.is.null,because_phrase.eq.").order("seq").limit(10),
   ]);
-  const profile: Record<string, string> = {};
-  for (const it of items ?? []) { const def = PROFILE_ITEMS.find((d) => d.key === it.key); if (def && it.value) profile[def.label] = it.value; }
   const targets = (rows ?? []).filter((r) => r.value_raw).map((r) => ({ id: r.id, value: r.value_raw as string, experience: r.experience_value ?? r.experience_value_v1 }));
   // 「なぜなら」が空の組が無ければAIを呼ばない（呼び出し回数の上限を無駄に使わない）
   if (!targets.length) { revalidatePath("/sheet/trust"); return; }
