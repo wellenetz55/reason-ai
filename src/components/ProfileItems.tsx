@@ -86,13 +86,24 @@ export function ProfileItems({ items, bq, oneLiner, review, drafted = true }: {
           <span className="text-[11px] text-ink-3">{answered ? "回答済み" : "未回答"}</span>
         </div>
         <p className="text-sm text-ink-2 mt-1 max-w-[40em] leading-relaxed">{bq[def.key] || "（問いの文面はベレネッツが設定します）"}</p>
-        {it?.draft && !answered && (
+        {/* メンバーの回答（承認待ち）：回答済みの項目に出した書き直し、または未回答の項目への回答 */}
+        {it?.draft && (answered ? it.draft !== it.value : it.source === "御社が書いた文") && (
+          <div className="mt-2 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-4 py-3 text-sm">
+            <p className="text-[11px] font-semibold text-navy">メンバーの回答（担当者の承認待ち）</p>
+            <p className="mt-1 whitespace-pre-line leading-relaxed">{it.draft}</p>
+            <div className="mt-2 flex gap-2" data-admin-only>
+              <form action={review}><input type="hidden" name="key" value={def.key} /><input type="hidden" name="action" value="answer" /><input type="hidden" name="after" value={it.draft} /><button className="btn-text text-navy" type="submit">この回答にする</button></form>
+              {answered && <form action={review}><input type="hidden" name="key" value={def.key} /><input type="hidden" name="action" value="dismiss" /><button className="btn-text" type="submit">見送る</button></form>}
+            </div>
+          </div>
+        )}
+        {it?.draft && !answered && it.source !== "御社が書いた文" && (
           <p className="tag-line tag-hypo pl-4 mt-2 text-[13px] text-ink-3 leading-relaxed whitespace-pre-line">AIの仮説：{it.draft}</p>
         )}
         {open ? (
           <form action={async (fd) => { await review(fd); setEditing(null); }} className="mt-2">
             <input type="hidden" name="key" value={def.key} /><input type="hidden" name="action" value="answer" />
-            <textarea name="after" defaultValue={it?.value ?? ""} rows={4} className="w-full border-b hairline py-2 text-sm" autoFocus placeholder="御社の言葉で" />
+            <textarea name="after" defaultValue={it?.value ?? (it?.source === "御社が書いた文" ? it?.draft ?? "" : "")} rows={4} className="w-full border-b hairline py-2 text-sm" autoFocus placeholder="御社の言葉で" />
             <div className="mt-2 flex gap-2"><button className="btn-primary" type="submit">保存</button><button type="button" className="btn-text" onClick={() => setEditing(null)}>やめる</button></div>
           </form>
         ) : (
