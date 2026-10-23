@@ -62,7 +62,7 @@ export async function saveIntake(formData: FormData) {
   if (removing) {
     await createAdminClient().from("diagnosis_intakes").update({ transcript: null, transcript_name: null, updated_by: user.id, updated_at: new Date().toISOString() }).eq("company_id", companyId);
   }
-  if (tr && "error" in tr) back(companyId, `error=${encodeURIComponent("記録は保存しました。" + tr.error)}`);
+  if (tr && "error" in tr) back(companyId, `error=${encodeURIComponent("記録は保存しました。" + tr.error + (formData.get("start_diagnosis") === "1" ? "（適合診断はまだ始めていません）" : ""))}`);
   if (tr && "text" in tr) {
     const { error: te } = await createAdminClient().from("diagnosis_intakes").update({ transcript: tr.text.slice(0, MAX_TRANSCRIPT), transcript_name: tr.name, updated_by: user.id, updated_at: new Date().toISOString() }).eq("company_id", companyId);
     if (te) back(companyId, `error=${encodeURIComponent("記録は保存しましたが、書き起こしを登録できませんでした：" + te.message)}`);
@@ -70,8 +70,10 @@ export async function saveIntake(formData: FormData) {
     trSaved = true;
   }
 
-  if (bad.length) back(companyId, `error=${encodeURIComponent((trSaved ? "記録と書き起こしは保存しました。" : "記録は保存しました。") + "次のURLは形が正しくないため登録していません：" + bad.join(" "))}`);
-  if (kind !== "company" && !targetName) back(companyId, `error=${encodeURIComponent("記録は保存しました。事業部・ブランド、商品・サービスを選んだときは、対象の名前も入れてください（AIが会社全体と取り違えないため）")}`);
+  // 「適合診断を始める」で押されていたら、始めていないことをはっきり書く（記録の保存だけで終わったと気づけるように）
+  const notStarted = formData.get("start_diagnosis") === "1" ? "適合診断（AIの判定案と下書き）はまだ始めていません。直してから、もう一度「保存して、適合診断を始める」を押してください。" : "";
+  if (bad.length) back(companyId, `error=${encodeURIComponent((trSaved ? "記録と書き起こしは保存しました。" : "記録は保存しました。") + "次のURLは形が正しくないため登録していません：" + bad.join(" ") + "。" + notStarted)}`);
+  if (kind !== "company" && !targetName) back(companyId, `error=${encodeURIComponent("記録は保存しました。事業部・ブランド、商品・サービスを選んだときは、対象の名前も入れてください（AIが会社全体と取り違えないため）。" + notStarted)}`);
 
   // 「適合診断を始める」：保存したうえで、AIが判定案と結果の下書きを作り、「結果を書く」へ進む
   if (formData.get("start_diagnosis") === "1") {
