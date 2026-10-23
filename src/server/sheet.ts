@@ -67,7 +67,7 @@ experience（体験価値）: 主語はお客様、「〜と感じることが�
 「御社は value。だから、お客様は experience」と読んで自然であること。根拠がサマリーに無いものは source に "仮説" と書く。
 JSONのみで返す: [{"value":"...","experience":"...","target":"誰向けか","one_liner":"中学生に説明する一言","source":"サマリーのどこ / 仮説"}]`;
   const text = await complete({ promptKey: "diverge", user, maxTokens: 1500 });
-  return arrayOrThrow(parseJson<DraftRow[]>(text), "row_draft").filter((d) => d && typeof d === "object");
+  return arrayOrThrow(parseJson<DraftRow[]>(text), "row_draft").filter((d) => d && typeof d === "object" && typeof (d as { value?: unknown }).value === "string");
 }
 
 /** 体験価値が空の行に、「だから、お客様は〜と感じることができる」の下書きを付ける */

@@ -127,7 +127,7 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
               <p className="text-[12px] mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
                 {dict.length > 0 && <span className="text-warm font-semibold">どの会社でも言える語：{[...new Set(dict)].join("・")}</span>}
                 {!concrete && <span className="text-warm font-semibold">数字・固有名詞がない</span>}
-                {d && d.resolved !== "accepted" && d.issues.map((i, k) => <span key={k} className="text-warm font-semibold">AI：{i}</span>)}
+                {d && d.resolved !== "accepted" && (Array.isArray(d.issues) ? d.issues : []).map((i, k) => <span key={k} className="text-warm font-semibold">AI：{i}</span>)}
                 {score > 0 && (
                   <span className="inline-flex items-center gap-1.5 text-hypo" title="AIの見立て：1＝少しふわっと／2＝ふわっと／3＝どの会社でも言える">
                     <span className="inline-flex gap-0.5" aria-hidden>{[1, 2, 3].map((k) => <span key={k} className={`inline-block w-2 h-2 rounded-full ${k <= score ? "bg-hypo" : "border border-hypo/60"}`} />)}</span>

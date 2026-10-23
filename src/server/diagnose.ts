@@ -34,5 +34,9 @@ ${opts.rows.map((r) => `- id:${r.id}\n  提供価値: ${q(r.value)}\n  体験価
 
 JSONのみで返す: [{"id":"...","vague_score":2,"issues":["数字が無い"],"suggestion_value":"...","suggestion_experience":"..."}]`;
   const text = await complete({ promptKey: "vague_check", user, maxTokens: 6000 });
-  return arrayOrThrow(parseJson<Diagnosis[]>(text), "diagnose").filter((d) => d && typeof d.id === "string");
+  // 形の崩れた項目を正す（issues が文字列などだと、画面で一覧にできず落ちるため）
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  return arrayOrThrow(parseJson<Diagnosis[]>(text), "diagnose")
+    .filter((d) => d && typeof d.id === "string")
+    .map((d) => ({ ...d, issues: Array.isArray(d.issues) ? d.issues.filter((x): x is string => typeof x === "string").slice(0, 3) : [], suggestion_value: str(d.suggestion_value), suggestion_experience: str(d.suggestion_experience) }));
 }
