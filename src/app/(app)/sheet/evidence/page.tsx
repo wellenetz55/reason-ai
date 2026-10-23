@@ -12,7 +12,7 @@ import { loadFixedText } from "@/server/ai/client";
 import { requestEvidenceCandidates } from "./actions";
 import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
-import { EVIDENCE_KINDS, buildClaims } from "@/lib/evidence";
+import { EVIDENCE_KINDS, buildClaims, triedKey } from "@/lib/evidence";
 
 export const maxDuration = 300; // AIが資料から候補を探す時間を取る
 
@@ -46,7 +46,7 @@ export default async function Page() {
   const candidates = evList.filter((e) => e.status === "candidate").length;
   const triedIds = new Set((tried ?? []).flatMap((t) => ((t.payload as { tried?: string[] } | null)?.tried ?? [])));
   const anyEv = new Set(evList.map((e) => e.row_id));
-  const searchable = list.filter((r) => r.claims.length > 0 && !anyEv.has(r.id) && !triedIds.has(r.id)).length;
+  const searchable = list.filter((r) => r.claims.length > 0 && !anyEv.has(r.id) && !triedIds.has(triedKey(r.id, r.claims))).length;
 
   return (
     <div>

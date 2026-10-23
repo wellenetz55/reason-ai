@@ -29,3 +29,10 @@ export function buildClaims(
     })),
   ];
 }
+
+/** AIが一度探した組の印：組のidと、そのときの主張の中身から作る（主張を書き直したら、もう一度探せる） */
+export function triedKey(rowId: string, claims: { text: string }[]): string {
+  let h = 5381;
+  for (const ch of claims.map((c) => c.text).join("\u0001")) h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0;
+  return `${rowId}:${h.toString(36)}`;
+}

@@ -5,7 +5,7 @@ import { isMember } from "@/lib/session";
 import { aiGuard } from "@/server/aiGuard";
 import { loadProfileContext } from "@/server/profile";
 import { findEvidenceCandidates, type RowIn } from "@/server/evidence";
-import { CLAIM_RE, KIND_SET, STRENGTH_OF, buildClaims } from "@/lib/evidence";
+import { CLAIM_RE, KIND_SET, STRENGTH_OF, buildClaims, triedKey } from "@/lib/evidence";
 import { cut } from "@/lib/limits";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -87,13 +87,14 @@ export async function requestEvidenceCandidates() {
     supabase.from("activity_log").select("payload").eq("company_id", company.id).eq("event", "evidence.draft"),
   ]);
   // 証拠・候補がある組と、AIが一度探して見つからなかった組は、もう一度は探さない（同じ材料なら結果は変わらないため）
-  const has = new Set([...(evs ?? []).map((e) => e.row_id), ...(tried ?? []).flatMap((t) => ((t.payload as { tried?: string[] } | null)?.tried ?? []))]);
+  const has = new Set((evs ?? []).map((e) => e.row_id));
+  const triedSet = new Set((tried ?? []).flatMap((t) => ((t.payload as { tried?: string[] } | null)?.tried ?? [])));
   const ordered = (rows ?? []).filter((r) => r.value_raw && !has.has(r.id))
     .sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999) || a.seq - b.seq);
   const targets: RowIn[] = ordered.map((r) => ({
     id: r.id, value: r.value_raw as string, experience: r.experience_value ?? r.experience_value_v1,
     claims: buildClaims(r, (brakes ?? []).filter((b) => b.row_id === r.id)).map((c) => ({ ref: c.ref, label: c.label, text: c.text })),
-  })).filter((t) => t.claims.length > 0).slice(0, BATCH);
+  })).filter((t) => t.claims.length > 0 && !triedSet.has(triedKey(t.id, t.claims))).slice(0, BATCH);
   if (!targets.length) { back(); return; }
   // 材料はお客様の発言・事実だけ（AIの下書きのまま承認されていない説明や、競合の一覧は証拠にならない）
   // 面談の記録のうち「その場で作った組」は主張そのもの（証拠にすると自分で自分を裏づけることになる）なので外す
@@ -106,7 +107,18 @@ export async function requestEvidenceCandidates() {
     row_id: d.row_id, claim_ref: d.claim_ref, what: d.what || null, content: d.content, kind: d.kind, strength: STRENGTH_OF[d.kind],
     source: d.source || null, status: "candidate", created_by: "ai",
   }));
-  if (recs.length) await supabase.from("evidences").insert(recs);
-  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "evidence.draft", payload: { n: recs.length, rows: targets.length, tried: targets.map((t) => t.id) } });
+  // 待つ間に別の画面で候補・証拠が入った組には入れない（同じ候補が二重にならないように）
+  const { data: nowEv } = await supabase.from("evidences").select("row_id").in("row_id", targets.map((t) => t.id));
+  const busy = new Set((nowEv ?? []).map((e) => e.row_id));
+  const fresh = recs.filter((r) => !busy.has(r.row_id));
+  if (fresh.length) {
+    const { error } = await supabase.from("evidences").insert(fresh);
+    if (error) {
+      // 保存できなかったときは「探した」印をつけない（次にもう一度探せるように）
+      await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "evidence.draft.error", payload: { msg: `保存できませんでした：${error.message}`.slice(0, 300) } });
+      back(); return;
+    }
+  }
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "evidence.draft", payload: { n: fresh.length, rows: targets.length, tried: targets.filter((t) => !busy.has(t.id)).map((t) => triedKey(t.id, t.claims)) } });
   back();
 }
