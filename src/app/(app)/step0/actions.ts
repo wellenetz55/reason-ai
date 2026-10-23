@@ -45,7 +45,7 @@ function kindOf(v: FormDataEntryValue | null) {
  * ① prepareUpload で検査と送り先の発行 → ② ブラウザが送る → ③ finishUpload で記録。
  */
 export async function prepareUpload(meta: { name: string; size: number; type: string }): Promise<{ ok: true; path: string; token: string } | { ok: false; error: string }> {
-  const { company, supabase } = await requireStage("step0");
+  const { company, supabase, user } = await requireStage("step0");
   if (!meta?.name || !meta.size) return { ok: false, error: "ファイルを選んでください。" };
   if (meta.size > MAX_BYTES) return { ok: false, error: "ファイルが大きすぎます（25MBまで）。" };
   if (!ALLOWED.includes(meta.type)) return { ok: false, error: "このファイルの形式は登録できません（PDF・画像・テキスト）。" };
@@ -65,13 +65,22 @@ export async function prepareUpload(meta: { name: string; size: number; type: st
   const gone = new Set(orphans.map((o) => o.name));
   const files = (stored ?? []).filter((o) => o.id && !gone.has(o.name));
   const storedBytes = files.reduce((a, o) => a + Number((o.metadata as { size?: number } | null)?.size ?? 0), 0);
-  const nFiles = Math.max(u.files, files.length), nBytes = Math.max(u.bytes, storedBytes);
+  // 送り先を発行しただけでまだ届いていないファイルも数える（発行だけを繰り返して上限を超えて置かれないように）。
+  // 送り先の有効期限（2時間）のあいだは、申告された大きさは信用せず、上限いっぱい（25MB）で見込む
+  const since = new Date(Date.now() - 2 * 3600_000).toISOString();
+  const { data: issued } = await supabase.from("activity_log").select("payload").eq("company_id", company.id).eq("event", "step0.upload_url").gte("created_at", since);
+  const storedNames = new Set(files.map((o) => `${company.id}/${o.name}`));
+  const pending = (issued ?? []).map((r) => r.payload as { path?: string; size?: number } | null).filter((x) => x?.path && !knownSet.has(x.path) && !storedNames.has(x.path));
+  if ((issued ?? []).length >= 30) return { ok: false, error: "短い時間に多くのファイルを送ろうとしています。しばらく時間をおいてから、もう一度お試しください。" };
+  const pendingBytes = pending.length * MAX_BYTES;
+  const nFiles = Math.max(u.files, files.length) + pending.length, nBytes = Math.max(u.bytes, storedBytes) + pendingBytes;
   if (nFiles >= LIMITS.files || nBytes + meta.size > LIMITS.totalBytes) return { ok: false, error: "登録できるファイルの数か容量の上限に達しています。不要な資料を取り下げてください。" };
   // 保管場所のキーは英数字だけにする（日本語のキーを受け付けない環境があるため）。元の名前は記録の題名に残す
   const ext = (meta.name.match(/\.([A-Za-z0-9]{1,5})$/)?.[1] ?? "bin").toLowerCase();
   const path = `${company.id}/${randomUUID()}.${ext}`;
   const { data, error } = await createAdminClient().storage.from("company-docs").createSignedUploadUrl(path);
   if (error || !data) return { ok: false, error: "送り先を用意できませんでした。しばらくしてからもう一度お試しください。" };
+  await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "step0.upload_url", payload: { path: data.path ?? path, size: meta.size } });
   return { ok: true, path: data.path ?? path, token: data.token };
 }
 
