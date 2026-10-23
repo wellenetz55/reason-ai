@@ -216,14 +216,14 @@ export async function reviewProfileItem(formData: FormData) {
     if (nl(String(formData.get("shown") ?? "")) !== nl(cur?.draft)) { revalidatePath("/step0"); return; }
     patch.value = cur?.draft ?? null; patch.status = "approved";
   }
-  else if (action === "fix" || action === "answer") { if (!after) return; patch.value = after; patch.status = "fixed"; if (action === "answer") patch.tag = "fact"; }
+  else if (action === "fix" || action === "answer") { if (!after) return; patch.value = after; patch.status = "fixed"; patch.source = OWN_SOURCE; if (action === "answer") patch.tag = "fact"; }
   else if (action === "hold") { patch.status = "held"; }
   // 戻す：自分で書いた（または承認した）文は残す
   // 戻す：確定・承認した文は消さずに下書きへ戻す（状態は「下書き」。もう一度承認・修正できる）
   else if (action === "reopen") {
     const keep = cur?.value ?? cur?.draft ?? null; patch.draft = keep; patch.value = null; patch.status = keep ? "draft" : "empty";
     // 御社が直した文を戻したときは「御社が書いた文」、承認したAIの文なら元の出所を残したまま印をつけ、AIの作り直しで上書きされないようにする
-    if (cur?.value) patch.source = cur.status === "fixed" ? OWN_SOURCE : (String(cur.source ?? "").startsWith(APPROVED_MARK) ? cur.source : `${APPROVED_MARK}${cur.source ? `・${cur.source}` : ""}`);
+    if (cur?.value) patch.source = cur.status === "fixed" || cur.source === OWN_SOURCE ? OWN_SOURCE : (String(cur.source ?? "").startsWith(APPROVED_MARK) ? cur.source : `${APPROVED_MARK}${cur.source ? `・${cur.source}` : ""}`);
   }
   await supabase.from("profile_items").upsert({ ...(cur ?? {}), ...patch }, { onConflict: "company_id,key" });
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "profile.review" });
