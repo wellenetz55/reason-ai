@@ -48,7 +48,7 @@ async function loadMethodSegments(): Promise<string[]> {
     admin.from("method_prompts").select("body").eq("is_active", true),
     admin.from("method_principles").select("principle, usage"),
     admin.from("method_techniques").select("usage"),
-    admin.from("method_fixed_texts").select("key, body").in("key", ["diag_guide"]),
+    admin.from("method_fixed_texts").select("key, body").in("key", ["diag_guide", "diag_intro", "diag_q1", "diag_q2", "diag_q3", "diag_q4", "diag_q5", "diag_q6", "diag_q7"]), // 適合診断の台本（お客様の画面には出さない）
   ]);
   const texts = [
     ...(prompts ?? []).map((r) => r.body),
