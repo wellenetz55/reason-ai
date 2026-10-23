@@ -57,8 +57,10 @@ export async function confirmRanking(formData: FormData) {
     supabase.from("sheet_rows").select("id").eq("company_id", companyId).eq("status", "active"),
     createAdminClient().from("litmus_market").select("row_id, rank, sheet_rows!inner(company_id)").eq("scored_by", "operator").eq("sheet_rows.company_id", companyId),
   ]);
-  const rankOf = new Map((ops ?? []).filter((o) => o.rank != null).map((o) => [o.row_id as string, o.rank as number]));
-  if (rankOf.size === 0) return back(companyId, "error=" + encodeURIComponent("仮順位がまだ1つも入っていません"));
+  // 外した組・保留の組に残っている仮順位は数えない（重なりの判定や1位がずれないように）
+  const active = new Set((rows ?? []).map((r) => r.id as string));
+  const rankOf = new Map((ops ?? []).filter((o) => o.rank != null && active.has(o.row_id as string)).map((o) => [o.row_id as string, o.rank as number]));
+  if (rankOf.size === 0) return back(companyId, "error=" + encodeURIComponent("いまある組に、仮順位がまだ1つも入っていません"));
   const nums = [...rankOf.values()];
   if (new Set(nums).size !== nums.length) return back(companyId, "error=" + encodeURIComponent("同じ順位が2つ以上あります。重ならないように直してから確定してください"));
   const top = Math.min(...nums);
