@@ -1,6 +1,7 @@
 import { requireCustomer } from "@/lib/session";
 import { sendErrorReport } from "./actions";
 import { ClientEnv } from "@/components/ClientEnv";
+import { ScreenshotInput } from "@/components/ScreenshotInput";
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -19,8 +20,8 @@ export default async function ReportPage() {
           <textarea name="body" required rows={6} className="block w-full border-b hairline py-2 text-sm mt-1" placeholder="例：「行を足す」を押しても何も起きません。画面上部に「Something went wrong」と出ました。" />
         </label>
         <label className="block">
-          <span className="text-xs text-ink-2">スクリーンショット（任意・画像10MBまで）</span>
-          <input type="file" name="screenshot" accept="image/*" className="block mt-1 text-sm file:mr-3 file:rounded-full file:border file:border-ink-3 file:bg-transparent file:px-3 file:py-1 file:text-[12px]" />
+          <span className="text-xs text-ink-2">スクリーンショット（任意・大きい画像は送る前に自動で縮小します）</span>
+          <ScreenshotInput name="screenshot" />
         </label>
         <button className="btn-primary" type="submit">ベレネッツに送る</button>
       </form>
