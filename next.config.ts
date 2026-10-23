@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const SUPABASE_ORIGIN = (() => { try { return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").origin; } catch { return ""; } })();
+
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
@@ -15,7 +17,7 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "Content-Security-Policy", value: `frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' ${SUPABASE_ORIGIN}`.trim() }, // 埋め込み・プラグイン・base タグの差し替え・外部へのフォーム送信を止める（バックアップのダウンロードは保管場所へ転送するので Supabase だけ許す）
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         ],
