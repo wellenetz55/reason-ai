@@ -10,7 +10,7 @@ export default async function AskPage() {
     <div>
       <h1 className="serif text-[28px] leading-tight">ベレネッツに質問を残す</h1>
       <p className="text-ink-2 text-sm mt-2 max-w-[40em]">迷ったところ、判断に困ったところを書いてください。次の面談か、それより前にベレネッツブランディングチームがご返答いたします。</p>
-      <form action={askOperator} className="mt-8 max-w-[40em] space-y-3">
+      <form action={askOperator} data-keep className="mt-8 max-w-[40em] space-y-3">
         <textarea name="body" required rows={4} className="w-full border-b hairline py-2 text-sm" placeholder="例：行12と行18は同じことを言っている気がします。どちらを残すべきですか。" />
         <button className="btn-primary" type="submit">質問を残す</button>
       </form>

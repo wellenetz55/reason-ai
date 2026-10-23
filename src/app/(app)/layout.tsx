@@ -175,7 +175,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <p>運営 株式会社ベレネッツ · www.wellenetz.co.jp</p>
           </div>
         </div>
-        <div className="max-w-[1120px]">{children}</div>
+        {company.status === "grace" && (
+          <div className="max-w-[1120px] mb-8 rounded-[var(--radius)] border-2 border-navy/30 bg-navy-soft px-5 py-4 text-sm leading-relaxed">
+            <p className="font-semibold text-navy">シートを編集できる期間は終わりました（確認セッション③のあとの1か月間）</p>
+            <p className="mt-1 text-ink-2">この期間は、完成した提供価値シートの閲覧と、Excelのダウンロードができます{company.grace_until ? `（${new Date(company.grace_until).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "long", day: "numeric" })}まで）` : ""}。続けて使いたい場合は「ベレネッツに質問を残す」からご相談ください。</p>
+          </div>
+        )}
+        {/* 猶予期間は編集のフォームを出さない（サーバ側でも書き込みを止めている）。質問・エラーレポートなど data-keep の付いたフォームは残す */}
+        <div className="max-w-[1120px]" data-readonly={company.status === "grace" ? "" : undefined}>{children}</div>
         <footer className="print:hidden max-w-[1120px] mt-20 pt-5 border-t hairline flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 text-[12px] text-ink-3">
           <div className="space-y-1">
             <p className="text-ink-2">選ばれる理由AI <span className="mx-1.5">·</span> 運営 株式会社ベレネッツ</p>

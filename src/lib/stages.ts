@@ -64,6 +64,7 @@ export function currentStep(status: string, rows: number) {
     case "extended":
       return { key: "trust", title: "体験価値を磨く", body: "「なぜなら」の根拠を固める段階です。裏づけ（お客様の声・数字・事実）の集め方と、営業やWebへの展開は、面談で一緒に進めます。" };
     case "grace":
+      return { key: "trust", title: "完成したシートを見る", body: "シートを編集できる期間は終わりました。完成した提供価値シートの閲覧と、Excelのダウンロードができます。続けて使いたい場合は、ベレネッツにご相談ください。" };
     case "advisor":
       return { key: "trust", title: "体験価値を磨く", body: "完成した提供価値シートの見直しと、営業トーク・価格説明・Webへの展開を、面談で一緒に進めます。" };
     case "locked":

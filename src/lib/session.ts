@@ -61,8 +61,8 @@ export async function requireCustomer() {
   return { ...ctx, company };
 }
 
-/** 契約前・編集終了・解約の会社は書き込めない（画面でフォームを隠すだけでなく、サーバ側でも止める） */
-const READ_ONLY = new Set(["diagnosed", "locked", "cancelled"]);
+/** 契約前・猶予期間・編集終了・解約の会社は書き込めない（画面でフォームを隠すだけでなく、サーバ側でも止める） */
+const READ_ONLY = new Set(["diagnosed", "grace", "locked", "cancelled"]); // grace：確認セッション③のあと1か月は閲覧・Excelダウンロードのみ（仕様 00）
 export async function requireWritableCustomer() {
   const ctx = await requireCustomer();
   if (READ_ONLY.has(ctx.company.status)) redirect("/");

@@ -202,3 +202,7 @@ button[data-busy]::after {
   white-space: nowrap; font-size: inherit;
 }
 button[data-busy="short"]::after { content: "…"; }
+
+/* 猶予期間（grace）は閲覧のみ：本文の中の編集フォームを隠す（data-keep のフォームは残す） */
+[data-readonly] form:not([data-keep]) { display: none !important; }
+

@@ -13,7 +13,7 @@ export default async function ReportPage() {
       <h1 className="serif text-[28px] leading-tight">エラーレポート</h1>
       <p className="text-ink-2 text-sm mt-2 max-w-[40em]">画面が動かない、表示がおかしい、エラーメッセージが出た、などをお知らせください。ベレネッツが確認して直します。</p>
 
-      <form action={sendErrorReport} className="mt-8 max-w-[40em] space-y-4">
+      <form action={sendErrorReport} data-keep className="mt-8 max-w-[40em] space-y-4">
         <ClientEnv />
         <label className="block">
           <span className="text-xs text-ink-2">何が起きましたか（エラーメッセージがあれば、そのまま貼ってください）</span>
