@@ -25,3 +25,6 @@
 
 ## 読む順
 `docs/spec/00-overview.md` → `01-data-model.md` → `02`〜`04` 画面 → `05-ai-behavior.md` → `06-notifications.md` → `07-design.md`
+
+## 実装上の注意
+- サーバアクションに届くフォームの文字は改行が CRLF、AIが書いた文は LF。保存は `cut()`（LFにそろえる）を通し、送られた文と保存済みの文を比べるときは両方を `nl()`（必要なら trim・上限の長さ）でそろえる
