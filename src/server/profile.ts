@@ -63,7 +63,7 @@ JSONのみで返す: [{"key":"a1","draft":"...","tag":"fact","source":"資料1 �
  */
 export async function loadProfileContext(supabase: { from: SupabaseClient["from"] }, companyId: string): Promise<Record<string, string>> {
   const [{ data: items }, { data: docs }, { data: sum }] = await Promise.all([
-    supabase.from("profile_items").select("key, draft, value, status").eq("company_id", companyId),
+    supabase.from("profile_items").select("key, draft, value, status, source").eq("company_id", companyId),
     supabase.from("company_documents").select("title, text_content").eq("company_id", companyId).not("text_content", "is", null).order("created_at").limit(5),
     supabase.from("company_profile_summary").select("q1_before").eq("company_id", companyId).maybeSingle(),
   ]);
@@ -76,7 +76,8 @@ export async function loadProfileContext(supabase: { from: SupabaseClient["from"
     const def = PROFILE_ITEMS.find((d) => d.key === it.key);
     if (!def) continue;
     const text = ["approved", "fixed"].includes(it.status) ? it.value : it.status === "draft" ? it.draft : null;
-    if (text) ctx[def.label + (it.status === "draft" ? "（AI下書き・未承認）" : "")] = text;
+    // 下書きのうち、御社（メンバー）が書いた文はAIの下書きと分ける
+    if (text) ctx[def.label + (it.status === "draft" ? ((it as { source?: string | null }).source === "御社が書いた文" ? "（御社の修正案・未承認）" : "（AI下書き・未承認）") : "")] = text;
   }
   const docText = (docs ?? []).map((d) => `[${d.title}] ${(d.text_content ?? "").slice(0, 1500)}`).join("\n");
   if (docText) ctx["資料の抜粋"] = docText.slice(0, 6000);

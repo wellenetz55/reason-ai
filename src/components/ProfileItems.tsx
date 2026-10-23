@@ -42,6 +42,16 @@ export function ProfileItems({ items, bq, oneLiner, review, drafted = true }: {
           </form>
         ) : (
           <>
+            {(status === "approved" || status === "fixed") && it?.draft && it.draft !== it.value && (
+              <div className="mt-2 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-4 py-3 text-sm">
+                <p className="text-[11px] font-semibold text-navy">メンバーの修正案（担当者の承認待ち）</p>
+                <p className="mt-1 whitespace-pre-line leading-relaxed">{it.draft}</p>
+                <div className="mt-2 flex gap-2" data-admin-only>
+                  <form action={review}><input type="hidden" name="key" value={def.key} /><input type="hidden" name="action" value="fix" /><input type="hidden" name="after" value={it.draft} /><button className="btn-text text-navy" type="submit">この案に直す</button></form>
+                  <form action={review}><input type="hidden" name="key" value={def.key} /><input type="hidden" name="action" value="dismiss" /><button className="btn-text" type="submit">見送る</button></form>
+                </div>
+              </div>
+            )}
             <p className={`tag-line ${status === "empty" ? "tag-none" : tagCls[tag] ?? "tag-hypo"} pl-4 mt-2 text-sm leading-relaxed whitespace-pre-line ${shown ? "" : "text-ink-3"}`}>
               {shown || (def.fixed ? "適合診断の記録がまだありません" : drafted ? "資料に見つかりませんでした。「直す」から書けます" : "まだ下書きがありません。上の「下書きを作る」を押すか、「直す」から書けます")}
             </p>

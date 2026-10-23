@@ -216,5 +216,6 @@ button[data-busy="short"]::after { content: "…"; }
 [data-member] form:has(input[name="action"][value="restore"]),
 [data-member] form:has(input[name="action"][value="reopen"]),
 [data-member] form:has(input[name="action"][value="accept"]),
-[data-member] form:has(input[name="action"][value="keep"]) { display: none !important; }
+[data-member] form:has(input[name="action"][value="keep"]),
+[data-member] form:has(input[name="action"][value="dismiss"]) { display: none !important; }
 

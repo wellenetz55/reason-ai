@@ -203,11 +203,15 @@ export async function reviewProfileItem(formData: FormData) {
   if (!def || def.fixed) return;
   const { data: cur } = await supabase.from("profile_items").select("*").eq("company_id", company.id).eq("key", key).maybeSingle();
   const patch: Record<string, unknown> = { company_id: company.id, key, updated_at: new Date().toISOString() };
-  // メンバーは承認・保留・戻すができない。直した文・答えは「下書き」として残し、担当者の承認を待つ
+  // メンバーは承認・保留・戻すができない。直した文・答えは担当者の承認待ちとして残す。
+  // 承認・修正済みの項目なら、確定した文（value）と状態はそのままにして、修正案を draft に置く（STEP 0 が空になって先が閉じることも、確定した文が消えることもない）
   if (isMember(profile)) {
     if (action !== "fix" && action !== "answer") { revalidatePath("/step0"); return; }
     if (!after) return;
-    await supabase.from("profile_items").upsert({ ...(cur ?? {}), ...patch, draft: after, value: null, status: "draft", source: OWN_SOURCE, ...(action === "answer" ? { tag: "fact" } : {}) }, { onConflict: "company_id,key" });
+    const settled = ["approved", "fixed"].includes(cur?.status ?? "");
+    await supabase.from("profile_items").upsert(settled
+      ? { ...(cur ?? {}), ...patch, draft: after }
+      : { ...(cur ?? {}), ...patch, draft: after, value: null, status: "draft", source: OWN_SOURCE, ...(action === "answer" ? { tag: "fact" } : {}) }, { onConflict: "company_id,key" });
     await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "profile.review" });
     revalidatePath("/step0");
     return;
@@ -225,7 +229,10 @@ export async function reviewProfileItem(formData: FormData) {
     if (nl(String(formData.get("shown") ?? "")) !== nl(cur?.draft)) { revalidatePath("/step0"); return; }
     patch.value = cur?.draft ?? null; patch.status = "approved";
   }
-  else if (action === "fix" || action === "answer") { if (!after) return; patch.value = after; patch.status = "fixed"; patch.source = OWN_SOURCE; if (action === "answer") patch.tag = "fact"; }
+  // 直す・答える（メンバーの修正案を採用するときも、この文で直す）。下書きは空にする（承認・修正済みの項目に残った下書き＝メンバーの修正案、と見分けるため）
+  else if (action === "fix" || action === "answer") { if (!after) return; patch.value = after; patch.draft = null; patch.status = "fixed"; patch.source = OWN_SOURCE; if (action === "answer") patch.tag = "fact"; }
+  // メンバーの修正案を見送る（確定した文はそのまま）
+  else if (action === "dismiss") { if (!["approved", "fixed"].includes(cur?.status ?? "")) return; patch.draft = null; }
   else if (action === "hold") { patch.status = "held"; }
   // 戻す：自分で書いた（または承認した）文は残す
   // 戻す：確定・承認した文は消さずに下書きへ戻す（状態は「下書き」。もう一度承認・修正できる）
