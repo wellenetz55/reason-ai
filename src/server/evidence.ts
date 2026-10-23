@@ -17,7 +17,11 @@ const squash = (s: string) => s.normalize("NFKC").replace(/[\s「」『』"'“�
  */
 export async function findEvidenceCandidates(opts: { companyName: string; materials: Record<string, string>; rows: RowIn[] }): Promise<EvidenceCandidate[]> {
   if (opts.rows.length === 0) return [];
-  const matText = Object.entries(opts.materials).map(([k, v]) => `【${k}】\n${v}`).join("\n\n").slice(0, 24000);
+  // 見出しごとに上限を決めて切る（後ろの見出しだけが丸ごと落ちないように）。面談の記録（新しい情報）は先に置く
+  const entries = Object.entries(opts.materials).sort(([a], [b]) => Number(b.startsWith("面談の記録")) - Number(a.startsWith("面談の記録")));
+  const per = Math.max(2000, Math.floor(24000 / Math.max(1, entries.length)));
+  const sections = entries.map(([k, v]) => [k, v.slice(0, per)] as const);
+  const matText = sections.map(([k, v]) => `【${k}】\n${v}`).join("\n\n");
   const user = `会社: ${opts.companyName}
 
 材料（この中に書かれていることだけを使う。出所は【】の見出し名で書く）:
@@ -36,8 +40,9 @@ JSONのみで返す: [{"row_id":"...","claim_ref":"row","what":"...","content":"
   const text = await complete({ promptKey: "evidence_draft", user, maxTokens: 6000 });
   const parsed = parseJson<EvidenceCandidate[]>(text);
   if (!Array.isArray(parsed)) throw new Error("evidence_draft: AIの返答を読み取れませんでした");
-  const hay = squash(matText);
+  const hay = sections.map(([k, v]) => [k, squash(v)] as const);
   const rowIds = new Map(opts.rows.map((r) => [r.id, new Set(r.claims.map((c) => c.ref))]));
+  const claimText = new Map(opts.rows.flatMap((r) => r.claims.map((c) => [`${r.id}|${c.ref}`, squash(c.text)] as const)));
   const str = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
   return parsed
     .filter((d) => d && typeof d === "object" && rowIds.has(String(d.row_id)))
@@ -49,6 +54,16 @@ JSONのみで返す: [{"row_id":"...","claim_ref":"row","what":"...","content":"
       kind: KIND_SET.has(String(d.kind)) ? String(d.kind) : "own_fact",
       source: str(d.source, 200),
     }))
-    // 材料にそのまま書かれている文だけを残す（12字以上が一致すること。短すぎる断片は証拠にならない）
-    .filter((d) => d.content.length >= 12 && hay.includes(squash(d.content)));
+    // 材料にそのまま書かれている文だけを残す（ならした後で12字以上。短すぎる断片は証拠にならない）。
+    // 出所はAIの申告ではなく、実際にその文が見つかった見出しにする。裏づけたい主張そのものを引いただけの候補（自分で自分を裏づける）は捨てる
+    .flatMap((d) => {
+      const sq = squash(d.content);
+      if (sq.length < 12) return [];
+      const hit = hay.find(([, v]) => v.includes(sq));
+      if (!hit) return [];
+      const claim = d.claim_ref ? claimText.get(`${d.row_id}|${d.claim_ref}`) : undefined;
+      if (claim && (claim.includes(sq) || sq.includes(claim))) return [];
+      const detail = d.source && !d.source.includes(hit[0]) ? `／${d.source}` : "";
+      return [{ ...d, source: `${hit[0]}${detail}`.slice(0, 200) }];
+    });
 }

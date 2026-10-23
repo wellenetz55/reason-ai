@@ -96,7 +96,10 @@ export async function requestEvidenceCandidates() {
   })).filter((t) => t.claims.length > 0).slice(0, BATCH);
   if (!targets.length) { back(); return; }
   // 材料はお客様の発言・事実だけ（AIの下書きのまま承認されていない説明や、競合の一覧は証拠にならない）
-  const materials = Object.fromEntries(Object.entries(ctx).filter(([k]) => !k.includes("AI下書き") && !k.startsWith("競合") && !k.startsWith("対象")));
+  // 面談の記録のうち「その場で作った組」は主張そのもの（証拠にすると自分で自分を裏づけることになる）なので外す
+  const materials = Object.fromEntries(Object.entries(ctx)
+    .filter(([k]) => !k.includes("AI下書き") && !k.includes("修正案") && !k.startsWith("競合") && !k.startsWith("対象"))
+    .map(([k, v]) => [k, v.replace(/その場で作った組：\n[\s\S]*?(?=\n(?:メモ・資料：|書き起こし（抜粋）：|【)|\n\n|$)/g, "")]));
   const found = await aiGuard(supabase, company.id, user.id, "evidence.draft", () => findEvidenceCandidates({ companyName: company.name, materials, rows: targets }));
   if (!found) { back(); return; }
   const recs = found.slice(0, BATCH * 3).map((d) => ({
