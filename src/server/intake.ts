@@ -71,7 +71,8 @@ export async function loadIntakeContext(companyId: string, companyName: string, 
   const [i, texts, { data: files }] = await Promise.all([
     loadIntake(companyId, true),
     loadDiagTexts(),
-    createAdminClient().from("diagnosis_intake_files").select("name, text_content").eq("company_id", companyId).not("text_content", "is", null).order("created_at"),
+    // 「お客様に見せてよい」にしたファイルだけ（社内だけのメモはAIに渡さない。SQL 0048 が未実行なら何も渡さない）
+    createAdminClient().from("diagnosis_intake_files").select("name, text_content").eq("company_id", companyId).eq("shareable", true).not("text_content", "is", null).order("created_at"),
   ]);
   // 面談メモ・資料（複数ファイル）。書き起こしの半分までの分量で渡す
   const memos = (files ?? []).map((f) => `【${f.name}】\n${(f.text_content ?? "").trim()}`).join("\n\n").slice(0, Math.floor(maxTranscript / 2));
@@ -81,7 +82,8 @@ export async function loadIntakeContext(companyId: string, companyName: string, 
   if (i.held_on) lines.push(`診断日：${i.held_on}${i.answers?.attendees ? "／面談した相手：" + i.answers.attendees : ""}`);
   for (const k of Q_KEYS) {
     const a = (i.answers?.[k] ?? "").trim();
-    if (a) lines.push(`${texts[`diag_${k}`] ? "問：" + texts[`diag_${k}`] + "\n" : ""}答：${a}`);
+    // 問いの文面（メソッド資産）はAIに渡さない。何問目の答えかだけを付ける
+    if (a) lines.push(`問${Q_KEYS.indexOf(k) + 1}への答え：${a}`);
   }
   if ((i.answers?.extra ?? "").trim()) lines.push(`追加で聞いたこと（お客様の発言）：${i.answers.extra.trim()}`);
   const t = stripOperatorScript((i.transcript ?? "").trim(), texts);

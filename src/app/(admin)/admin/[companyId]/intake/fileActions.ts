@@ -9,7 +9,7 @@ const MAX_BYTES = 25 * 1024 * 1024;
 const MAX_TEXT = 200_000;
 const OK_EXT = /\.(txt|md|vtt|srt|csv|tsv|pdf|docx|png|jpe?g|heic|webp)$/i;
 
-export type IntakeFile = { id: string; name: string; storage_path: string; size_bytes: number | null; chars: number; created_at: string };
+export type IntakeFile = { id: string; name: string; storage_path: string; size_bytes: number | null; chars: number; created_at: string; shareable?: boolean };
 
 const missing = (m: string) => /diagnosis_intake_files/.test(m) ? "面談メモの保存先がまだありません（SQL 0023 が未実行の可能性があります）" : /meeting_files/.test(m) ? "面談の記録の保存先がまだありません（SQL 0026 が未実行の可能性があります）" : m;
 /** 適合診断の記録（meetingId 無し）と、面談の記録（meetingId 有り）で、表と置き場所を分ける */
@@ -58,7 +58,7 @@ export async function finishIntakeFile(meta: { companyId: string; path: string; 
     company_id: meta.companyId, ...(meta.meetingId ? { meeting_id: meta.meetingId } : {}), name: meta.name.slice(0, 200), storage_path: meta.path, mime_type: meta.type || blob.type || null, size_bytes: blob.size, text_content: text, created_by: user.id,
   }).select("id, name, storage_path, size_bytes, created_at").single();
   if (error || !data) { await admin.storage.from("company-docs").remove([meta.path]); return { ok: false, error: `${meta.name}：記録できませんでした（${missing(error?.message ?? "")}）` }; }
-  return { ok: true, file: { ...data, chars: text?.length ?? 0 }, note: ex.error ? `${meta.name}：${ex.error}（ファイルは保管しました）` : undefined };
+  return { ok: true, file: { ...data, chars: text?.length ?? 0, shareable: false }, note: ex.error ? `${meta.name}：${ex.error}（ファイルは保管しました）` : undefined };
 }
 
 /** 面談メモを外す（記録とファイルを消す。ベレネッツ側のメモなので消してよい） */
@@ -71,5 +71,17 @@ export async function removeIntakeFile(meta: { companyId: string; id: string; me
   const { error } = await admin.from(t).delete().eq("id", meta.id);
   if (error) return { ok: false, error: error.message };
   await admin.storage.from("company-docs").remove([data.storage_path]);
+  return { ok: true };
+}
+
+/**
+ * ファイルを「お客様に見せてよい（AIの材料にする）」か「社内だけ」にする。
+ * AIの下書きはお客様の画面に出るので、社内だけのメモ（社長の温度感・価格の注意など）はAIに渡さない。
+ */
+export async function setIntakeFileShareable(meta: { companyId: string; id: string; meetingId?: string; shareable: boolean }): Promise<{ ok: boolean; error?: string }> {
+  await requireOperator();
+  if (!UUID.test(meta.companyId) || !UUID.test(meta.id) || (meta.meetingId && !UUID.test(meta.meetingId))) return { ok: false, error: "不正な指定です" };
+  const { error } = await createAdminClient().from(where(meta.meetingId).table).update({ shareable: !!meta.shareable }).eq("id", meta.id).eq("company_id", meta.companyId);
+  if (error) return { ok: false, error: /shareable/.test(error.message) ? "SQL 0048 が未実行です" : error.message };
   return { ok: true };
 }

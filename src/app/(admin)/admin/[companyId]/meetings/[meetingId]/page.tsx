@@ -31,10 +31,10 @@ export default async function MeetingRecordPage({ params, searchParams }: PagePr
     admin.from("companies").select("id, name, status").eq("id", companyId).single(),
     admin.from("company_meetings").select("id, kind, scheduled_at, held_at, meeting_url").eq("id", meetingId).eq("company_id", companyId).maybeSingle(),
     loadMeetingRecord(meetingId, true),
-    admin.from("meeting_files").select("id, name, storage_path, size_bytes, created_at, text_content").eq("meeting_id", meetingId).order("created_at"),
+    admin.from("meeting_files").select("*").eq("meeting_id", meetingId).order("created_at"), // shareable（SQL 0048）が無くても読めるように * で読む
   ]);
   if (!c || !m) notFound();
-  const files = (filesRes.data ?? []).map(({ text_content, ...f }) => ({ ...f, chars: text_content?.length ?? 0 }));
+  const files = (filesRes.data ?? []).map((f) => ({ id: f.id as string, name: f.name as string, storage_path: f.storage_path as string, size_bytes: f.size_bytes as number | null, created_at: f.created_at as string, chars: (f.text_content as string | null)?.length ?? 0, shareable: f.shareable === true }));
   const label = MEETING_LABEL[m.kind] ?? m.kind;
   const isKickoff = m.kind === "kickoff";
   const inp = "block w-full border-b hairline py-2 text-sm";

@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { prepareIntakeFile, finishIntakeFile, removeIntakeFile, type IntakeFile } from "@/app/(admin)/admin/[companyId]/intake/fileActions";
+import { prepareIntakeFile, finishIntakeFile, removeIntakeFile, setIntakeFileShareable, type IntakeFile } from "@/app/(admin)/admin/[companyId]/intake/fileActions";
 
 /** 保管場所が受け付ける形式に合わせて送る（テキスト類は text/plain にそろえる。拡張子で決めるので、OSが形式を付けないファイルも通る） */
 function contentTypeOf(f: File): string {
@@ -57,6 +57,11 @@ export function IntakeFiles({ companyId, initial, meetingId }: { companyId: stri
     if (input.current) input.current.value = "";
   }
 
+  async function share(id: string, shareable: boolean) {
+    const r = await setIntakeFileShareable({ companyId, id, meetingId, shareable });
+    if (r.ok) setFiles((x) => x.map((f) => (f.id === id ? { ...f, shareable } : f)));
+    else setMsgs([`切り替えられませんでした：${r.error ?? ""}`]);
+  }
   async function remove(id: string) {
     setConfirmId("");
     const r = await removeIntakeFile({ companyId, id, meetingId });
@@ -75,7 +80,7 @@ export function IntakeFiles({ companyId, initial, meetingId }: { companyId: stri
         <input ref={input} type="file" multiple className="sr-only" accept=".txt,.md,.vtt,.srt,.csv,.tsv,.pdf,.docx,.png,.jpg,.jpeg,.heic,.webp" onChange={(e) => send([...(e.target.files ?? [])])} />
         <Upload size={22} strokeWidth={1.75} className="mx-auto text-navy" aria-hidden />
         <p className="mt-2 text-[14px] font-semibold text-navy">{busy || "ここを押してファイルを選ぶ（複数まとめて選べます）／ここにドラッグ"}</p>
-        <p className="text-[12px] text-ink-3 mt-1">テキスト・PDF・Word(.docx)・画像。1ファイル25MBまで。選ぶとすぐ登録します（上で入力中の内容は消えません）。画像は保管のみで、AIは文字を読みません</p>
+        <p className="text-[12px] text-ink-3 mt-1">テキスト・PDF・Word(.docx)・画像。1ファイル25MBまで。選ぶとすぐ登録します（上で入力中の内容は消えません）。画像は保管のみで、AIは文字を読みません。登録したファイルは「社内だけ」になります。お客様に見せてよい中身なら「見せてよいにする」を押すと、AIの下書きの材料になります（AIの下書きはお客様の画面に出るため）</p>
       </label>
       {msgs.length > 0 && <ul className="text-[12px] space-y-0.5">{msgs.map((m, i) => <li key={i} className={/登録しました/.test(m) ? "text-navy" : "text-warm"}>{m}</li>)}</ul>}
       {files.length > 0 ? (
@@ -84,7 +89,13 @@ export function IntakeFiles({ companyId, initial, meetingId }: { companyId: stri
             <li key={f.id} className="py-2 flex flex-wrap items-center gap-x-3 gap-y-1">
               <a href={`/api/admin/file?path=${encodeURIComponent(f.storage_path)}`} target="_blank" rel="noopener" className="underline underline-offset-4 break-all">{f.name}</a>
               <span className="num text-[12px] text-ink-3">{kb(f.size_bytes)}</span>
-              <span className="text-[12px] text-ink-3">{f.chars ? `文字 ${f.chars.toLocaleString()} 字（AIの材料）` : "保管のみ（文字なし）"}</span>
+              <span className="text-[12px] text-ink-3">{f.chars ? `文字 ${f.chars.toLocaleString()} 字` : "保管のみ（文字なし）"}</span>
+              {f.chars > 0 && (
+                <span className="inline-flex items-center gap-2 text-[12px]">
+                  {f.shareable ? <span className="text-navy font-semibold">お客様に見せてよい（AIの材料にする）</span> : <span className="text-warm font-semibold">社内だけ（AIに渡さない）</span>}
+                  <button type="button" className="btn-text text-xs" onClick={() => share(f.id, !f.shareable)}>{f.shareable ? "社内だけにする" : "見せてよいにする"}</button>
+                </span>
+              )}
               <span className="ml-auto">
                 {confirmId === f.id ? (
                   <span className="inline-flex items-center gap-2 text-[12px]">本当に外しますか？

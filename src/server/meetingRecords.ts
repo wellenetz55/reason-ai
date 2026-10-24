@@ -37,7 +37,8 @@ export async function loadMeetingContext(companyId: string, maxChars = 24_000): 
   const ids = recs.map((r) => r.meeting_id as string);
   const [{ data: ms }, { data: files }] = await Promise.all([
     admin.from("company_meetings").select("id, kind, scheduled_at, held_at").in("id", ids),
-    admin.from("meeting_files").select("meeting_id, name, text_content").in("meeting_id", ids).not("text_content", "is", null),
+    // 「お客様に見せてよい」にしたファイルだけ（SQL 0048 が未実行なら何も渡さない）
+    admin.from("meeting_files").select("meeting_id, name, text_content").in("meeting_id", ids).eq("shareable", true).not("text_content", "is", null),
   ]);
   const meta = Object.fromEntries((ms ?? []).map((m) => [m.id, m]));
   const ordered = [...recs].sort((a, b) => {

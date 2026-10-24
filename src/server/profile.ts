@@ -27,7 +27,7 @@ export async function draftProfile(companyId: string, companyName: string): Prom
   const head: { title: string; kind: string; text: string }[] = [];
   if (intake.notes) head.push({ title: "適合診断の面談記録（ベレネッツが聞き取った要点）", kind: "diagnosis_memo", text: intake.notes });
   if (intake.transcript) head.push({ title: "適合診断の書き起こし（ベレネッツとお客様の両方が話している。お客様の発言だけを材料にする）", kind: "diagnosis_memo", text: intake.transcript });
-  if (intake.memos) head.push({ title: "適合診断の面談メモ・資料（ベレネッツがヒアリング中に取ったメモと受け取った資料。お客様の発言・事実だけを材料にする）", kind: "diagnosis_memo", text: intake.memos });
+  if (intake.memos) head.push({ title: "適合診断の面談メモ・資料（ベレネッツが「お客様に見せてよい」としたもの。お客様の発言・事実だけを材料にする）", kind: "diagnosis_memo", text: intake.memos });
   if (meetings) head.unshift({ title: "面談の記録（キックオフ・確認セッションなど。新しい順。お客様の発言・事実だけを材料にする。適合診断より新しい情報として優先）", kind: "meeting_record", text: meetings });
   const all = [...head, ...docs];
   if (all.length === 0) return { items: [], skipped, errors, docCount: 0 };

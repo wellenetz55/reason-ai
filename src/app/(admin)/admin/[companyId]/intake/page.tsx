@@ -25,9 +25,9 @@ export default async function IntakePage({ params, searchParams }: PageProps<"/a
     loadIntake(companyId, true),
     loadDiagTexts(),
     supabase.from("company_documents").select("url, title").eq("company_id", companyId).not("url", "is", null).order("created_at"),
-    createAdminClient().from("diagnosis_intake_files").select("id, name, storage_path, size_bytes, created_at, text_content").eq("company_id", companyId).order("created_at"),
+    createAdminClient().from("diagnosis_intake_files").select("*").eq("company_id", companyId).order("created_at"), // shareable（SQL 0048）が無くても読めるように * で読む
   ]);
-  const memoFiles = (memoRes.data ?? []).map(({ text_content, ...f }) => ({ ...f, chars: text_content?.length ?? 0 }));
+  const memoFiles = (memoRes.data ?? []).map((f) => ({ id: f.id as string, name: f.name as string, storage_path: f.storage_path as string, size_bytes: f.size_bytes as number | null, created_at: f.created_at as string, chars: (f.text_content as string | null)?.length ?? 0, shareable: f.shareable === true }));
   if (!c) notFound();
   const q = Object.fromEntries(Q_KEYS.map((k) => [k, texts[`diag_${k}`] ?? ""]));
   const intro = texts.diag_intro ?? "";
