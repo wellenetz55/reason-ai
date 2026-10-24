@@ -16,6 +16,8 @@ import { lastAiError } from "@/server/aiGuard";
 import { AiNotice } from "@/components/AiNotice";
 import { loadMeetingAfter } from "@/server/meetingNext";
 import { MeetingNextBlock } from "@/components/MeetingNext";
+import { loadSeals } from "@/server/seals";
+import { sealOn, SEAL_LABEL } from "@/lib/seals";
 
 export const maxDuration = 300; // AIの下書き（資料・URLの読み込みを含む）が画面側の待ち時間より先に打ち切られないように
 
@@ -25,7 +27,7 @@ export default async function Page() {
   if (!isStageOpen(stage, company.status)) return <ClosedStage stageKey="litmus" status={company.status} />;
   if (!(await isStep0Ready(supabase, company.id))) return <Step0Required stageKey="litmus" />;
   const [{ data: rows }, { data: niche, error: nErr }, { data: market }, ctx, fixed, meeting] = await Promise.all([
-    supabase.from("sheet_rows").select("id, seq, value_raw, experience_value, experience_value_v1, because_phrase").eq("company_id", company.id).eq("status", "active").order("seq"),
+    supabase.from("sheet_rows").select("id, seq, value_raw, experience_value, experience_value_v1, because_phrase, created_at").eq("company_id", company.id).eq("status", "active").order("seq"),
     supabase.from("litmus_niche").select("row_id, judged_by, q1_pain_urgency, q2_actively_seeking, ai_q1, ai_q2, ai_note, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
     supabase.from("litmus_market").select("row_id, scored_by, common_sense, investment, strength_asset, feasibility, beat_competitor, internal_passion, brand_purpose_fit, magnitude_text, magnitude_score, zougenjofu, total, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
     loadGateCtx(supabase, company.id, company.status),
@@ -35,7 +37,10 @@ export default async function Page() {
   const gate = stepGate("litmus", ctx);
   const aiErr = await lastAiError(supabase, company.id, "litmus.draft");
   const loadErr = nErr ? `読み込めませんでした${/ai_q1|ai_note/.test(nErr.message) ? "（SQL 0038 が未実行の可能性があります）" : ""}：${nErr.message}` : null;
-  const list = (rows ?? []).map((r) => ({ id: r.id, seq: r.seq, value_raw: r.value_raw, experience: r.experience_value ?? r.experience_value_v1, because: r.because_phrase }));
+  const seals = await loadSeals(supabase, company.id);
+  // 封（確認セッション②）：封の時点であった組の点数は、理由を書いたときだけ直せる
+  const sealLabel = (column: string, at: string) => { const x = sealOn(seals, column, at); return x ? SEAL_LABEL[x.session] : null; };
+  const list = (rows ?? []).map((r) => ({ id: r.id, seq: r.seq, value_raw: r.value_raw, experience: r.experience_value ?? r.experience_value_v1, because: r.because_phrase, sealedNiche: sealLabel("litmus_niche.answer", r.created_at), sealedMarket: sealLabel("litmus_market.score", r.created_at) }));
   const nlist = (niche ?? []) as unknown as Niche[];
   const mlist = (market ?? []) as unknown as Market[];
   const aiDone = new Set(nlist.filter((n) => n.ai_note).map((n) => n.row_id));

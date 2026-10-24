@@ -12,6 +12,7 @@ const COLUMN_LABEL: Record<string, string> = {
   "sheet_rows.target": "ターゲット", "sheet_rows.value_raw": "提供価値", "sheet_rows.experience_value_v1": "体験価値（STEP 1）", "sheet_rows.status": "組を外す・保留",
   "brakes.customer_words": "ブレーキ", "brakes.counter_message": "先回りの答え", "brakes.because": "答えの根拠", "brakes.status": "ブレーキを外す",
   "sheet_rows.experience_value": "体験価値（STEP 5）", "sheet_rows.because_phrase": "なぜなら", "sheet_rows.rank": "順位", "evidences.*": "証拠",
+  "litmus_niche.answer": "見込み客の切実さ（2問）", "litmus_market.score": "市場で通用するか（御社の点数）",
 };
 
 /** 封（確認セッション①②③）：封をする・解く、封をブロックする条件の警告、封をした列の変更の記録 */

@@ -9,15 +9,15 @@ export const SEAL_SESSIONS = [
     columns: ["sheet_rows.target", "sheet_rows.value_raw", "sheet_rows.experience_value_v1", "sheet_rows.status"],
   },
   {
-    key: "s2", label: "確認セッション②", what: "ブレーキと先回りの答え（STEP 3・4）、磨いた体験価値となぜなら（STEP 5）、順位",
-    columns: ["brakes.customer_words", "brakes.counter_message", "brakes.because", "brakes.because_tag", "brakes.status", "sheet_rows.experience_value", "sheet_rows.because_phrase", "sheet_rows.because_tag", "sheet_rows.rank"],
+    key: "s2", label: "確認セッション②", what: "ブレーキと先回りの答え（STEP 3・4）、磨いた体験価値となぜなら（STEP 5）、御社の評価の点数（STEP 6）、順位",
+    columns: ["brakes.customer_words", "brakes.counter_message", "brakes.because", "brakes.because_tag", "brakes.status", "sheet_rows.experience_value", "sheet_rows.because_phrase", "sheet_rows.because_tag", "litmus_niche.answer", "litmus_market.score", "sheet_rows.rank"],
   },
   {
     key: "s3", label: "確認セッション③", what: "すべての列（①②の列に加え、②のあとに足した組・ブレーキと、採用した証拠）",
     columns: [
       "sheet_rows.target", "sheet_rows.value_raw", "sheet_rows.experience_value_v1", "sheet_rows.status",
       "brakes.customer_words", "brakes.counter_message", "brakes.because", "brakes.because_tag", "brakes.status",
-      "sheet_rows.experience_value", "sheet_rows.because_phrase", "sheet_rows.because_tag", "sheet_rows.rank", "evidences.*",
+      "sheet_rows.experience_value", "sheet_rows.because_phrase", "sheet_rows.because_tag", "litmus_niche.answer", "litmus_market.score", "sheet_rows.rank", "evidences.*",
     ],
   },
 ] as const;

@@ -1,7 +1,8 @@
 import { answerNiche, saveMarket } from "@/app/(app)/sheet/litmus/actions";
+import { SealReason } from "@/components/SealReason";
 import { MARKS, MARK_LABEL, NICHE_QUESTIONS, MARKET_AXES, marketTotal, nicheAnswered, marketScored, type AxisKey } from "@/lib/litmus";
 
-export type LitmusRow = { id: string; seq: number; value_raw: string | null; experience: string | null; because: string | null };
+export type LitmusRow = { id: string; seq: number; value_raw: string | null; experience: string | null; because: string | null; sealedNiche?: string | null; sealedMarket?: string | null };
 export type Niche = { row_id: string; judged_by?: string | null; q1_pain_urgency: boolean | null; q2_actively_seeking: boolean | null; ai_q1: boolean | null; ai_q2: boolean | null; ai_note: string | null };
 export type Market = { row_id: string; scored_by: string; magnitude_text: string | null; zougenjofu: string | null } & Partial<Record<AxisKey, number | string | null>>;
 
@@ -74,6 +75,7 @@ export function LitmusBoard({ rows, niche, market }: { rows: LitmusRow[]; niche:
                   })}
                   {n?.ai_note && answered && marketScored(m) && <p className="text-[11px] text-ink-3">AIの見立て：{n.ai_note}</p>}
                   {hold && <p className="text-[12px] text-ink-2">2問とも「いいえ」です。この組は保留候補として、確認セッション②でベレネッツと扱いを決めます。</p>}
+                  {r.sealedNiche && answered && <SealReason optional label={`${r.sealedNiche}で封をした答えです。答えを変えるときは、`} />}
                   <button className="btn-primary" type="submit">2問を保存</button>
                 </form>
 
@@ -109,6 +111,7 @@ export function LitmusBoard({ rows, niche, market }: { rows: LitmusRow[]; niche:
                     <input name="magnitude_text" defaultValue={m?.magnitude_text ?? ""} maxLength={300} className="w-full border-b hairline py-1 bg-transparent" /></label>
                   <label className="block text-[13px]"><span className="text-[11px] text-ink-3">手の入れ方のメモ（伸ばす・減らす・やめる・足す）</span>
                     <textarea name="adjust_note" defaultValue={m?.zougenjofu ?? ""} rows={2} maxLength={500} className="w-full border-b hairline py-1 bg-transparent" /></label>
+                  {r.sealedMarket && m && marketScored(m) && <SealReason optional label={`${r.sealedMarket}で封をした点数です。点数を変えるときは、`} />}
                   <button className="btn-primary" type="submit">市場の評価を保存</button>
                 </form>
               </div>
