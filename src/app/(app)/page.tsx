@@ -102,7 +102,7 @@ export default async function Home() {
         )}
         {company.reaccess && company.reaccess_until && (
           <p className="mt-4 rounded-[var(--radius)] bg-navy-soft px-5 py-3 text-sm text-ink-2 max-w-[40em]">
-            ご連絡をいただき、ベレネッツが <span className="num font-semibold text-ink">{new Date(company.reaccess_until).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "long", day: "numeric" })}</span> まで提供価値シートをダウンロードできるようにしています。
+            ご連絡をいただき、ベレネッツが <span className="num font-semibold text-ink">{new Date(company.reaccess_until).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "long", day: "numeric" })}</span> まで、提供価値シートを閲覧・ダウンロードできるようにしています（編集はできません）。
           </p>
         )}
         {company.status === "locked" && <a href="/api/export?step=deploy" className="btn-primary inline-block mt-6">提供価値シートをダウンロード</a>}

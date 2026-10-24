@@ -52,7 +52,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
   const emails = Object.fromEntries(await Promise.all((members ?? []).map(async (m) => [m.id, (await adminAuth.getUserById(m.id)).data.user?.email ?? ""] as const)));
   const emailOf = (id: string) => emails[id] ?? "";
   const ALERT_LABEL: Record<string, string> = { stale7: "7日操作なし", escalation: "要対応", homework_overdue: "宿題の期限超過", attitude_flag: "姿勢シグナル", disclosure_request: "開示要求", quota_reached: "生成上限", grace_ending: "猶予終了間近", extension_ending: "延長終了間近", no_internal_meeting: "社内打合せ未登録" };
-  const alertText = (a: { kind: string; payload: unknown }) => { const pl = a.payload as { type?: string; kind?: string } | null; const t = pl?.type; if (t === "meeting_chosen") return `${MEETING_LABEL[pl?.kind ?? ""] ?? "面談"}の日程が選ばれました。会議URLを入れてください`; if (t === "dates_declined") return `${MEETING_LABEL[pl?.kind ?? ""] ?? "面談"}の候補日がすべて合いませんでした。下の「面談」に新しい候補日を3つほど登録してください`; return t === "program_applied" ? "申込がありました" : t === "step2_done" ? "まとめて絞るが終わりました。確認セッション①の日程を登録してください" : t === "kickoff_chosen" ? "キックオフ日が選ばれました" : t === "diagnosis_viewed" ? "診断結果を開きました" : ALERT_LABEL[a.kind] ?? a.kind; };
+  const alertText = (a: { kind: string; payload: unknown }) => { const pl = a.payload as { type?: string; kind?: string } | null; const t = pl?.type; if (t === "meeting_chosen") return `${MEETING_LABEL[pl?.kind ?? ""] ?? "面談"}の日程が選ばれました。会議URLを入れてください`; if (t === "reaccess_requested") return "解約後の閲覧の再開を依頼されました。下の「解約後のデータへの再アクセス」で期限を決めて再開してください"; if (t === "dates_declined") return `${MEETING_LABEL[pl?.kind ?? ""] ?? "面談"}の候補日がすべて合いませんでした。下の「面談」に新しい候補日を3つほど登録してください`; return t === "program_applied" ? "申込がありました" : t === "step2_done" ? "まとめて絞るが終わりました。確認セッション①の日程を登録してください" : t === "kickoff_chosen" ? "キックオフ日が選ばれました" : t === "diagnosis_viewed" ? "診断結果を開きました" : ALERT_LABEL[a.kind] ?? a.kind; };
   if (!c) notFound();
   // 面談の記録があるか（ボタンの文言用。表が無ければ空）
   const { data: recs } = await createAdminClient().from("meeting_records").select("meeting_id").eq("company_id", companyId);
@@ -257,11 +257,11 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
         {c.status === "cancelled" && (
           <div className="mt-4 rounded-[var(--radius)] bg-paper-2 px-4 py-3 text-sm max-w-[44em]">
             <p className="font-semibold text-[13px]">解約後のデータへの再アクセス</p>
-            <p className="text-xs text-ink-3 mt-1">お客様から連絡があったときに、期限付きで提供価値シートのダウンロードを戻します（編集はできません）。期限が来ると自動で閉じます。状態は「解約」のままです。</p>
+            <p className="text-xs text-ink-3 mt-1">解約した会社のお客様は、何も見られません（サインインすると「閲覧の再開を依頼する」画面だけが出ます）。依頼があったら、ここで期限付きで閲覧とダウンロードを戻します（編集はできません）。期限が来ると自動で閉じます。状態は「解約」のままです。</p>
             {c.reaccess_until && new Date(c.reaccess_until) > new Date() ? (
               <form action={setReaccess} className="mt-2 flex flex-wrap items-center gap-3">
                 <input type="hidden" name="company_id" value={c.id} />
-                <span className="text-navy text-[13px]"><span className="num">{fmtMeeting(c.reaccess_until)}</span> までダウンロードできます</span>
+                <span className="text-navy text-[13px]"><span className="num">{fmtMeeting(c.reaccess_until)}</span> まで閲覧・ダウンロードできます</span>
                 <input type="hidden" name="days" value="0" />
                 <button className="btn-text text-xs" type="submit">いま閉じる</button>
               </form>
@@ -271,7 +271,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
                 <select name="days" defaultValue="14" className="border-b hairline py-1 text-sm">
                   <option value="7">7日間</option><option value="14">14日間</option><option value="30">30日間</option>
                 </select>
-                <button className="btn-text" type="submit">ダウンロードを許可する</button>
+                <button className="btn-text" type="submit">閲覧を再開する（ロック解除）</button>
               </form>
             )}
           </div>

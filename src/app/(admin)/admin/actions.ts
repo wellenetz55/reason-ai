@@ -264,6 +264,8 @@ export async function setReaccess(formData: FormData) {
   const { error } = await supabase.from("companies").update({ reaccess_until: until }).eq("id", id).eq("status", "cancelled");
   const { redirect } = await import("next/navigation");
   if (error) redirect(`/admin/${id}?status_error=${encodeURIComponent("保存できませんでした（migration 0016 が未適用の可能性があります）：" + error.message)}`);
+  // 閲覧を再開したら「閲覧の再開を依頼されました」は済み
+  if (until) await supabase.from("alerts").update({ resolved_at: new Date().toISOString() }).eq("company_id", id).is("resolved_at", null).contains("payload", { type: "reaccess_requested" });
   revalidatePath(`/admin/${id}`);
   revalidatePath("/", "layout");
 }

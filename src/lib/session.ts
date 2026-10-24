@@ -53,11 +53,20 @@ export async function requireCustomer() {
   const ctx = await requireUser();
   if (ctx.profile.role === "operator") redirect("/admin");
   if (!ctx.profile.company_id) redirect(loginErrorUrl("nocompany"));
-  const { data } = await ctx.supabase.from("companies").select("*").eq("id", ctx.profile.company_id).single();
+  const { data } = await ctx.supabase.from("companies").select("*").eq("id", ctx.profile.company_id).maybeSingle();
+  // 解約した会社は、ベレネッツが再アクセスを許可するまで何も読めない（SQL 0047。会社の行も見えなくなる）。
+  // 読めなかったときは、解約かどうかをサーバ側で確かめ、解約なら「閲覧の再開を依頼する」画面へ
+  if (!data) {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const { data: c } = await createAdminClient().from("companies").select("status, reaccess_until").eq("id", ctx.profile.company_id).maybeSingle();
+    if (c?.status === "cancelled") redirect("/closed");
+    redirect(loginErrorUrl("nocompany"));
+  }
   let company = data as Company;
-  // 解約後でも、ベレネッツが再アクセスを許可した期間は「編集終了（ダウンロードのみ）」と同じ扱いにする
-  if (company?.status === "cancelled" && company.reaccess_until && new Date(company.reaccess_until) > new Date()) {
-    company = { ...company, status: "locked", reaccess: true };
+  if (company.status === "cancelled") {
+    // 再アクセスの期間は「閲覧のみ」（猶予期間と同じ扱い：シートを見られ、Excelをダウンロードできる。書き込みはできない）
+    if (company.reaccess_until && new Date(company.reaccess_until) > new Date()) company = { ...company, status: "grace", grace_until: company.reaccess_until, reaccess: true };
+    else redirect("/closed"); // SQL 0047 を実行する前でも、画面は閉じる
   }
   return { ...ctx, company };
 }

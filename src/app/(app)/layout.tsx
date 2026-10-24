@@ -179,7 +179,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </div>
         {company.status === "grace" && (
           <div className="max-w-[1120px] mb-8 rounded-[var(--radius)] border-2 border-navy/30 bg-navy-soft px-5 py-4 text-sm leading-relaxed">
-            <p className="font-semibold text-navy">シートを編集できる期間は終わりました（確認セッション③のあとの1か月間）</p>
+            <p className="font-semibold text-navy">{company.reaccess ? "ご契約は終了しています（ベレネッツが一時的に閲覧を再開しています）" : "シートを編集できる期間は終わりました（確認セッション③のあとの1か月間）"}</p>
             <p className="mt-1 text-ink-2">この期間は、完成した提供価値シートの閲覧と、Excelのダウンロードができます{company.grace_until ? `（${new Date(company.grace_until).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "long", day: "numeric" })}まで）` : ""}。続けて使いたい場合は「ベレネッツに質問を残す」からご相談ください。</p>
           </div>
         )}
