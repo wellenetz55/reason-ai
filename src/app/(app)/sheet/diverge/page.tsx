@@ -37,6 +37,8 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
   // AIの下書きを付けられるのは、使っている（保留・却下でない）行だけ。ボタンはその数で出す
   const missingActive = (rows ?? []).filter((r) => r.status === "active" && r.value_raw && !r.experience_value_v1?.trim()).length;
   const confirmed = (rows ?? []).filter((r) => r.confirmed_at && r.status === "active").length;
+  // まだ見ていないAIの下書きは、承認・確定・直すまで「〇組」に数えない（SQL 0046）
+  const aiPending = (rows ?? []).filter((r) => r.created_by === "ai" && (r.status === "active" || r.status === "held") && r.experience_value_v1?.trim()).length;
   const rec = facetForToday(byFacet, progress?.max_round ?? 1);
   // 面は顧客が選べる（URLで保持）。指定が無ければ「いちばん薄い面」をおすすめとして出す
   const chosen = typeof sp?.facet === "string" ? FACETS.find((f) => f.key === sp.facet) : undefined;
@@ -55,6 +57,7 @@ export default async function DivergePage({ searchParams }: PageProps<"/sheet/di
             {count < 20 && gate.ready ? `いま${count}組。ベレネッツが次の段階を開いています。組を足しながら進めて構いません。目標は30組。` : count < 20 ? `あと${20 - count}組で、まとめて絞る段階に進めます。目標は30組。` : count < 30 ? `${count}組。目標の30組まで出し切ると、絞ったあとに残る言葉が強くなります。` : `${count}組。出し切りました。まとめて絞る段階へ。`}
             {missingActive > 0 && <span className="text-warm">　体験価値が空の行が{missingActive}行。</span>}
             {confirmed > 0 && <span className="text-navy">　確定 {confirmed}組。</span>}
+            {aiPending > 0 && <span className="text-ink-3">　ほかにAIの下書きが{aiPending}組あります（承認・確定するまで組の数には入りません）。</span>}
           </p>
         </div>
         <div className="sm:text-right shrink-0">
