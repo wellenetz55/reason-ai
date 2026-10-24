@@ -13,7 +13,6 @@ import { PROFILE_ITEMS } from "@/lib/profileItems";
 const KIND = { distrust: "不信（本当かな）", unnecessary: "不要（必要ないかも）", unfit: "不適（合わないかも）", nourgent: "不急（今じゃなくても）" } as Record<string, string>;
 const TAG = { fact: "事実", verify: "要確認", hypothesis: "仮説" } as Record<string, string>;
 const STATUS = { active: "有効", merged: "統合済", dropped: "却下", held: "保留", separate: "別立て" } as Record<string, string>;
-const VERDICT = { superior: "優位", equal: "同等", inferior: "劣位", unknown: "不明" } as Record<string, string>;
 const EV = { named_voice: "実名の声", public_voice: "公開レビュー", third_party: "第三者評価", own_fact: "自社の事実" } as Record<string, string>;
 const yn = (v: boolean | null | undefined) => (v === true ? "はい" : v === false ? "いいえ" : "");
 const facetLabel = (k: string | null) => FACETS.find((f) => f.key === k)?.label ?? k ?? "";
@@ -84,11 +83,9 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
       cols.push({ header: "一言で", key: "one", width: 30 }, { header: "状態", key: "status", width: 12 });
       if (any("rank")) cols.push({ header: "順位", key: "rank", width: 6 });
     }
-    if (has("trust")) cols.push({ header: "体験価値（磨いた後）", key: "exp", width: 44 }, { header: "なぜなら（根拠）", key: "because", width: 44 }, { header: "根拠タグ", key: "btag", width: 8 }, { header: "当社しか", key: "onlyus", width: 8 }, { header: "根拠の種類", key: "axis", width: 14 });
     addSheet(has("merge") ? "1-2 提供価値" : "1 提供価値", cols, (rows ?? []).map((r) => ({
       seq: r.seq, facet: facetLabel(r.facet), round: r.round, raw: r.value_raw, exp1: r.experience_value_v1, target: r.target,
       merged: r.value_merged, final: r.value_final, one: r.one_liner, status: STATUS[r.status] ?? r.status, rank: r.rank,
-      exp: r.experience_value ?? r.experience_value_v1, because: r.because_phrase, btag: TAG[r.because_tag] ?? "", onlyus: r.because_only_us ? "○" : "", axis: ({ systematic: "体系的", perceived: "知覚される", created: "生み出された" } as Record<string, string>)[r.trust_axis] ?? r.trust_axis,
     })));
   }
 
@@ -105,11 +102,19 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
     })));
   }
 
-  // STEP 5 競合比較
+  // STEP 5 体験価値を磨く（使っている組だけ。順位があれば順位の順）
   if (has("trust")) {
-    const { data: cc } = await supabase.from("competitor_comparisons").select("*, sheet_rows!inner(company_id), competitors(name)").eq("sheet_rows.company_id", companyId);
-    if (cc?.length) addSheet("5 競合比較", [{ header: "行No", key: "seq", width: 6 }, { header: "提供価値", key: "raw", width: 36 }, { header: "競合", key: "comp", width: 24 }, { header: "判定", key: "verdict", width: 8 }, { header: "理由", key: "reason", width: 40 }, { header: "要確認", key: "verify", width: 30 }],
-      cc.map((c) => ({ seq: byId.get(c.row_id)?.seq, raw: byId.get(c.row_id)?.value_final ?? byId.get(c.row_id)?.value_raw, comp: (c.competitors as { name: string } | null)?.name, verdict: VERDICT[c.verdict] ?? c.verdict, reason: c.reason, verify: c.to_verify })));
+    const active = (rows ?? []).filter((r) => r.status === "active" && r.value_raw)
+      .sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999) || a.seq - b.seq);
+    if (active.length) addSheet("5 体験価値を磨く", [
+      { header: "No", key: "seq", width: 6 }, ...(active.some((r) => r.rank != null) ? [{ header: "順位", key: "rank", width: 6 }] : []),
+      { header: "提供価値（御社は〜できる）", key: "raw", width: 40 }, { header: "体験価値（だから、お客様は〜と感じられる）", key: "exp", width: 44 },
+      { header: "なぜなら（根拠）", key: "because", width: 44 }, { header: "根拠タグ", key: "btag", width: 8 }, { header: "当社しか", key: "onlyus", width: 8 }, { header: "根拠の種類", key: "axis", width: 14 },
+    ], active.map((r) => ({
+      seq: r.seq, rank: r.rank, raw: r.value_final ?? r.value_raw, exp: r.experience_value ?? r.experience_value_v1,
+      because: r.because_phrase, btag: r.because_phrase ? (TAG[r.because_tag] ?? "") : "", onlyus: r.because_only_us ? "○" : "",
+      axis: ({ systematic: "体系的", perceived: "知覚される", created: "生み出された" } as Record<string, string>)[r.trust_axis] ?? r.trust_axis,
+    })));
   }
 
   // STEP 6 選ばれる理由の見極め
