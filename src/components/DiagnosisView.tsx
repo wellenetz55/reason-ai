@@ -85,7 +85,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
                 d.one_liner_before ? ["#one-liner", "「御社を一言で言うと？」── 面談でのお答え"] : null,
                 seeds.length ? ["#seeds", `初回ヒアリングで、もう見つかったもの（${seeds.length}組）`] : null,
                 brakes.length ? ["#brakes", `まだ言葉になっていないブレーキ（${brakes.length}つ）`] : null,
-                fit.length ? ["#why", "なぜ「つくれる」と判断したか"] : null,
+                fit.length ? ["#why", "なぜ選ばれる理由を「つくることができる」と判断したか"] : null,
                 ["#deliverables", "8週間で、御社に残るもの"],
                 company.status === "diagnosed" && !applied ? ["#paths", "ここから、2つの道があります"] : null,
               ].filter((x): x is [string, string] => !!x).map(([href, label], i) => (
@@ -184,7 +184,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
 
       {fit.length > 0 && (
         <section id="why" className="mt-14 scroll-mt-6">
-          <h2 className="serif sec-title">なぜ「つくれる」と判断したか</h2>
+          <h2 className="serif sec-title">なぜ選ばれる理由を「つくることができる」と判断したか</h2>
           <ul className="mt-5 space-y-4">
             {fit.map((f, i) => (
               <li key={i}>
