@@ -74,7 +74,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
         </section>
 
         <section>
-          <h2 className="serif text-[17px]">3. まだ言葉になっていないブレーキ（最大2）</h2>
+          <h2 className="serif text-[17px]">3. まだ言葉になっていない「顧客のブレーキ」（最大2）</h2>
           <p className="text-xs text-ink-3 mt-1">御社の「買い手」が、競合でなく御社を選ぶ直前に抱くためらい（4つの不）。面談相手がブランディングに進むことへの迷いではありません。</p>
           {[0, 1].map((i) => (
             <div key={i} className="mt-3 grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3 items-start">

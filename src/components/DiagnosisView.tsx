@@ -84,7 +84,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
               {[
                 d.one_liner_before ? ["#one-liner", "「御社を一言で言うと？」── 面談でのお答え"] : null,
                 seeds.length ? ["#seeds", `初回ヒアリングで、もう見つかったもの（${seeds.length}組）`] : null,
-                brakes.length ? ["#brakes", `まだ言葉になっていないブレーキ（${brakes.length}つ）`] : null,
+                brakes.length ? ["#brakes", `まだ言葉になっていない「顧客のブレーキ」（${brakes.length}つ）`] : null,
                 fit.length ? ["#why", "なぜ選ばれる理由を「つくることができる」と判断したか"] : null,
                 ["#deliverables", "8週間で、御社に残るもの"],
                 company.status === "diagnosed" && !applied ? ["#paths", "ここから、2つの道があります"] : null,
@@ -109,7 +109,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
           <p className="serif text-[30px] leading-none mt-1"><span className="num">{seeds.length}</span><span className="text-[14px] ml-1">組</span></p>
         </div>
         <div className="rounded-[var(--radius)] bg-paper-2 px-5 py-4">
-          <p className="text-[11px] text-ink-3">まだ言葉になっていないブレーキ</p>
+          <p className="text-[11px] text-ink-3">まだ言葉になっていない「顧客のブレーキ」</p>
           <p className="serif text-[30px] leading-none mt-1"><span className="num">{brakes.length}</span><span className="text-[14px] ml-1">つ</span></p>
         </div>
         <div className="rounded-[var(--radius)] bg-navy text-on-accent px-5 py-4">
@@ -166,7 +166,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
 
       {brakes.length > 0 && (
         <section id="brakes" className="mt-14 scroll-mt-6">
-          <h2 className="serif sec-title">まだ言葉になっていないブレーキ</h2>
+          <h2 className="serif sec-title">まだ言葉になっていない「顧客のブレーキ」</h2>
           <p className="text-sm text-ink-2 mt-1 max-w-[40em]">お客様が御社を選ぶ直前に、おそらくこう迷っています。ここを言葉で先回りできると、見積りの前の会話が変わります。3〜5週目の仕事です。</p>
           <ul className="mt-5 space-y-3">
             {brakes.map((b, i) => (
