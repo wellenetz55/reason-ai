@@ -153,12 +153,13 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
             ))}
           </ol>
           <div className="mt-8">
-            <p className="text-[12px] text-ink-3">これは、最初の{seeds.length}組です。</p>
-            <div className="mt-2 grid grid-cols-10 gap-1.5 max-w-[360px]" aria-label="30組のうち見つかった数">
+            <p className="text-sm"><span className="font-semibold">8週間で目標にするのは30組。</span>上の{seeds.length}組は、45分の面談で見つかった分です。</p>
+            <div className="mt-2 grid grid-cols-10 gap-1.5 max-w-[360px]" aria-label={`目標30組のうち、面談で見つかった${seeds.length}組`}>
               {Array.from({ length: 30 }, (_, i) => (
                 <span key={i} className={`h-[18px] rounded-[3px] ${i < seeds.length ? "bg-navy" : "border border-dashed border-ink-3"}`} />
               ))}
             </div>
+            <p className="text-[11px] text-ink-3 mt-1.5"><span className="inline-block w-[10px] h-[10px] rounded-[2px] bg-navy align-middle mr-1" />面談で見つかった組（{seeds.length}）　<span className="inline-block w-[10px] h-[10px] rounded-[2px] border border-dashed border-ink-3 align-middle mr-1" />これから8週間で出す組（{30 - seeds.length}）</p>
             <p className="text-sm mt-3 max-w-[40em]"><span className="font-semibold">残りは、御社の中にあります。</span>毎日ちがう角度の問いに答えるうちに、「言われてみれば、それもそうだ」が積み上がっていきます。まず30組を目標に出し、そこから強いものに絞り込みます。面談では、その入口が見えただけです。</p>
           </div>
         </section>
