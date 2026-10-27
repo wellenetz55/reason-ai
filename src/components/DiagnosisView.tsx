@@ -83,7 +83,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
             <ol className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-[13px]">
               {[
                 d.one_liner_before ? ["#one-liner", "「御社を一言で言うと？」── 面談でのお答え"] : null,
-                seeds.length ? ["#seeds", `初回ヒアリングで、もう見つかったもの（${seeds.length}組）`] : null,
+                seeds.length ? ["#seeds", `初回ヒアリングで、もう見つかった「提供価値」（${seeds.length}組）`] : null,
                 brakes.length ? ["#brakes", `まだ言葉になっていない「顧客のブレーキ」（${brakes.length}つ）`] : null,
                 fit.length ? ["#why", "なぜ選ばれる理由を「つくることができる」と判断したか"] : null,
                 ["#deliverables", "8週間で、御社に残るもの"],
@@ -141,7 +141,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
 
       {seeds.length > 0 && (
         <section id="seeds" className="mt-14 scroll-mt-6">
-          <h2 className="serif sec-title">初回ヒアリングで、もう見つかったもの</h2>
+          <h2 className="serif sec-title">初回ヒアリングで、もう見つかった「提供価値」</h2>
           <p className="text-sm text-ink-2 mt-1 max-w-[40em]">御社の中では当たり前すぎて、誰も言っていなかったこと。お話しいただいた言葉を「御社は〜できる。だから、お客様は〜と感じられる」の型に仮に置いたものです。まだ仮説です。8週間で事実にします。</p>
           <ol className="mt-5 space-y-4">
             {seeds.map((s, i) => (
