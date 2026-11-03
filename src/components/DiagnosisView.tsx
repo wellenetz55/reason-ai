@@ -254,14 +254,14 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
 
         <h3 className="serif text-[18px] mt-10">8週間後に、御社に残るもの</h3>
         <div className="mt-3 rounded-[var(--radius)] border-2 border-warm px-5 py-5">
-          <p className="text-[11px] font-semibold tracking-wide text-warm">1. 御社の「選ばれる理由」一式　── すべてダウンロードして、御社のものに</p>
-          <p className="text-[13px] text-ink-2 mt-2 leading-relaxed max-w-[42em]">「御社は〜できる。だから、お客様は〜と感じられる。なぜなら〜」で書かれた選ばれる理由と、お客様のブレーキへの先回りの答え、裏づけの証拠、営業トーク・価格説明・Web・採用に使う形にしたもの。ベレネッツではこの一式を「脚本」と呼んでいます。Excelと文書でお渡しし、御社の体制でそのまま使えます。</p>
+          <p className="text-[11px] font-semibold tracking-wide text-warm">8週間の契約に含まれるもの　── 御社の「選ばれる理由」一式をダウンロード</p>
+          <p className="text-[13px] text-ink-2 mt-2 leading-relaxed max-w-[42em]">「御社は〜できる。だから、お客様は〜と感じられる。なぜなら〜」で書かれた選ばれる理由と、お客様のブレーキへの先回りの答え、裏づけの証拠、営業トーク・価格説明・Web・採用に使う形にしたもの。ベレネッツではこの一式を「脚本」と呼んでいます。Excelと文書でお渡しし、御社の体制でそのまま使えます。通常は、ここまでが8週間の成果物です。</p>
         </div>
 
         {/* 真骨頂：御社専用AI。一式を覚えたAIが、以後の文章を御社の言葉で書き続ける */}
         <div className="mt-4 rounded-[var(--radius)] bg-navy text-on-accent px-5 sm:px-7 py-6">
-          <p className="text-[11px] font-semibold tracking-[0.15em] text-on-accent/70">2. 御社専用の「脳」ができる　── 継続契約・任意</p>
-          <p className="serif text-[21px] sm:text-[24px] leading-snug mt-2">完成した一式を覚えた、<br className="sm:hidden" />御社専用にカスタマイズしたAIが残ります。</p>
+          <p className="text-[11px] font-semibold tracking-[0.15em] text-on-accent/70">オプション（継続契約）　── 御社専用の「脳」ができる</p>
+          <p className="serif text-[21px] sm:text-[24px] leading-snug mt-2">完成した一式を覚えた、<br className="sm:hidden" />御社専用にカスタマイズしたAIを使い続けられます。</p>
           <p className="text-[14px] leading-relaxed mt-3 text-on-accent/90 max-w-[42em]">8週間で完成した御社の「選ばれる理由」と、ベレネッツが25年・750社で積み上げた進め方と勝ちパターンを、御社専用にベレネッツがカスタマイズしたAIです。一般のAIに「うちの強みを書いて」と頼むのとは違い、出てくる言葉はすべて御社の選ばれる理由に沿い、根拠のないことは書きません。社内の誰が使っても、同じ言葉で出てきます。</p>
           <p className="text-[11px] text-on-accent/70 mt-4">御社の言葉で、こういうものが出てきます</p>
           <ul className="mt-2 flex flex-wrap gap-2">
@@ -279,7 +279,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
               <p className="text-[13px] leading-relaxed mt-1.5">ベレネッツが、脳科学・行動科学の知見と、積み上がり続ける成功パターンをこのAIに学ばせ続けます。御社の選ばれる理由そのものも、顧問の面談で更新していきます。契約した日より、半年後のほうが賢い。</p>
             </div>
           </div>
-          <p className="text-[12px] text-on-accent/70 mt-4">一式は御社のものとしてお渡しします。継続契約は、そのうえで「使い続け、育て続ける」ための選択肢です。</p>
+          <p className="text-[12px] text-on-accent/70 mt-4">8週間の契約だけでも、一式はすべて御社のものとしてお渡しします。このAIは、そのうえで「使い続け、育て続ける」ためのオプション（月額の継続契約）です。費用は適合診断のあとにご案内します。</p>
         </div>
       </section>
 
