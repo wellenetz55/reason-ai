@@ -60,7 +60,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
         </section>
 
         <section>
-          <h2 className="serif text-[17px]">2. 選ばれる理由の芽（最大3）</h2>
+          <h2 className="serif text-[17px]">2. 選ばれる理由の候補（最大3）</h2>
           <p className="text-xs text-ink-3 mt-1">御社は〜できる／だから、お客様は〜と感じられる。仮説のまま出してよい</p>
           {[0, 1, 2].map((i) => (
             <div key={i} className="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_1fr_100px] gap-3 items-start">
@@ -112,6 +112,12 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
           <div className="mt-2 flex gap-4">
             {[0, 1, 2].map((i) => <input key={i} type="datetime-local" name={`date${i + 1}`} defaultValue={dates[i] ? toLocalInput(dates[i]) : ""} className="border-b hairline py-2 text-sm num" />)}
           </div>
+        </section>
+
+        <section>
+          <h2 className="serif text-[17px]">6b. 放っておくとどうなるか（一行）</h2>
+          <textarea name="risk_line" defaultValue={(d?.risk_line as string | null) ?? ""} rows={2} maxLength={400} className={inp} placeholder="例：相見積もりになるたびに値引きで取り、利益率が削られる状態が続きます" />
+          <p className="text-xs text-ink-3 mt-1">お客様の画面で「ここを放っておくと、」に続けて出ます。面談で出た具体的な場面を。空なら共通の文（比べられたら負ける会社のまま）が出ます。「適合診断を始める」でAIの下書きが入ります（面談の発言からだけ）</p>
         </section>
 
         <section>

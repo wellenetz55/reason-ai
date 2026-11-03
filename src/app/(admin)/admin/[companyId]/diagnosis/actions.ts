@@ -22,7 +22,7 @@ export async function saveDiagnosis(formData: FormData) {
   const companyId = s(formData, "company_id");
   const dropped: string[] = [];
   const seeds = [1, 2, 3].map((i) => ({ feature: strip(s(formData, `seed${i}_feature`), ["御社は"]), experience: strip(s(formData, `seed${i}_experience`), ["だから、お客様は", "だから お客様は", "だから"]), tag: s(formData, `seed${i}_tag`) || "hypothesis" })).filter((x, i) => {
-    if (!x.feature && x.experience) dropped.push(`芽${i + 1}（「〜できる」が空）`);
+    if (!x.feature && x.experience) dropped.push(`候補${i + 1}（「〜できる」が空）`);
     return x.feature;
   });
   const brakes = [1, 2].map((i) => ({ kind: s(formData, `brake${i}_kind`), words: strip(s(formData, `brake${i}_words`), []) })).filter((x) => x.words);
@@ -43,6 +43,7 @@ export async function saveDiagnosis(formData: FormData) {
     one_liner_before: strip(s(formData, "one_liner_before"), []) || null,
     seeds, brakes, fit_reasons: fit, competitor, candidate_dates: dates,
     operator_note: s(formData, "operator_note") || null,
+    risk_line: s(formData, "risk_line").slice(0, 400) || null,
     expires_at: expiresLocal ? jst(expiresLocal) : null,
     created_by: user.id,
     updated_at: new Date().toISOString(),

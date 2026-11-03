@@ -9,6 +9,7 @@ type Draft = {
   verdict: "fit" | "hold" | "unfit";
   verdict_reason: string;
   summary?: string;
+  risk_line?: string;
   one_liner_before?: string;
   seeds?: { feature: string; experience: string; tag: "fact" | "verify" | "hypothesis" }[];
   brakes?: { kind: string; words: string }[];
@@ -54,15 +55,16 @@ ${FIT_CONDITIONS.map((f, i) => `${i + 1}. ${f}`).join("\n")}
 書き方:
 - verdict_reason: 素材（選ばれている事実があるか）・言語化（差が言葉になっていないか）・姿勢（経営者が決める意思、時間、一緒に考える人）のそれぞれについて1〜2文。根拠になった発言を短く引用する。保留なら、時期を改める理由と、何が分かれば判断できるかを書く
 - summary: お客様（面談相手）に見せるエグゼクティブサマリー。判定が適合または保留のときだけ書く（不適合なら省略）。300〜450字、です・ます調、面談相手に語りかける。順番は (1) 45分のお話で分かったこと（結論を先に）(2) 御社が選ばれている理由の核（お客様自身の言葉を引用して）(3) 足りないのは言葉だけ、という見立て（まだ言葉になっていない買い手のためらいに一言触れる）(4) 8週間で何が変わるか（「御社を一言で」が業種の説明から選ばれる理由に変わる）。段落は2〜4つ、空行で区切る。ほめ言葉で埋めない。どの会社でも言える文にしない。材料に無い数字・実績を書かない
+- risk_line: 「ここを放っておくと、」に続く一文（80字以内）。面談相手が話した具体的な場面（相見積もり・値引き・失注・採用など）だけから書く。経営者が日常で痛感している言い方で。発言に無ければ省略
 - one_liner_before: お客様が面談で自社を一言で言った言葉（聞いたまま。無ければ省略）
-- seeds: 「選ばれる理由の芽」最大3つ。feature は「御社は〜できる」の「〜できる」の部分だけ。experience は「だから、お客様は〜と感じられる」の「〜と感じられる」の部分だけ。tag は発言や資料に根拠があれば fact、要確認なら verify、推測なら hypothesis
+- seeds: 「選ばれる理由の候補」最大3つ。feature は「御社は〜できる」の「〜できる」の部分だけ。experience は「だから、お客様は〜と感じられる」の「〜と感じられる」の部分だけ。tag は発言や資料に根拠があれば fact、要確認なら verify、推測なら hypothesis
 - brakes: 「買い手」が ${name} を選ぶ直前に抱く、まだ言葉になっていないためらい（最大2つ）。${name} が競合でなく自社を選んでもらう場面でのブレーキであって、面談相手がブランディングや本プログラムに進むことへの迷いではない。words は買い手の心の声として「本当にうちの規模でも頼めるのか」のような一文。面談相手が「お客様からよく〜と言われる」「失注のとき〜と言われた」と話した言葉を優先し、無ければ材料から読み取れる範囲で仮説として書く。読み取れなければ空配列
 - seeds の experience も「買い手」の気持ち・状態の変化で書く（面談相手の気持ちではない）
 - fit_reasons: 判定が適合または保留のとき、当てはまる条件（最大3つ）と、根拠になった発言の引用。quote は「……」とおっしゃった、の形
 - どの会社でも言える言葉で埋めない。根拠の無い数字・固有名詞を作らない。材料に無いことは書かない。空欄でよい
 
 JSONのみで返す:
-{"verdict":"fit|hold|unfit","verdict_reason":"...","summary":"...","one_liner_before":"...","seeds":[{"feature":"...","experience":"...","tag":"fact|verify|hypothesis"}],"brakes":[{"kind":"distrust","words":"..."}],"fit_reasons":[{"condition_no":1,"quote":"..."}]}`;
+{"verdict":"fit|hold|unfit","verdict_reason":"...","summary":"...","risk_line":"...","one_liner_before":"...","seeds":[{"feature":"...","experience":"...","tag":"fact|verify|hypothesis"}],"brakes":[{"kind":"distrust","words":"..."}],"fit_reasons":[{"condition_no":1,"quote":"..."}]}`;
 
   const text = await complete({ promptKey: "diag_draft", user, maxTokens: 4000 });
   const d = parseJson<Draft>(text);
@@ -76,14 +78,15 @@ JSONのみで返す:
 
   // 2) 結果の下書き → 空いている欄にだけ
   const filled: string[] = [];
-  const { data: r } = await admin.from("diagnosis_results").select("published_at, summary, one_liner_before, seeds, brakes, fit_reasons").eq("company_id", companyId).maybeSingle();
+  const { data: r } = await admin.from("diagnosis_results").select("published_at, summary, risk_line, one_liner_before, seeds, brakes, fit_reasons").eq("company_id", companyId).maybeSingle();
   if (r?.published_at) return { verdict: VERDICT_JA[d.verdict], filled, note: "結果は公開済みのため、下書きは入れていません（判定案だけ記録に書きました）" };
   const patch: Record<string, unknown> = { company_id: companyId, updated_at: new Date().toISOString() };
   const clean = (v: unknown) => String(v ?? "").trim();
   if (!r?.summary && clean(d.summary) && d.verdict !== "unfit") { patch.summary = clean(d.summary).slice(0, 2000); filled.push("エグゼクティブサマリー"); }
+  if (!r?.risk_line && clean(d.risk_line) && d.verdict !== "unfit") { patch.risk_line = clean(d.risk_line).slice(0, 400); filled.push("放っておくとどうなるか"); }
   if (!r?.one_liner_before && clean(d.one_liner_before)) { patch.one_liner_before = clean(d.one_liner_before).slice(0, 200); filled.push("御社を一言で"); }
   const seeds = (d.seeds ?? []).map((x) => ({ feature: clean(x.feature).slice(0, 200), experience: clean(x.experience).slice(0, 200), tag: ["fact", "verify", "hypothesis"].includes(x.tag) ? x.tag : "hypothesis" })).filter((x) => x.feature).slice(0, 3);
-  if (!(Array.isArray(r?.seeds) && r.seeds.length) && seeds.length) { patch.seeds = seeds; filled.push(`選ばれる理由の芽 ${seeds.length}`); }
+  if (!(Array.isArray(r?.seeds) && r.seeds.length) && seeds.length) { patch.seeds = seeds; filled.push(`選ばれる理由の候補 ${seeds.length}`); }
   const brakes = (d.brakes ?? []).map((x) => ({ kind: BRAKE_LABEL[x.kind] ? x.kind : "distrust", words: clean(x.words).slice(0, 200) })).filter((x) => x.words).slice(0, 2);
   if (!(Array.isArray(r?.brakes) && r.brakes.length) && brakes.length) { patch.brakes = brakes; filled.push(`ブレーキ ${brakes.length}`); }
   const fit = (d.fit_reasons ?? []).map((x) => ({ condition: FIT_CONDITIONS[Number(x.condition_no) - 1] ?? "", quote: clean(x.quote).slice(0, 300) })).filter((x) => x.condition).slice(0, 3);

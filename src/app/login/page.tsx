@@ -57,11 +57,10 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <section>
           <h1><ReasonLogo width={240} /></h1>
           <p className="serif text-[26px] md:text-[32px] leading-[1.25] mt-8 text-ink">
-            お客様を引き寄せる<span className="text-warm">「脚本」</span>を8週間で。<br />
-            そのあと、御社専用のAI<span className="text-warm">「脳」</span>が残る。
+            8週間で、<span className="text-warm">「選ばれる理由」</span>を<br />営業・採用・Webで使える形にする。
           </p>
           <p className="text-sm text-ink-2 leading-relaxed mt-4 max-w-[36em]">
-            「安いから」ではなく「御社だから」と言われる言葉を、御社の中から言語化する8週間のプログラムです。AIが下書きし、御社が決め、ベレネッツのコンサルタントが確認します。完成した脚本を覚えた御社だけの「脳」が、そのあと集客・採用・営業の文章を書き続けます。御社側でのAI契約は不要です。
+            「安いから」ではなく「御社だから」と言われる言葉を、御社の中から取り出す8週間のプログラムです。AIが下書きし、御社が決め、ベレネッツのコンサルタントが確認します。完成した一式（ベレネッツでは「脚本」と呼んでいます）は御社のものになり、そのあとは御社専用にベレネッツがカスタマイズしたAIが、集客・採用・営業の文章を御社の言葉で書き続けます。御社側でAIを契約する必要はありません。
           </p>
 
           <ul className="mt-8 space-y-3 max-w-[36em]">
@@ -84,7 +83,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
                 </span>
                 <span className="flex-1 min-w-0">
                   <span className="block text-[15px] font-semibold text-ink">無料適合診断を申し込む<span className="ml-2 text-[11px] font-normal text-warm">45分・Zoom面談</span></span>
-                  <span className="block text-[12px] text-ink-2 mt-0.5">御社に「選ばれる理由の芽」があるかを、ベレネッツ代表が直接お伺いします</span>
+                  <span className="block text-[12px] text-ink-2 mt-0.5">御社に「選ばれる理由の候補」があるかを、ベレネッツ代表が直接お伺いします</span>
                 </span>
                 <span className="text-warm" aria-hidden="true">→</span>
               </a>

@@ -39,7 +39,7 @@ export default async function Home() {
           <span>
             <span className="block text-[11px] font-semibold tracking-wide text-navy">初回ヒアリングの診断結果</span>
             <span className="serif block text-[18px] leading-snug mt-0.5">適合診断の結果を振り返る</span>
-            <span className="block text-[12px] text-ink-2 mt-0.5">見つかった芽・ブレーキ・8週間で残るもの。いつでも読み返せます</span>
+            <span className="block text-[12px] text-ink-2 mt-0.5">見つかった選ばれる理由の候補・顧客のブレーキ・8週間で残るもの。いつでも読み返せます</span>
           </span>
           <span className="text-navy text-[20px]" aria-hidden>→</span>
         </Link>
