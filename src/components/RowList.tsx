@@ -103,12 +103,12 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
                 <button className="btn-text" type="submit">確定を外す</button>
               </form>
             )}
-            {(isDraft || held) && (
+            {(isDraft || held) && !(held && row.sealed) && (
               <form action={reviewRow}>
                 <input type="hidden" name="row_id" value={row.id} />
                 <input type="hidden" name="action" value="approve" />
                 <DwellField since={shownAt} />
-                <button className="btn-text" type="submit">承認</button>
+                <button className="btn-text" type="submit">{held ? "戻す" : "承認"}</button>
               </form>
             )}
             {!held && !row.sealed && (

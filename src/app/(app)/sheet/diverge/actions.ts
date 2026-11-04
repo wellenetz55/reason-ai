@@ -61,7 +61,9 @@ async function doReviewRow(formData: FormData): Promise<{ ok: boolean; error?: s
   const member = isMember(profile);
   if (member && action !== "fix") { revalidatePath("/sheet/diverge"); return { ok: false, error: "承認・確定・保留は担当者が行います。" }; }
   // 封（確認セッション①）：封の時点であった組は、保留にできず、直すときは理由が要る（理由と変更前後を記録）
-  if ((action === "hold" || ((action === "approve" || action === "confirm") && row.status === "held")) && (await isSealed(supabase, company.id, "sheet_rows.status", row.created_at))) { revalidatePath("/sheet/diverge"); return { ok: false, error: "確認セッション①で封をした組は、保留にしたり戻したりできません。" }; }
+  // 封の時点で保留・却下だった組も、承認・確定で戻せない（封をした状態を理由なしに変えない）
+  const statusSealed = (action === "hold" || row.status !== "active") && (await isSealed(supabase, company.id, "sheet_rows.status", row.created_at));
+  if (statusSealed && action !== "fix") { revalidatePath("/sheet/diverge"); return { ok: false, error: "確認セッション①で封をした組は、保留にしたり戻したりできません。" }; }
   if (action === "fix") {
     const ok = await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
       { column: "sheet_rows.value_raw", rowId, createdAt: row.created_at, before: row.value_raw, after },
@@ -88,7 +90,7 @@ async function doReviewRow(formData: FormData): Promise<{ ok: boolean; error?: s
       if (row.target_tag === "仮説（体験価値はAI下書き）") update.target_tag = null;
     }
     if (!member) {
-      update.status = "active";
+      if (!statusSealed) update.status = "active"; // 封の時点で保留・却下だった組は、文を直しても戻さない
       update.confirmed_at = new Date().toISOString(); // ボタンは「直して確定」：直した文で確定する
     } else update.confirmed_at = null; // メンバーが直した行は、担当者の確定待ち
   }
