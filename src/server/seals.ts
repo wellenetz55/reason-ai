@@ -41,6 +41,17 @@ export async function isSealed(supabase: SupabaseClient, companyId: string, colu
 }
 
 /** 封をした言葉に理由が無く保存しなかったとき、その画面に戻して合図を出す（黙って何も起きないように） */
-export function sealRetry(path: string): never {
-  redirect(`${path}?seal_retry=1`);
+export function sealRetry(path: string, kind: "reason" | "member" = "reason"): never {
+  redirect(`${path}?seal_retry=${kind === "member" ? "member" : "1"}`);
+}
+
+/**
+ * 理由の入力なしに、決まった理由で封の変更を記録する（証拠がそろって「事実」に変えたときなど）。
+ * 変更のあとの印（tag）で封の対象になるときだけ記録する。会社の行であることは呼び出し側で確かめ済みのこと
+ */
+export async function recordSealChange(supabase: SupabaseClient, companyId: string, userId: string,
+  c: { column: string; rowId: string | null; createdAt: string | null; before: string | null; after: string | null; tag?: string | null }, reason: string) {
+  const s = sealOn(await loadSeals(supabase, companyId), c.column, c.createdAt, c.tag);
+  if (!s) return;
+  await createAdminClient().from("sheet_lock_history").insert({ lock_id: s.id, row_id: c.rowId, column_key: c.column, before_text: c.before, after_text: c.after, reason, changed_by: userId });
 }

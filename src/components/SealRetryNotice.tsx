@@ -6,18 +6,18 @@ import { useEffect, useState } from "react";
  * 画面を開いたあとに封をされた場合など、理由欄が出ていないまま送られたときに出す。
  */
 export function SealRetryNotice() {
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useState<false | "reason" | "member">(false);
   useEffect(() => {
     const url = new URL(window.location.href);
     if (!url.searchParams.has("seal_retry")) return;
-    setShow(true);
+    setShow(url.searchParams.get("seal_retry") === "member" ? "member" : "reason");
     url.searchParams.delete("seal_retry");
     window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
   }, []);
   if (!show) return null;
   return (
     <div role="alert" className="fixed inset-x-0 top-3 z-50 mx-auto w-fit max-w-[92vw] rounded-[var(--radius)] border border-warm bg-warm-soft px-4 py-3 text-sm shadow-md flex items-start gap-3">
-      <span>保存されませんでした。確認セッションで封をした言葉です。もう一度「直す」を開き、変更の理由を書いてから確定してください。</span>
+      <span>{show === "member" ? "保存されませんでした。確認セッションで封をした言葉は、担当者の方だけが変えられます。変えたいときは、担当者の方にお伝えください。" : "保存されませんでした。確認セッションで封をした言葉です。もう一度「直す」を開き、変更の理由を書いてから確定してください。"}</span>
       <button type="button" className="btn-text text-xs" onClick={() => setShow(false)}>閉じる</button>
     </div>
   );

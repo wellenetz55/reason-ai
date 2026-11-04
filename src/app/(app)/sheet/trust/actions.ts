@@ -1,5 +1,5 @@
 "use server";
-import { sealRetry, sealGate } from "@/server/seals";
+import { sealRetry, sealGate, isSealed } from "@/server/seals";
 import { isMember } from "@/lib/session";
 import { MAX, cut, nl } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
@@ -50,6 +50,14 @@ export async function saveTriple(formData: FormData) {
     const exp = cut(String(formData.get("experience") || "").trim(), MAX.value);
     const because = cut(String(formData.get("because") || "").trim(), MAX.value);
     const tag = String(formData.get("tag") || "hypothesis");
+    const sealTagNow = row.because_by === "ai" ? "hypothesis" : row.because_tag ?? "hypothesis"; // 承認前のAIの下書きは仮封
+    // メンバーの修正は承認待ち（AIの下書き扱い）に戻るため、封をした言葉を変えると記録なしで封が外れてしまう。封をした言葉はメンバーには変えさせない
+    if (member) {
+      const tagAfter = tag === "fact" ? "verify" : ["fact", "verify", "hypothesis"].includes(tag) ? tag : "hypothesis";
+      const expChanged = nl(exp) !== nl(row.experience_value);
+      const becChanged = nl(because) !== nl(row.because_phrase) || (tagAfter !== (row.because_tag ?? "hypothesis") && tag !== (row.because_tag ?? "hypothesis"));
+      if ((expChanged && (await isSealed(supabase, company.id, "sheet_rows.experience_value", row.created_at))) || (becChanged && (await isSealed(supabase, company.id, "sheet_rows.because_phrase", row.created_at, sealTagNow)))) sealRetry("/sheet/trust", "member");
+    }
     // 封（確認セッション②）：磨いた体験価値と、根拠が「事実」のなぜなら は、変えるときに理由が要る
     if (!(await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
       { column: "sheet_rows.experience_value", rowId, createdAt: row.created_at, before: row.experience_value, after: exp },

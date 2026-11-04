@@ -105,16 +105,20 @@ export async function saveCounter(formData: FormData) {
     const because = cut(String(formData.get("because") || "").trim(), MAX.value);
     const tag = String(formData.get("tag") || "hypothesis");
     if (!counter) return;
+    // 実際に保存する根拠タグ（メンバーは「事実」を付けられず「確認中」になる）。封の確認もこの値で行う（事実→確認中の格下げを記録なしにしない）
+    const savedTag = isMember(profile) && tag === "fact" ? "verify" : TAGS.includes(tag) ? tag : "hypothesis";
+    // メンバーの修正は担当者の承認待ちに戻るため、封をした答えをメンバーが変えると記録なしで封が外れる。封をした答えはメンバーには変えさせない
+    if (isMember(profile) && (nl(counter) !== nl(b.counter_message) || nl(because) !== nl(b.because)) && (await isSealed(supabase, company.id, "brakes.counter_message", b.created_at, sealTag(b)))) sealRetry("/sheet/counter", "member");
     // 封（確認セッション②）：根拠が「事実」の答えは、変えるときに理由が要る（理由と変更前後を記録）
     if (!(await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
       { column: "brakes.counter_message", rowId: b.row_id, createdAt: b.created_at, before: b.counter_message, after: counter, tag: sealTag(b) },
       { column: "brakes.because", rowId: b.row_id, createdAt: b.created_at, before: b.because, after: because, tag: sealTag(b) },
-      { column: "brakes.because_tag", rowId: b.row_id, createdAt: b.created_at, before: b.because_tag, after: TAGS.includes(tag) ? tag : "hypothesis", tag: sealTag(b) },
+      { column: "brakes.because_tag", rowId: b.row_id, createdAt: b.created_at, before: b.because_tag, after: savedTag, tag: sealTag(b) },
     ] }))) sealRetry("/sheet/counter");
     // 直す前の答えも履歴に残す（直したあとで、前の答えに戻したくなったとき用）
     const changed = !!b.counter_message && (nl(b.counter_message) !== counter || nl(b.because) !== because);
     const history = changed ? [...((b.counter_history as string[] | null) ?? []), encodeCounter({ c: b.counter_message as string, b: (b.because as string | null) ?? null, t: (b.because_tag as string | null) ?? null, a: (b.counter_by as string | null) ?? null })].slice(-5) : undefined;
-    await supabase.from("brakes").update({ counter_message: counter, because: because || null, because_tag: isMember(profile) && tag === "fact" ? "verify" : TAGS.includes(tag) ? tag : "hypothesis", counter_by: "customer", counter_approved_at: isMember(profile) ? null : new Date().toISOString(), ...(history ? { counter_history: history } : {}) }).eq("id", id);
+    await supabase.from("brakes").update({ counter_message: counter, because: because || null, because_tag: savedTag, counter_by: "customer", counter_approved_at: isMember(profile) ? null : new Date().toISOString(), ...(history ? { counter_history: history } : {}) }).eq("id", id);
     await supabase.from("sheet_row_reviews").insert({ row_id: b.row_id, column_key: "counter_message", action: "fix", before_text: b.counter_message, after_text: counter, reviewer_id: user.id });
   } else if (action === "approve") {
     // 画面で見ていた答えと、いまの答えが違う（別のタブでAIの別案などに変わった）ときは承認しない
@@ -122,6 +126,8 @@ export async function saveCounter(formData: FormData) {
     await supabase.from("brakes").update({ counter_approved_at: new Date().toISOString() }).eq("id", id);
     await supabase.from("sheet_row_reviews").insert({ row_id: b.row_id, column_key: "counter_message", action: "approve", before_text: b.counter_message, after_text: b.counter_message, reviewer_id: user.id });
   } else if (action === "reopen") {
+    // 封をした答えは「承認を外す」で封の外に出さない（外すと理由なしで書き換えられるようになるため）
+    if (await isSealed(supabase, company.id, "brakes.counter_message", b.created_at, sealTag(b))) { revalidatePath("/sheet/counter"); return; }
     await supabase.from("brakes").update({ counter_approved_at: null }).eq("id", id);
   } else return;
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "counter.save", payload: { action } });
