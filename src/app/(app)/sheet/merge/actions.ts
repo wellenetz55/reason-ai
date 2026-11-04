@@ -105,6 +105,8 @@ export async function resolveDiagnosis(formData: FormData) {
     ] });
     if (!ok) sealRetry("/sheet/merge");
     const expChanged = afterExp !== cut(nl(row.experience_value_v1).trim(), MAX.value); // 保存済みの側も、入力と同じ形（前後の空白なし・上限の長さ）にそろえて比べる
+    // 御社が見て決めた組なので、「仮説（体験価値はAI下書き）」の印は外す（20組の数え方。SQL 0050）
+    await supabase.from("sheet_rows").update({ target_tag: null }).eq("id", rowId).eq("target_tag", "仮説（体験価値はAI下書き）");
     await supabase.from("sheet_rows").update({ value_raw: after, experience_value_v1: afterExp || null, ...(expChanged ? { experience_value: afterExp || null } : {}), created_by: "customer" }).eq("id", rowId);
     await supabase.from("sheet_row_reviews").insert({ row_id: rowId, column_key: "value_raw", action: "fix", before_text: row.value_raw, after_text: after, reviewer_id: user.id });
     await supabase.from("row_diagnoses").update({ resolved: "accepted", vague_score: 0 }).eq("row_id", rowId);

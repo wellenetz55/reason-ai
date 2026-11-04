@@ -15,3 +15,11 @@ create or replace view v_divergence_progress with (security_invoker = true) as
     count(*) filter (where r.status in ('active','held') and coalesce(r.experience_value_v1,'') <> '' and r.created_by <> 'ai' and coalesce(r.target_tag,'') <> '仮説（体験価値はAI下書き）') as pair_count
   from sheet_rows r
   group by r.company_id;
+
+-- これまで「確定」では「仮説（体験価値はAI下書き）」の印が外れなかったため、確定済みの行に印が残っている。
+-- このままだと上の数え方で確定済みの組が20組から外れてしまうので、確定済みの行の印は外しておく。
+-- 承認だけした行（確定はしていない）も、承認・直すの記録があれば外す
+update sheet_rows r set target_tag = null
+where r.target_tag = '仮説（体験価値はAI下書き）'
+  and (r.confirmed_at is not null
+       or exists (select 1 from sheet_row_reviews v where v.row_id = r.id and v.action in ('approve', 'fix')));
