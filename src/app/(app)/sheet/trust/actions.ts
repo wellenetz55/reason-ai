@@ -54,7 +54,8 @@ export async function saveTriple(formData: FormData) {
     // メンバーの修正は承認待ち（AIの下書き扱い）に戻るため、封をした言葉を変えると記録なしで封が外れてしまう。封をした言葉はメンバーには変えさせない
     if (member) {
       const tagAfter = tag === "fact" ? "verify" : ["fact", "verify", "hypothesis"].includes(tag) ? tag : "hypothesis";
-      const expChanged = nl(exp) !== nl(row.experience_value);
+      // 体験価値（STEP 5）がまだ空なら、STEP 1 の文を下地に出しているだけなので「変えた」とは見ない（封の確認と同じ）
+      const expChanged = nl(row.experience_value).trim() !== "" && nl(exp) !== nl(row.experience_value);
       const becChanged = nl(because) !== nl(row.because_phrase) || (tagAfter !== (row.because_tag ?? "hypothesis") && tag !== (row.because_tag ?? "hypothesis"));
       if ((expChanged && (await isSealed(supabase, company.id, "sheet_rows.experience_value", row.created_at))) || (becChanged && (await isSealed(supabase, company.id, "sheet_rows.because_phrase", row.created_at, sealTagNow)))) sealRetry("/sheet/trust", "member");
     }

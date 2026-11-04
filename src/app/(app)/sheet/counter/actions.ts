@@ -106,9 +106,11 @@ export async function saveCounter(formData: FormData) {
     const tag = String(formData.get("tag") || "hypothesis");
     if (!counter) return;
     // 実際に保存する根拠タグ（メンバーは「事実」を付けられず「確認中」になる）。封の確認もこの値で行う（事実→確認中の格下げを記録なしにしない）
-    const savedTag = isMember(profile) && tag === "fact" ? "verify" : TAGS.includes(tag) ? tag : "hypothesis";
+    // メンバーが文も印も変えずに送ったときは、元の「事実」を保つ。文を変えた答えや、新しく「事実」にするのは担当者の確認が要るので「確認中」
+    const textChanged = nl(counter) !== nl(b.counter_message) || nl(because) !== nl(b.because);
+    const savedTag = isMember(profile) && tag === "fact" ? (b.because_tag === "fact" && !textChanged ? "fact" : "verify") : TAGS.includes(tag) ? tag : "hypothesis";
     // メンバーの修正は担当者の承認待ちに戻るため、封をした答えをメンバーが変えると記録なしで封が外れる。封をした答えはメンバーには変えさせない
-    if (isMember(profile) && (nl(counter) !== nl(b.counter_message) || nl(because) !== nl(b.because)) && (await isSealed(supabase, company.id, "brakes.counter_message", b.created_at, sealTag(b)))) sealRetry("/sheet/counter", "member");
+    if (isMember(profile) && (textChanged || savedTag !== (b.because_tag ?? "hypothesis")) && (await isSealed(supabase, company.id, "brakes.counter_message", b.created_at, sealTag(b)))) sealRetry("/sheet/counter", "member");
     // 封（確認セッション②）：根拠が「事実」の答えは、変えるときに理由が要る（理由と変更前後を記録）
     if (!(await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
       { column: "brakes.counter_message", rowId: b.row_id, createdAt: b.created_at, before: b.counter_message, after: counter, tag: sealTag(b) },
