@@ -13,7 +13,7 @@ function MeetingRow({ label, m }: { label: string; m?: MeetingMark }) {
   return (
     <div className={clsx("flex items-center gap-2 py-[5px] pl-3 -ml-3 text-[11px]", held ? "text-ink-3" : m?.at ? "text-warm" : "text-ink-3")}>
       <span className={clsx("inline-flex items-center justify-center shrink-0 w-[60px] rounded-full py-[2px] text-[9px] font-semibold tracking-[0.08em] leading-none", held ? "bg-paper-2 text-ink-3" : m?.at ? "bg-warm-soft text-warm border border-warm/50" : "border border-dashed border-ink-3 text-ink-3")}>面談</span>
-      <span className="leading-tight">{label}<span className="num ml-1.5">{held ? "済" : m?.candidates ? `候補${m.candidates}件・選ぶ` : m?.at ? fmtMeeting(m.at) : "日程は追って"}</span></span>
+      <span className="leading-tight">{label}<span className="num ml-1.5">{held ? "済" : m?.candidates ? <Link href="/#meeting-pick" className="underline underline-offset-2 hover:opacity-80">{`候補${m.candidates}件・選ぶ`}</Link> : m?.at ? fmtMeeting(m.at) : "日程は追って"}</span></span>
     </div>
   );
 }
