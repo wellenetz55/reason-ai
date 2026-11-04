@@ -33,7 +33,7 @@ export default async function Page() {
     if (n < 20 && !started) return <ClosedStage stageKey="merge" status={company.status} note={`STEP 1 で、提供価値と体験価値の組があと${20 - n}組そろうと開きます（いま${n}組）。`} />;
   }
   const [{ data: rows }, { data: diags }, ctx, meeting] = await Promise.all([
-    supabase.from("sheet_rows").select("id, seq, facet, target, value_raw, experience_value_v1, status, created_at").eq("company_id", company.id).in("status", ["active", "dropped"]).order("seq"),
+    supabase.from("sheet_rows").select("id, seq, facet, target, value_raw, experience_value_v1, experience_value, status, created_at").eq("company_id", company.id).in("status", ["active", "dropped"]).order("seq"),
     supabase.from("row_diagnoses").select("row_id, vague_score, issues, suggestion_value, suggestion_experience, resolved, checked_at, redraft_history, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", company.id),
     loadGateCtx(supabase, company.id, company.status),
     loadMeetingAfter(supabase, company.id, "merge"),
@@ -41,8 +41,9 @@ export default async function Page() {
   const gate = stepGate("merge", ctx);
   const aiErr = await lastAiError(supabase, company.id, "vague_check.run");
   const seals = await loadSeals(supabase, company.id);
-  const sealLabel = (at: string) => { const x = sealOn(seals, "sheet_rows.value_raw", at); return x ? SEAL_LABEL[x.session] : null; };
-  const active = (rows ?? []).filter((r) => r.status === "active").map((r) => ({ ...r, sealed: sealLabel(r.created_at) }));
+  // STEP 1・2 で体験価値を直すと STEP 5 の体験価値（確認セッション②）にもそろうので、そちらの封も見る
+  const sealLabel = (at: string, exp?: string | null) => { const x = sealOn(seals, "sheet_rows.value_raw", at) ?? (exp ? sealOn(seals, "sheet_rows.experience_value", at) : null); return x ? SEAL_LABEL[x.session] : null; };
+  const active = (rows ?? []).filter((r) => r.status === "active").map((r) => ({ ...r, sealed: sealLabel(r.created_at, r.experience_value) }));
   const dropped = (rows ?? []).filter((r) => r.status === "dropped");
   const shownIds = new Set(active.map((r) => r.id));
   const dlist = (diags ?? []).filter((d) => shownIds.has(d.row_id)).map((d) => ({ ...d, issues: (d.issues ?? []) as string[] }));

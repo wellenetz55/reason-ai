@@ -6,7 +6,7 @@ import { reviewRow, reviewRowWithResult } from "@/app/(app)/sheet/diverge/action
 import { SealReason, SealBadge } from "@/components/SealReason";
 
 type Row = {
-  id: string; seq: number; value_raw: string | null; experience_value_v1: string | null; target: string | null; one_liner: string | null;
+  id: string; seq: number; value_raw: string | null; experience_value_v1: string | null; experience_value?: string | null; target: string | null; one_liner: string | null;
   target_tag: string | null; facet: string | null; round: number; status: string; created_by: string; confirmed_at: string | null;
   sealed?: string | null; // 封をした確認セッション名（封の対象の組だけ）
 };
@@ -56,7 +56,7 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
               <label className="block text-[11px] text-ink-3">御社は</label>
               <textarea name="after" data-sealed data-seal-base={row.value_raw ?? ""} value={text} onChange={(e) => setText(e.target.value)} rows={2} className="serif w-full text-[18px] leading-snug border-b hairline" />
               <label className="block text-[11px] text-ink-3 mt-3">だから、お客様は</label>
-              <textarea name="after_experience" data-sealed data-seal-base={row.experience_value_v1 ?? ""} value={exp} onChange={(e) => setExp(e.target.value)} rows={2} placeholder="〜と感じることができる" className="w-full text-[16px] leading-snug border-b hairline" />
+              <textarea name="after_experience" data-sealed data-seal-base={row.experience_value_v1 || row.experience_value || ""} value={exp} onChange={(e) => setExp(e.target.value)} rows={2} placeholder="〜と感じることができる" className="w-full text-[16px] leading-snug border-b hairline" />
               {row.sealed && <SealReason />}
               {err && <p role="alert" className="mt-2 text-[13px] text-warm">{err}</p>}
               <div className="mt-2 flex gap-2">

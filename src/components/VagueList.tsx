@@ -11,7 +11,7 @@ const VAGUE_LABEL: Record<number, string> = { 1: "少しふわっとしている
 /** 言い直し案の下の選択肢ボタン（罫線で囲って目立たせる） */
 const OPT = "rounded-[var(--radius)] border px-3 py-1.5 text-[13px] font-medium transition-colors";
 
-type Row = { id: string; seq: number; value_raw: string | null; experience_value_v1: string | null; sealed?: string | null };
+type Row = { id: string; seq: number; value_raw: string | null; experience_value_v1: string | null; experience_value?: string | null; sealed?: string | null };
 type Diag = { row_id: string; vague_score: number; issues: string[]; suggestion_value: string | null; suggestion_experience: string | null; resolved: string | null; checked_at: string; redraft_history?: unknown[] | null };
 
 function Mark({ text }: { text: string | null }) {
@@ -144,7 +144,7 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
                     <p className="text-[11px] text-ink-3 mt-1">御社は</p>
                     <textarea name="after" data-sealed data-seal-base={r.value_raw ?? ""} defaultValue={d?.suggestion_value ?? r.value_raw ?? ""} rows={2} className="w-full border-b hairline py-1 text-sm bg-transparent" />
                     <p className="text-[11px] text-ink-3 mt-2">だから、お客様は</p>
-                    <textarea name="after_experience" data-sealed data-seal-base={r.experience_value_v1 ?? ""} defaultValue={d?.suggestion_experience ?? r.experience_value_v1 ?? ""} rows={2} className="w-full border-b hairline py-1 text-sm bg-transparent" placeholder="…と感じることができる" />
+                    <textarea name="after_experience" data-sealed data-seal-empty-keeps data-seal-base={r.experience_value_v1 || r.experience_value || ""} defaultValue={d?.suggestion_experience ?? r.experience_value_v1 ?? ""} rows={2} className="w-full border-b hairline py-1 text-sm bg-transparent" placeholder="…と感じることができる" />
                     {r.sealed && <SealReason />}
                     <div className="mt-2 flex gap-2"><button className="btn-primary" type="submit">この内容で決定する</button><button type="button" className="btn-text" onClick={() => setEditing(null)}>やめる</button></div>
                   </form>
@@ -179,7 +179,7 @@ export function VagueList({ rows, diags, dropped = [] }: { rows: Row[]; diags: D
                       </details>
                     )}
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {d?.suggestion_value && <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" /><input type="hidden" name="after" data-sealed data-seal-base={r.value_raw ?? ""} value={d.suggestion_value} /><input type="hidden" name="after_experience" data-sealed data-seal-base={r.experience_value_v1 ?? ""} value={d.suggestion_experience ?? r.experience_value_v1 ?? ""} />{r.sealed && <SealReason />}<button className={OPT + " border-navy bg-navy text-on-accent font-semibold hover:brightness-110"} type="submit">この案で決定する</button></form>}
+                      {d?.suggestion_value && <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="accept" /><input type="hidden" name="after" data-sealed data-seal-base={r.value_raw ?? ""} value={d.suggestion_value} /><input type="hidden" name="after_experience" data-sealed data-seal-base={r.experience_value_v1 || r.experience_value || ""} value={d.suggestion_experience ?? r.experience_value_v1 ?? ""} />{r.sealed && <SealReason />}<button className={OPT + " border-navy bg-navy text-on-accent font-semibold hover:brightness-110"} type="submit">この案で決定する</button></form>}
                       <form action={resolveDiagnosis}><input type="hidden" name="row_id" value={r.id} /><input type="hidden" name="action" value="keep" /><button className={OPT + " border-ink-3 bg-paper text-ink hover:bg-paper-2"} type="submit">初期案（自社入力）のままにする</button></form>
                       <form action={redraftDiagnosis} data-busy-timeout="300000"><input type="hidden" name="row_id" value={r.id} /><button className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} type="submit">{d?.suggestion_value ? "この組だけAIで別案を出す" : "この組だけAIに言い直し案を頼む"}</button></form>
                       <button type="button" data-admin-only data-edit className={OPT + " border-navy bg-paper text-navy hover:bg-navy-soft"} onClick={() => setEditing(r.id)}>一部自社で直す</button>
