@@ -42,7 +42,11 @@ export async function addRow(formData: FormData) {
   revalidatePath("/sheet/diverge");
 }
 
-export async function reviewRow(formData: FormData) {
+/** 行の承認・直す・保留・確定。直す画面からは結果を受け取り、断られたときは編集欄を閉じずに理由を出す */
+export async function reviewRow(formData: FormData) { await doReviewRow(formData); }
+export async function reviewRowWithResult(formData: FormData): Promise<{ ok: boolean; error?: string }> { return doReviewRow(formData); }
+
+async function doReviewRow(formData: FormData): Promise<{ ok: boolean; error?: string }> {
   const { supabase, company, user, profile } = await requireStage("diverge");
   const rowId = String(formData.get("row_id"));
   const action = String(formData.get("action")) as "approve" | "fix" | "hold" | "confirm" | "unconfirm";
@@ -50,14 +54,14 @@ export async function reviewRow(formData: FormData) {
   const afterExp = formData.has("after_experience") ? cut(String(formData.get("after_experience") || "").trim(), MAX.value) : null;
   const dwell = Number(formData.get("dwell_ms") || 0);
   const { data: row } = await supabase.from("sheet_rows").select("id, value_raw, experience_value_v1, experience_value, status, target_tag, created_at").eq("id", rowId).eq("company_id", company.id).single();
-  if (!row) return;
+  if (!row) return { ok: false, error: "この組が見つかりませんでした。画面を読み込み直してください。" };
   // 提供価値を空にして「直して確定」を押したときは何もしない（AIの下書きが承認なしで御社の行になってしまうため）
-  if (action === "fix" && !after) { revalidatePath("/sheet/diverge"); return; }
+  if (action === "fix" && !after) { revalidatePath("/sheet/diverge"); return { ok: false, error: "「御社は」を空にはできません。" }; }
   // メンバーは確定・保留・承認ができない（直すだけ。直した行は確定前の状態で残り、担当者が確定する）
   const member = isMember(profile);
-  if (member && action !== "fix") { revalidatePath("/sheet/diverge"); return; }
+  if (member && action !== "fix") { revalidatePath("/sheet/diverge"); return { ok: false, error: "承認・確定・保留は担当者が行います。" }; }
   // 封（確認セッション①）：封の時点であった組は、保留にできず、直すときは理由が要る（理由と変更前後を記録）
-  if ((action === "hold" || ((action === "approve" || action === "confirm") && row.status === "held")) && (await isSealed(supabase, company.id, "sheet_rows.status", row.created_at))) { revalidatePath("/sheet/diverge"); return; }
+  if ((action === "hold" || ((action === "approve" || action === "confirm") && row.status === "held")) && (await isSealed(supabase, company.id, "sheet_rows.status", row.created_at))) { revalidatePath("/sheet/diverge"); return { ok: false, error: "確認セッション①で封をした組は、保留にしたり戻したりできません。" }; }
   if (action === "fix") {
     const ok = await sealGate({ supabase, companyId: company.id, userId: user.id, formData, changes: [
       { column: "sheet_rows.value_raw", rowId, createdAt: row.created_at, before: row.value_raw, after },
@@ -71,6 +75,8 @@ export async function reviewRow(formData: FormData) {
   if (action === "hold") { update.status = "held"; update.confirmed_at = null; }
   if (action === "approve") update.status = "active";
   if (action === "confirm") { update.status = "active"; update.confirmed_at = new Date().toISOString(); }
+  // 承認・確定したら、AIが下書きした体験価値を御社が見たことになるので「仮説（体験価値はAI下書き）」の印を外す（20組にも数える。SQL 0050）
+  if ((action === "approve" || action === "confirm") && row.target_tag === "仮説（体験価値はAI下書き）") update.target_tag = null;
   if (action === "unconfirm") update.confirmed_at = null;
   if (action === "fix" && after) {
     update.value_raw = after;
@@ -103,6 +109,7 @@ export async function reviewRow(formData: FormData) {
   }
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "row.review" });
   revalidatePath("/sheet/diverge");
+  return { ok: true };
 }
 
 export async function requestDraft(formData: FormData) {

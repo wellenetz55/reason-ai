@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { DwellField } from "@/components/DwellField";
 import clsx from "clsx";
-import { reviewRow } from "@/app/(app)/sheet/diverge/actions";
+import { reviewRow, reviewRowWithResult } from "@/app/(app)/sheet/diverge/actions";
 import { SealReason, SealBadge } from "@/components/SealReason";
 
 type Row = {
@@ -28,6 +28,7 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(row.value_raw ?? "");
   const [exp, setExp] = useState(row.experience_value_v1 ?? "");
+  const [err, setErr] = useState<string | null>(null);
   const hasExp = !!row.experience_value_v1;
   // 開くたびに最新の行の内容で入力欄を埋める（AIの下書きが後から付いた場合に空欄で上書きしないため）
   const startEdit = () => {
@@ -48,7 +49,7 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
         <span className="num text-xs text-ink-3 w-6 pt-1.5">{row.seq}</span>
         <div className="flex-1 min-w-0">
           {editing ? (
-            <form action={async (fd) => { await reviewRow(fd); setEditing(false); }}>
+            <form action={async (fd) => { const r = await reviewRowWithResult(fd); if (r.ok) { setErr(null); setEditing(false); } else setErr(r.error ?? "保存できませんでした。"); }}>
               <input type="hidden" name="row_id" value={row.id} />
               <input type="hidden" name="action" value="fix" />
               <DwellField since={shownAt} />
@@ -57,9 +58,10 @@ function RowItem({ row, facetLabel }: { row: Row; facetLabel: string }) {
               <label className="block text-[11px] text-ink-3 mt-3">だから、お客様は</label>
               <textarea name="after_experience" value={exp} onChange={(e) => setExp(e.target.value)} rows={2} placeholder="〜と感じることができる" className="w-full text-[16px] leading-snug border-b hairline" />
               {row.sealed && <SealReason />}
+              {err && <p role="alert" className="mt-2 text-[13px] text-warm">{err}</p>}
               <div className="mt-2 flex gap-2">
                 <button className="btn-primary" type="submit"><span data-admin-only>直して確定</span><span data-member-only>直す（担当者の確定待ち）</span></button>
-                <button className="btn-text" type="button" onClick={() => setEditing(false)}>やめる</button>
+                <button className="btn-text" type="button" onClick={() => { setErr(null); setEditing(false); }}>やめる</button>
               </div>
             </form>
           ) : (
