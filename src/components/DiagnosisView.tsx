@@ -296,6 +296,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
           <div className="mt-4 max-w-[42em] pl-4 border-l-2 border-warm text-sm leading-relaxed">
             <p><span className="font-semibold">初回ヒアリングで見つかった候補は、御社の「いま」の言葉です。</span>時間が経つほど、言い回しも熱量も薄れます。</p>
             <p className="mt-1">お申し込みは、この結果の公開から<span className="font-semibold">1か月以内</span>{applyBy ? <>（<span className="num font-semibold">{applyBy}</span>まで）</> : null}にお願いします。申し込むと2営業日以内に契約書と請求書が届き、入金の確認後にこの画面でキックオフの日を選べます。</p>
+            <p className="mt-1">費用は8週間で<span className="num font-semibold">70万円</span>（前払い・税別）。2週目の終わりの面談までなら半額返金保証があります。オプションの御社専用AIは別料金（月額）で、適合診断のあとにご案内します。</p>
           </div>
           <ProgramStart company={company} chosenDate={chosenDate} dates={dates} expiresAt={d.expires_at ?? null} preview={preview} />
         </section>

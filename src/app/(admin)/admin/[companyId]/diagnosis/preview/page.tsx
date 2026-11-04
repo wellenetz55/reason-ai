@@ -54,7 +54,7 @@ export default async function DiagnosisPreview({ params, searchParams }: PagePro
             <p className="mt-1.5 text-[11px] text-ink-3 text-center">ベレネッツからの回答は、質問と同じ画面に表示されます。</p>
           </aside>
           <div className="flex-1 min-w-0 px-6 sm:px-10 py-10">
-            <DiagnosisView company={shown} d={d} preview kickoff={kickoff} />
+            <DiagnosisView company={shown} d={d} preview kickoff={before ? { candidates: [], chosen: null } : kickoff} />
           </div>
         </div>
       )}
