@@ -47,7 +47,7 @@ export function ProgramStart({ company, chosenDate, dates, expiresAt, preview = 
             <p className="text-sm">キックオフは <span className="num font-semibold">{fmtMeeting(chosenDate)}</span> で承りました。会議URLは決まりしだい、画面左の「次の面談」に表示します。</p>
           ) : dates.length > 0 ? (
             <>
-              <p className="text-sm">入金を確認しました。キックオフ（3時間・オンライン）の日を選んでください。</p>
+              <p className="text-sm">入金を確認しました。<span data-admin-only>キックオフ（3時間・オンライン）の日を選んでください。</span><span data-member-only>キックオフ（3時間・オンライン）の日は、主担当の方が選びます。</span></p>
               <KickoffPicker dates={dates} action={chooseKickoff} preview={preview} kind="kickoff" declineAction={requestOtherDates} />
             </>
           ) : (

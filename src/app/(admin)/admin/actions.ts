@@ -130,7 +130,8 @@ export async function setContractStep(formData: FormData) {
       const lines = k.candidates.length
         ? ["ご入金を確認しました。ありがとうございます。", `選ばれる理由AIにサインインし、ホーム画面で、キックオフ（3時間・オンライン）の日を候補の${k.candidates.length}つからお選びください。`]
         : ["ご入金を確認しました。ありがとうございます。", "キックオフ（3時間・オンライン）の候補日は、あらためてベレネッツからご連絡します。"];
-      for (const to of await customerEmails(id)) {
+      // 日程を選べるのは担当者だけなので、キックオフ日を選んでもらうメールは担当者にだけ送る
+      for (const to of await customerEmails(id, { onlyAdmin: k.candidates.length > 0 })) {
         await notifyCustomer({ to, subject: k.candidates.length ? "ご入金を確認しました。キックオフ日をお選びください" : "ご入金を確認しました", lines: [co?.name ?? "", "ご担当者様", "", ...lines, "", "株式会社ベレネッツ"], path: "/" });
       }
     }

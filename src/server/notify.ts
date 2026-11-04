@@ -71,9 +71,12 @@ ${url ? `<p style="margin:16px 0 0"><a href="${url}" style="color:#1e2a5a">選�
 }
 
 /** その会社の担当者（お客様）のメールアドレス */
-export async function customerEmails(companyId: string): Promise<string[]> {
+export async function customerEmails(companyId: string, opts: { onlyAdmin?: boolean } = {}): Promise<string[]> {
   const admin = createAdminClient();
-  const { data: ps } = await admin.from("profiles").select("id, disabled_at").eq("company_id", companyId).neq("role", "operator");
+  // onlyAdmin：担当者（主担当）だけ。日程の選択・申し込みなど、担当者しかできないことを頼むメールに使う
+  let q = admin.from("profiles").select("id, disabled_at").eq("company_id", companyId).neq("role", "operator");
+  if (opts.onlyAdmin) q = q.eq("role", "customer_admin");
+  const { data: ps } = await q;
   const ids = new Set((ps ?? []).filter((p) => !p.disabled_at).map((p) => p.id));
   if (ids.size === 0) return [];
   const { data: list } = await listAllUsers(admin);

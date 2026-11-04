@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requireCustomer } from "@/lib/session";
+import { requireCustomer, isMember } from "@/lib/session";
 import { STAGES, NOT_READY } from "@/lib/stages";
 import { ProgramStart } from "@/components/ProgramStart";
 import { loadKickoff } from "@/server/kickoff";
@@ -18,7 +18,7 @@ function greeting() {
 }
 
 export default async function Home() {
-  const { company, supabase } = await requireCustomer();
+  const { company, supabase, profile } = await requireCustomer();
   if (company.status === "diagnosed") {
     // 申込前：診断結果が最初の画面。申込後：ここで「契約→入金→キックオフ日」の進み具合を見せ、診断結果は振り返り用のリンクに
     if (!company.applied_at && !company.contracted_at && !company.paid_at) redirect("/diagnosis");
@@ -30,7 +30,7 @@ export default async function Home() {
     const paid = !!company.paid_at;
     const contracted = paid || !!company.contracted_at;
     const kickoffDone = paid && !!heldKickoff?.held_at;
-    const now = kickoffDone ? "キックオフが終わりました。ベレネッツが STEP 1 を開くまで、少しお待ちください。" : !contracted ? "ベレネッツから申込書・契約書と請求書がメールで届きます（2営業日以内）。" : !paid ? "入金が確認されると、この画面でキックオフの日を選べるようになります。" : !kickoff.chosen ? "キックオフの日を選んでください。" : "キックオフの日が決まりました。当日まで、会社案内や資料を手元にそろえておいてください。";
+    const now = kickoffDone ? "キックオフが終わりました。ベレネッツが STEP 1 を開くまで、少しお待ちください。" : !contracted ? "ベレネッツから申込書・契約書と請求書がメールで届きます（2営業日以内）。" : !paid ? "入金が確認されると、この画面でキックオフの日を選べるようになります。" : !kickoff.chosen ? (isMember(profile) ? "キックオフの日は、主担当の方が選びます。" : "キックオフの日を選んでください。") : "キックオフの日が決まりました。当日まで、会社案内や資料を手元にそろえておいてください。";
     return (
       <div>
         <h1 className="serif text-[30px] leading-tight">{company.name}様、{greeting()}。</h1>
