@@ -37,14 +37,14 @@ export async function sealSession(formData: FormData) {
   back(companyId, "notice=" + encodeURIComponent(`${def.label}の封をしました${provisional ? "（仮封：根拠が「事実」でない主張は、お客様が理由なしで直せます）" : ""}`));
 }
 
-/** 封を解く（間違えて封をしたとき）。その封についた変更の記録も一緒に消える */
+/** 封を解く（間違えて封をしたとき）。その封についた変更の記録は残る（SQL 0052） */
 export async function unsealSession(formData: FormData) {
   const { supabase, user, isSuper } = await requireOperator();
   const companyId = String(formData.get("company_id") ?? "");
   const key = String(formData.get("session") ?? "");
   if (!UUID.test(companyId) || !SEAL_SESSIONS.some((s) => s.key === key)) return;
   // 押し間違いで封と記録が消えないように、確認のチェックを必須にする。記録がある封を解けるのはスーパー管理者だけ
-  if (formData.get("confirm") !== "yes") return back(companyId, "error=" + encodeURIComponent("封を解くには、「変更の記録も消えることを確認しました」にチェックを入れてください"));
+  if (formData.get("confirm") !== "yes") return back(companyId, "error=" + encodeURIComponent("封を解くには、「封を解くことを確認しました」にチェックを入れてください"));
   const { data: locks } = await supabase.from("sheet_locks").select("id").eq("company_id", companyId).eq("session", key);
   const ids = (locks ?? []).map((l) => l.id);
   if (ids.length && !isSuper) {

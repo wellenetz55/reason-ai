@@ -30,10 +30,14 @@ export default async function SealsAdmin({ params, searchParams }: PageProps<"/a
   ]);
   if (!c) notFound();
   const lockIds = (locks ?? []).map((l) => l.id);
-  const [{ data: hist }, { data: topBrakes }] = await Promise.all([
+  const [{ data: liveHist }, { data: topBrakes }, { data: oldHist }] = await Promise.all([
     lockIds.length ? createAdminClient().from("sheet_lock_history").select("id, lock_id, row_id, column_key, before_text, after_text, reason, changed_at").in("lock_id", lockIds).order("changed_at", { ascending: false }).limit(50) : Promise.resolve({ data: [] as { id: string; lock_id: string; row_id: string | null; column_key: string; before_text: string | null; after_text: string | null; reason: string | null; changed_at: string }[] }),
     top ? supabase.from("brakes").select("because_tag, counter_message").eq("row_id", top.id).eq("status", "active") : Promise.resolve({ data: [] as { because_tag: string; counter_message: string | null }[] }),
+    // 解いた封の記録（SQL 0052 で残るようになった。実行前は列が無く、何も出ない）
+    createAdminClient().from("sheet_lock_history").select("id, lock_id, row_id, column_key, before_text, after_text, reason, changed_at, session").eq("company_id", companyId).is("lock_id", null).order("changed_at", { ascending: false }).limit(50),
   ]);
+  const hist = [...(liveHist ?? []).map((h) => ({ ...h, session: null as string | null })), ...((oldHist ?? []) as { id: string; lock_id: string | null; row_id: string | null; column_key: string; before_text: string | null; after_text: string | null; reason: string | null; changed_at: string; session: string | null }[])]
+    .sort((a, b) => b.changed_at.localeCompare(a.changed_at)).slice(0, 50);
   // 記録がどの組のものか分かるように、組の番号を引く
   const histRowIds = [...new Set((hist ?? []).map((h) => h.row_id).filter((x): x is string => !!x))];
   const { data: histRows } = histRowIds.length ? await supabase.from("sheet_rows").select("id, seq").in("id", histRowIds) : { data: [] as { id: string; seq: number }[] };
@@ -78,7 +82,7 @@ export default async function SealsAdmin({ params, searchParams }: PageProps<"/a
                 {l && (
                   <form action={unsealSession} className="flex flex-wrap items-center gap-2">
                     <input type="hidden" name="company_id" value={c.id} /><input type="hidden" name="session" value={s.key} />
-                    <label className="text-[11px] text-ink-3 flex items-center gap-1"><input type="checkbox" name="confirm" value="yes" required />変更の記録も消えることを確認しました</label>
+                    <label className="text-[11px] text-ink-3 flex items-center gap-1"><input type="checkbox" name="confirm" value="yes" required />封を解くことを確認しました（変更の記録は残ります）</label>
                     <button className="btn-text text-xs" type="submit">封を解く</button>
                   </form>
                 )}
@@ -94,7 +98,7 @@ export default async function SealsAdmin({ params, searchParams }: PageProps<"/a
           <ul className="mt-3 divide-y divide-hair text-[13px]">
             {(hist ?? []).map((h) => (
               <li key={h.id} className="py-3">
-                <p className="text-[11px] text-ink-3"><span className="num">{fmtMeeting(h.changed_at)}</span> · {SEAL_LABEL[lockSession.get(h.lock_id) ?? ""] ?? ""} · {h.row_id && seqOf.has(h.row_id) ? <span className="num">組 No.{seqOf.get(h.row_id)} · </span> : null}{COLUMN_LABEL[h.column_key] ?? h.column_key}</p>
+                <p className="text-[11px] text-ink-3"><span className="num">{fmtMeeting(h.changed_at)}</span> · {h.lock_id ? SEAL_LABEL[lockSession.get(h.lock_id) ?? ""] ?? "" : `${SEAL_LABEL[h.session ?? ""] ?? ""}（解いた封）`} · {h.row_id && seqOf.has(h.row_id) ? <span className="num">組 No.{seqOf.get(h.row_id)} · </span> : null}{COLUMN_LABEL[h.column_key] ?? h.column_key}</p>
                 <p className="mt-1"><span className="text-ink-3 mr-1">前：</span>{h.before_text || "（空）"}</p>
                 <p><span className="text-ink-3 mr-1">後：</span>{h.after_text || "（空）"}</p>
                 <p className="mt-0.5 text-navy"><span className="text-ink-3 mr-1">理由：</span>{h.reason}</p>
