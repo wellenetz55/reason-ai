@@ -1,3 +1,4 @@
+import { oneMonthLaterJst, fmtApplyBy } from "@/lib/applyBy";
 import Link from "next/link";
 import { BRAKE_LABEL, TAG_LABEL } from "@/lib/diagnosis";
 import { fmtMeeting } from "@/lib/meetings";
@@ -37,10 +38,13 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
   const applied = contracted || !!company.applied_at;
   const tagCls: Record<string, string> = { fact: "tag-fact", verify: "tag-verify", hypothesis: "tag-hypo" };
   // 項目番号（出ている項目だけで①から振る）
-  const order = [d.one_liner_before ? "one-liner" : null, seeds.length ? "seeds" : null, brakes.length ? "brakes" : null, fit.length ? "why" : null, comp && comp.claims?.length ? "competitor" : null, "why-not-alone", "program", !applied ? "apply" : null].filter((x): x is string => !!x);
+  // 申し込みの欄が出るのは、契約前（適合診断済み）でまだ申し込んでいないときだけ。目次・番号・案内文も同じ条件
+  const showApply = company.status === "diagnosed" && !applied;
+  const order = [d.one_liner_before ? "one-liner" : null, seeds.length ? "seeds" : null, brakes.length ? "brakes" : null, fit.length ? "why" : null, comp && comp.claims?.length ? "competitor" : null, "why-not-alone", "program", showApply ? "apply" : null].filter((x): x is string => !!x);
   const no = (key: string) => "①②③④⑤⑥⑦⑧⑨"[order.indexOf(key)] ?? "";
-  // 申し込みの目安：公開から1か月（日本時間の日付で）
-  const applyBy = d.published_at ? (() => { const t = new Date(d.published_at as string); t.setMonth(t.getMonth() + 1); return t.toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", month: "long", day: "numeric" }); })() : null;
+  // 申し込みの期限：閲覧期限（expires_at。公開時に空なら公開から1か月が入る）。公開前のプレビューでは、いま公開した場合の日付
+  const applyByIso = (d.expires_at as string | null | undefined) || (d.published_at ? oneMonthLaterJst(d.published_at as string) : preview ? oneMonthLaterJst(new Date().toISOString()) : null);
+  const applyBy = applyByIso ? fmtApplyBy(applyByIso) : null;
 
   return (
     <article className="max-w-[880px] print-root">
@@ -86,7 +90,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
                 comp && comp.claims?.length ? ["#competitor", "競合が、いま言っていること"] : null,
                 ["#why-not-alone", "なぜ、自社だけでは形にならないか"],
                 ["#program", "ここから：8週間の流れと、残るもの"],
-                !applied ? ["#apply", "申し込み・費用・次の一歩"] : null,
+                showApply ? ["#apply", "申し込み・費用・次の一歩"] : null,
               ].filter((x): x is [string, string] => !!x).map(([href, label], i) => (
                 <li key={href} className="flex gap-2"><span className="num text-on-accent/60 shrink-0">{i + 1}</span><a href={href} className="underline underline-offset-4 decoration-on-accent/40 hover:decoration-on-accent">{label}</a></li>
               ))}
@@ -206,7 +210,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
       {/* 帯1の締め：放っておくとどうなるか（面談で出た具体的な場面。ベレネッツが書く／AIの下書き） */}
       <div className="mt-10 max-w-[42em] pl-4 border-l-2 border-warm">
         <p className="text-sm"><span className="font-semibold">ここを放っておくと、</span>{d.risk_line?.trim() || "御社は「比べられたら負ける会社」のままです。選ばれる時は値引きと相見積もりで選ばれ、選ばれない時は理由を教えてもらえません。"}</p>
-        {!applied && <p className="text-[12px] text-ink-3 mt-2">費用とお申し込みは、このページのいちばん下にあります。</p>}
+        {showApply && <p className="text-[12px] text-ink-3 mt-2">費用とお申し込みは、このページのいちばん下にあります。</p>}
       </div>
 
       {/* ───────── 帯2：なぜ自社だけでは形にならないか ───────── */}
@@ -279,7 +283,7 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
               <p className="text-[13px] leading-relaxed mt-1.5">ベレネッツが、脳科学・行動科学の知見と、積み上がり続ける成功パターンをこのAIに学ばせ続けます。御社の選ばれる理由そのものも、顧問の面談で更新していきます。契約した日より、半年後のほうが賢い。</p>
             </div>
           </div>
-          <p className="text-[12px] text-on-accent/70 mt-4">8週間の契約だけでも、一式はすべて御社のものとしてお渡しします。このAIは、そのうえで「使い続け、育て続ける」ためのオプション（月額の継続契約）です。費用は適合診断のあとにご案内します。</p>
+          <p className="text-[12px] text-on-accent/70 mt-4">8週間の契約だけでも、一式はすべて御社のものとしてお渡しします。このAIは、そのうえで「使い続け、育て続ける」ためのオプション（月額の継続契約）です。費用はご希望の場合に別途ご案内します。</p>
         </div>
       </section>
 
@@ -290,13 +294,13 @@ export function DiagnosisView({ company, d, preview = false, kickoff }: { compan
         </section>
       )}
 
-      {company.status === "diagnosed" && !applied && (
+      {showApply && (
         <section id="apply" className="mt-16 scroll-mt-6">
           <h2 className="serif sec-title"><span className="num text-ink-3 mr-2">{no("apply")}</span>申し込み・費用・次の一歩</h2>
           <div className="mt-4 max-w-[42em] pl-4 border-l-2 border-warm text-sm leading-relaxed">
             <p><span className="font-semibold">初回ヒアリングで見つかった候補は、御社の「いま」の言葉です。</span>時間が経つほど、言い回しも熱量も薄れます。</p>
             <p className="mt-1">お申し込みは、この結果の公開から<span className="font-semibold">1か月以内</span>{applyBy ? <>（<span className="num font-semibold">{applyBy}</span>まで）</> : null}にお願いします。申し込むと2営業日以内に契約書と請求書が届き、入金の確認後にこの画面でキックオフの日を選べます。</p>
-            <p className="mt-1">費用は8週間で<span className="num font-semibold">70万円</span>（前払い・税別）。2週目の終わりの面談までなら半額返金保証があります。オプションの御社専用AIは別料金（月額）で、適合診断のあとにご案内します。</p>
+            <p className="mt-1">費用と返金保証は、下の申し込みボタンのすぐ下にあります。オプションの御社専用AIは別料金（月額）で、ご希望の場合に別途ご案内します。</p>
           </div>
           <ProgramStart company={company} chosenDate={chosenDate} dates={dates} expiresAt={d.expires_at ?? null} preview={preview} />
         </section>

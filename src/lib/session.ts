@@ -60,8 +60,10 @@ export async function requireCustomer() {
     // ベレネッツは、閲覧モードのときだけお客様の画面に入れる（読み取り専用）
     const id = (await cookies()).get(VIEW_COOKIE)?.value;
     if (!id || !UUID_RE.test(id)) redirect("/admin");
-    // サーバアクション（書き込み）は閲覧モードでは止める。next-action ヘッダはサーバアクションの呼び出しにだけ付く
-    if ((await headers()).get("next-action")) redirect("/");
+    // サーバアクション（書き込み）は閲覧モードでは止める。JSからの呼び出しには next-action ヘッダが、
+    // JSが読み込まれる前のフォーム送信（ふつうのPOST）には content-type が付く。画面の表示（GET）にはどちらも無い
+    const h = await headers();
+    if (h.get("next-action") || h.get("content-type")) redirect("/");
     const { data } = await ctx.supabase.from("companies").select("*").eq("id", id).maybeSingle();
     if (!data) redirect("/admin");
     return { ...ctx, profile: { ...ctx.profile, company_id: id }, company: data as Company, viewing: true as const };

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOperator } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { cut } from "@/lib/limits";
+import { oneMonthLaterJst } from "@/lib/applyBy";
 
 const jst = (local: string) => (local ? new Date(`${local}:00+09:00`).toISOString() : null);
 const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
@@ -43,7 +45,7 @@ export async function saveDiagnosis(formData: FormData) {
     one_liner_before: strip(s(formData, "one_liner_before"), []) || null,
     seeds, brakes, fit_reasons: fit, competitor, candidate_dates: dates,
     operator_note: s(formData, "operator_note") || null,
-    risk_line: s(formData, "risk_line").slice(0, 400) || null,
+    risk_line: cut(s(formData, "risk_line"), 400) || null,
     expires_at: expiresLocal ? jst(expiresLocal) : null,
     created_by: user.id,
     updated_at: new Date().toISOString(),
@@ -87,7 +89,10 @@ export async function publishDiagnosis(formData: FormData) {
       await admin.from("profiles").upsert({ id: invited!.user!.id, company_id: companyId, role: memberCount ? "customer_member" : "customer_admin", display_name: name || email });
     }
   }
-  await supabase.from("diagnosis_results").update({ published_at: new Date().toISOString() }).eq("company_id", companyId);
+  const nowIso = new Date().toISOString();
+  await supabase.from("diagnosis_results").update({ published_at: nowIso }).eq("company_id", companyId);
+  // 申し込み・閲覧の期限が空なら、公開から1か月（日本時間のその日の23:59）を入れる。画面の「◯月◯日まで」と、申し込みの締め切りを同じ日にするため
+  await supabase.from("diagnosis_results").update({ expires_at: oneMonthLaterJst(nowIso) }).eq("company_id", companyId).is("expires_at", null);
   revalidatePath(`/admin/${companyId}/diagnosis`);
   revalidatePath(`/admin/${companyId}`);
   redirect(`/admin/${companyId}/diagnosis?notice=${encodeURIComponent(email ? "公開しました。招待メールを送りました" : "公開しました")}`);

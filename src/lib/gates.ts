@@ -66,8 +66,8 @@ export function stepGate(key: string, c: GateCtx): Gate {
         : { next, ready: false, byOperator: true, note: "見極めの結果を確認セッション②でベレネッツと見たあと、次のステップが開きます。" };
     case "evidence":
       return c.evidences >= 1
-        ? { next, ready: true, note: `証拠が${c.evidences}件つきました。接点への展開に進めます。` }
-        : { next, ready: false, note: "証拠を1件以上つけると、接点への展開に進めます。" };
+        ? { next, ready: true, note: `証拠が${c.evidences}件つきました。「顧客接点に展開する」に進めます。` }
+        : { next, ready: false, note: "証拠を1件以上つけると、「顧客接点に展開する」に進めます。" };
     default:
       return { ready: false, note: "ここが最後のステップです。完成した言葉を、使う場面ごとに展開します。" };
   }

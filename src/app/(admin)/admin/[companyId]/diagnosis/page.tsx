@@ -126,9 +126,9 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
         </section>
 
         <section>
-          <h2 className="serif text-[17px]">8. 閲覧期限（任意）</h2>
+          <h2 className="serif text-[17px]">8. 申し込み・閲覧の期限</h2>
           <input type="datetime-local" name="expires_at" defaultValue={d?.expires_at ? toLocalInput(d.expires_at) : ""} className="border-b hairline py-2 text-sm num" />
-          <p className="text-xs text-ink-3 mt-1">空なら期限なし。入れると顧客側に「このページは◯月◯日まで」と穏やかに出ます</p>
+          <p className="text-xs text-ink-3 mt-1">空のまま公開すると、公開から1か月（その日の23:59）が自動で入ります。この日を過ぎると申し込みボタンが締め切りになり、顧客側には「◯月◯日まで」と出ます</p>
         </section>
 
         <div className="flex flex-wrap items-center gap-3">

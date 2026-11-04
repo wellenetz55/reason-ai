@@ -1,4 +1,5 @@
 "use server";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { requireCustomer } from "@/lib/session";
@@ -6,7 +7,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyOperators } from "@/server/notify";
 
 export async function sendErrorReport(formData: FormData) {
-  const { company, user, supabase } = await requireCustomer();
+  const { company, user, supabase, viewing } = await requireCustomer();
+  if (viewing) redirect("/"); // ベレネッツの閲覧モードでは書き込まない
   const body = String(formData.get("body") || "").trim();
   if (!body) return;
   let screenshot_path: string | null = null;

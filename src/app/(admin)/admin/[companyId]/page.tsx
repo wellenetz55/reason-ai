@@ -93,7 +93,6 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
       <p className="text-sm text-ink-2 mt-1">{STATUS_LABEL[c.status]} · <Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 hover:text-ink">適合診断の記録</Link> · <Link href={`/admin/${c.id}/diagnosis`} className="underline underline-offset-4 hover:text-ink">適合診断の結果を書く</Link> · <Link href={`/admin/${c.id}/litmus`} className="underline underline-offset-4 hover:text-ink">選ばれる理由を見極める（採点・順位）</Link> · <Link href={`/admin/${c.id}/seals`} className="underline underline-offset-4 hover:text-ink">封</Link></p>
       <form action={startView} className="mt-2 flex flex-wrap items-center gap-2">
         <input type="hidden" name="company_id" value={c.id} />
-        <input type="hidden" name="path" value="/" />
         <button type="submit" className="rounded-[var(--radius)] border-2 border-navy text-navy px-4 py-2 text-sm font-semibold hover:bg-navy-soft">お客様の画面を見る（読み取り専用）→</button>
         <span className="text-xs text-ink-3">面談中に、お客様と同じ画面（STEP 0〜FINAL・ホーム・宿題）を左メニューから見られます。ボタンは出ず、データは変わりません。</span>
       </form>

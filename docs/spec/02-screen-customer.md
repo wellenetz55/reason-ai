@@ -98,7 +98,7 @@
 ### 3.6 社内打ち合わせの登録
 - W3〜5で最低1回。日時を登録（未登録は黄色の注意）。前日にアジェンダ（未完了宿題・保留行・仮説タグの行）を自動メール
 
-### 3.7 STEP 6「選ばれる理由の見極め」（`/sheet/litmus`。実装済み。旧称は社内用語のため顧客には出さない）
+### 3.7 STEP 6「選ばれる理由を見極める」（`/sheet/litmus`。実装済み。旧称は社内用語のため顧客には出さない）
 - 材料: 残した組（active）。組ごとのカードに ①ニッチの2問（はい／いいえ／わからない → litmus_niche.q1/q2、judged_by=customer）②市場フィット（◎○△× = 3/2/1/0 を litmus_market の scored_by=customer 行に。common_sense は text 列に "0"〜"3"）＋大きさ（magnitude_text：金額か件数）＋手の入れ方のメモ（zougenjofu 列。顧客には「伸ばす・減らす・やめる・足す」と表示）
 - AIの仮判定: 8組ずつ。ニッチは litmus_niche.ai_q1/ai_q2/ai_note、市場は scored_by=ai の行（サーバ側で書く）。御社が未回答の組は、AIの判定を欄の初期値（下書き）に入れ、上に「AIの仮判定」の囲みを出す。保存するまで顧客の判定にならない。決めるのは顧客。prompt key `litmus_draft`、固定文 `round2_litmus_intro`（DB）
 - 2問とも「いいえ」は保留候補（薄く表示）。ベレネッツの採点（scored_by=operator）は確認セッション②まで顧客に見せない（0038 のRLS）

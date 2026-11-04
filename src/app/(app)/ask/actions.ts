@@ -1,10 +1,12 @@
 "use server";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireCustomer } from "@/lib/session";
 import { notifyOperators } from "@/server/notify";
 
 export async function askOperator(formData: FormData) {
-  const { supabase, company, user } = await requireCustomer();
+  const { supabase, company, user, viewing } = await requireCustomer();
+  if (viewing) redirect("/"); // ベレネッツの閲覧モードでは書き込まない
   const body = String(formData.get("body") || "").trim();
   if (!body) return;
   await supabase.from("questions_to_operator").insert({ company_id: company.id, body: body.slice(0, 5000), created_by: user.id });

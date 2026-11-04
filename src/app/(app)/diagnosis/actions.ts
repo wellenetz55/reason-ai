@@ -1,4 +1,5 @@
 "use server";
+import { redirect } from "next/navigation";
 import { inviteGate } from "@/server/intake";
 import { revalidatePath } from "next/cache";
 import { requireCustomer, isMember } from "@/lib/session";
@@ -8,7 +9,8 @@ import { fmtMeeting } from "@/lib/meetings";
 
 /** 顧客が「申し込む」を押す → 申込日時を記録し、ベレネッツに知らせる（契約書・請求書はアプリ外で送る） */
 export async function applyProgram() {
-  const { company, user, profile } = await requireCustomer();
+  const { company, user, profile, viewing } = await requireCustomer();
+  if (viewing) redirect("/"); // ベレネッツの閲覧モードでは書き込まない
   if (isMember(profile)) return; // 申し込みは担当者だけ
   const admin = createAdminClient();
   // 契約前で、結果が公開されていて、閲覧期限内のときだけ受け付ける
@@ -48,7 +50,8 @@ export async function applyProgram() {
 
 /** 顧客がキックオフ候補日を選ぶ（契約・入金の確認後のみ） → 面談として登録し、ベレネッツに知らせる */
 export async function chooseKickoff(formData: FormData) {
-  const { company, user, profile } = await requireCustomer();
+  const { company, user, profile, viewing } = await requireCustomer();
+  if (viewing) redirect("/"); // ベレネッツの閲覧モードでは書き込まない
   if (isMember(profile)) return; // キックオフの日程を選ぶのは担当者だけ
   const iso = String(formData.get("date") || "");
   // キックオフ日を選ぶのは、キックオフ前の会社（diagnosed／入金後にベレネッツが「キックオフ前」に進めた onboarding）

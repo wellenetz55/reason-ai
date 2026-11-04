@@ -1,10 +1,12 @@
 "use server";
+import { redirect } from "next/navigation";
 import { MAX, cut } from "@/lib/limits";
 import { revalidatePath } from "next/cache";
 import { requireCustomer } from "@/lib/session";
 
 export async function answerHomework(formData: FormData) {
-  const { supabase, company, user } = await requireCustomer();
+  const { supabase, company, user, viewing } = await requireCustomer();
+  if (viewing) redirect("/"); // ベレネッツの閲覧モードでは書き込まない
   const id = String(formData.get("id"));
   const mode = String(formData.get("mode"));
   const answer = cut(String(formData.get("answer") || "").trim(), MAX.answer);

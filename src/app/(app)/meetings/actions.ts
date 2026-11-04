@@ -1,4 +1,5 @@
 "use server";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireCustomer, isMember } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -19,7 +20,8 @@ function canTouch(status: string, kind: string) {
  * 選んだ日時の面談を残し（会議URLは残る）、ほかの未実施の候補は外す。ベレネッツに通知。
  */
 export async function chooseMeeting(formData: FormData) {
-  const { company, user, profile } = await requireCustomer();
+  const { company, user, profile, viewing } = await requireCustomer();
+  if (viewing) redirect("/"); // ベレネッツの閲覧モードでは書き込まない
   if (isMember(profile)) return; // 面談日程の選択・別日の希望は担当者だけ
   const kind = String(formData.get("kind") || "");
   const iso = String(formData.get("date") || "");
@@ -50,7 +52,8 @@ const DECLINABLE = ["kickoff", ...PICKABLE];
  * お客様に希望日を入れさせない（候補の提示はベレネッツ側からのみ）。
  */
 export async function requestOtherDates(formData: FormData) {
-  const { company, user, profile } = await requireCustomer();
+  const { company, user, profile, viewing } = await requireCustomer();
+  if (viewing) redirect("/"); // ベレネッツの閲覧モードでは書き込まない
   if (isMember(profile)) return; // 面談日程の選択・別日の希望は担当者だけ
   const kind = String(formData.get("kind") || "");
   if (!DECLINABLE.includes(kind) || !canTouch(company.status, kind)) return;

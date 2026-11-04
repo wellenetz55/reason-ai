@@ -8,9 +8,8 @@ export async function startView(formData: FormData) {
   await requireOperator();
   const id = String(formData.get("company_id") ?? "");
   if (!/^[0-9a-f-]{36}$/.test(id)) redirect("/admin");
-  const path = String(formData.get("path") ?? "/");
   (await cookies()).set(VIEW_COOKIE, id, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 8 * 3600 });
-  redirect(path.startsWith("/") && !path.startsWith("//") ? path : "/");
+  redirect("/");
 }
 
 /** 閲覧モードを終えて管理画面へ戻る */

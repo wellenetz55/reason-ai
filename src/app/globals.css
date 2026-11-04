@@ -207,6 +207,8 @@ button[data-busy="short"]::after { content: "…"; }
 [data-readonly] form:not([data-keep]) { display: none !important; }
 /* 編集欄を開くボタン（フォームの外にある）も隠す。開いても中のフォームが隠れていて、文が消えたように見えるため */
 [data-readonly] [data-edit] { display: none !important; }
+/* ベレネッツの閲覧モード：data-keep のフォーム（質問・エラーレポートなど）も含めて、入力欄とボタンは一切出さない */
+[data-viewing] form, [data-viewing] [data-edit] { display: none !important; }
 
 /* メンバーにだけ出す案内（担当者の操作の代わりに「担当者が行います」と出す） */
 [data-member-only] { display: none; }
