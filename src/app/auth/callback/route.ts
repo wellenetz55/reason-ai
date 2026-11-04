@@ -37,7 +37,12 @@ export async function POST(request: Request) {
   // 他のサイトから自動送信されたサインイン（攻撃者のアカウントに入らされる）を防ぐ
   const from = request.headers.get("origin");
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-  if (from && host && new URL(from).host !== host) return FAIL(origin);
+  if (from && host) {
+    // Origin が "null" など URL として読めないときも、別サイトからの送信と同じく断る（500 にしない）
+    let fromHost: string | null = null;
+    try { fromHost = new URL(from).host; } catch { fromHost = null; }
+    if (fromHost !== host) return FAIL(origin, "origin mismatch");
+  }
   const form = await request.formData();
   const tokenHash = String(form.get("token_hash") || "");
   const type = String(form.get("type") || "magiclink");

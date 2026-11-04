@@ -91,8 +91,11 @@ export async function publishDiagnosis(formData: FormData) {
       const { data: prof } = await admin.from("profiles").select("role, company_id, display_name").eq("id", existing.id).maybeSingle();
       if (prof?.role === "operator") back("そのメールアドレスは運営者です。顧客の担当者には登録できません");
       if (prof?.company_id && prof.company_id !== companyId) back("そのメールアドレスは別の会社の担当者として登録済みです");
-      await admin.from("profiles").upsert({ id: existing.id, company_id: companyId, role: prof?.role ?? (memberCount ? "customer_member" : "customer_admin"), display_name: name || prof?.display_name || email });
-      await admin.auth.signInWithOtp({ email, options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`, shouldCreateUser: false } });
+      await admin.from("profiles").upsert({ id: existing.id, company_id: companyId, role: prof?.role ?? (memberCount ? "customer_member" : "customer_admin"), display_name: name || prof?.display_name || email, disabled_at: null });
+      // 外していた人を招待し直したときは、サインインの停止も解く（担当者の追加と同じ）
+      await admin.auth.admin.updateUserById(existing.id, { ban_duration: "none" });
+      const { error: oe } = await admin.auth.signInWithOtp({ email, options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`, shouldCreateUser: false } });
+      if (oe) { console.error("publishDiagnosis.signInWithOtp", oe.status, (oe as { code?: string }).code); back("サインインリンクを送れませんでした。少し時間をおいて、もう一度「公開して招待する」を押してください（結果はまだ公開していません）"); }
     } else {
       const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback` });
       if (error || !invited?.user) back(`招待できませんでした（${error?.message ?? "不明なエラー"}）`);
