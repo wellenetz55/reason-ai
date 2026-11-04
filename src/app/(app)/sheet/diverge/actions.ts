@@ -91,7 +91,7 @@ async function doReviewRow(formData: FormData): Promise<{ ok: boolean; error?: s
     }
     if (!member) {
       // 封の時点で保留・却下だった組は、文を直しても戻さず、確定にもしない（「保留」と「確定」が同時に付かないように）
-      if (!statusSealed) { update.status = "active"; update.confirmed_at = new Date().toISOString(); } // ボタンは「直して確定」：直した文で確定する
+      if (!statusSealed) { update.status = "active"; update.confirmed_at = new Date().toISOString(); if (row.target_tag === "仮説（体験価値はAI下書き）") update.target_tag = null; } // ボタンは「直して確定」：直した文で確定する
     } else update.confirmed_at = null; // メンバーが直した行は、担当者の確定待ち
   }
   // approving an AI draft converts it to a customer-owned row
