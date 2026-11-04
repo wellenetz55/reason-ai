@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { startView } from "@/app/(admin)/admin/view-actions";
 import { ClearIssuedLink } from "@/components/ClearIssuedLink";
 import { requireOperator } from "@/lib/session";
 import { STATUS_LABEL } from "@/lib/stages";
@@ -90,6 +91,12 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
       ) : null)}
       <h1 className="serif text-[28px] leading-tight">{c.name}</h1>
       <p className="text-sm text-ink-2 mt-1">{STATUS_LABEL[c.status]} · <Link href={`/admin/${c.id}/intake`} className="underline underline-offset-4 hover:text-ink">適合診断の記録</Link> · <Link href={`/admin/${c.id}/diagnosis`} className="underline underline-offset-4 hover:text-ink">適合診断の結果を書く</Link> · <Link href={`/admin/${c.id}/litmus`} className="underline underline-offset-4 hover:text-ink">選ばれる理由を見極める（採点・順位）</Link> · <Link href={`/admin/${c.id}/seals`} className="underline underline-offset-4 hover:text-ink">封</Link></p>
+      <form action={startView} className="mt-2 flex flex-wrap items-center gap-2">
+        <input type="hidden" name="company_id" value={c.id} />
+        <input type="hidden" name="path" value="/" />
+        <button type="submit" className="rounded-[var(--radius)] border-2 border-navy text-navy px-4 py-2 text-sm font-semibold hover:bg-navy-soft">お客様の画面を見る（読み取り専用）→</button>
+        <span className="text-xs text-ink-3">面談中に、お客様と同じ画面（STEP 0〜FINAL・ホーム・宿題）を左メニューから見られます。ボタンは出ず、データは変わりません。</span>
+      </form>
       <p className="text-xs text-ink-3 mt-1">
         {intake ? <>{intake.held_on && <>診断日 <span className="num">{new Date(intake.held_on + "T00:00:00+09:00").toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "numeric", day: "numeric" })}</span> · </>}対象：{describeTarget(intake, c.name) || "会社全体"}{intake.transcript_name ? " · 書き起こしあり" : " · 書き起こしなし"}{intake.verdict ? ` · 判定 ${VERDICT_LABEL[intake.verdict] ?? intake.verdict}` : ""}</> : <span className="text-warm">適合診断の記録がまだありません（対象・URL・聞き取りを入れると、AIの下書きがそれを使います）</span>}
       </p>

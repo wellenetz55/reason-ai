@@ -95,7 +95,8 @@ export async function chooseKickoff(formData: FormData) {
 
 /** 顧客が診断結果ページを開いた記録。開くたびにベレネッツに通知する（10分以内の連続表示は1回と数える） */
 export async function recordDiagnosisView() {
-  const { company, user, profile } = await requireCustomer();
+  const { company, user, profile, viewing } = await requireCustomer();
+  if (viewing) return; // ベレネッツの閲覧は数えない
   const admin = createAdminClient();
   // 契約後に開いたときは、閲覧の記録・通知をしない（申込前の検討状況を知るための記録のため）
   // 申込後（振り返りで開く）も記録・通知しない

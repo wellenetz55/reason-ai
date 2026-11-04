@@ -1,5 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { loginErrorUrl } from "@/lib/loginErrors";
 
@@ -49,9 +50,22 @@ export async function requireUser() {
   return { supabase, user, profile: profile as Profile };
 }
 
+/** ベレネッツが「お客様の画面」を見るときの会社id（cookie）。面談中に、お客様と同じ画面を見ながら話すため */
+export const VIEW_COOKIE = "ra_view_company";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 export async function requireCustomer() {
   const ctx = await requireUser();
-  if (ctx.profile.role === "operator") redirect("/admin");
+  if (ctx.profile.role === "operator") {
+    // ベレネッツは、閲覧モードのときだけお客様の画面に入れる（読み取り専用）
+    const id = (await cookies()).get(VIEW_COOKIE)?.value;
+    if (!id || !UUID_RE.test(id)) redirect("/admin");
+    // サーバアクション（書き込み）は閲覧モードでは止める。next-action ヘッダはサーバアクションの呼び出しにだけ付く
+    if ((await headers()).get("next-action")) redirect("/");
+    const { data } = await ctx.supabase.from("companies").select("*").eq("id", id).maybeSingle();
+    if (!data) redirect("/admin");
+    return { ...ctx, profile: { ...ctx.profile, company_id: id }, company: data as Company, viewing: true as const };
+  }
   if (!ctx.profile.company_id) redirect(loginErrorUrl("nocompany"));
   const { data } = await ctx.supabase.from("companies").select("*").eq("id", ctx.profile.company_id).maybeSingle();
   // 解約した会社は、ベレネッツが再アクセスを許可するまで何も読めない（SQL 0047。会社の行も見えなくなる）。
@@ -68,13 +82,14 @@ export async function requireCustomer() {
     if (company.reaccess_until && new Date(company.reaccess_until) > new Date()) company = { ...company, status: "grace", grace_until: company.reaccess_until, reaccess: true };
     else redirect("/closed"); // SQL 0047 を実行する前でも、画面は閉じる
   }
-  return { ...ctx, company };
+  return { ...ctx, company, viewing: false as const };
 }
 
 /** 契約前・猶予期間・編集終了・解約の会社は書き込めない（画面でフォームを隠すだけでなく、サーバ側でも止める） */
 const READ_ONLY = new Set(["diagnosed", "grace", "locked", "cancelled"]); // grace：確認セッション③のあと1か月は閲覧・Excelダウンロードのみ（仕様 00）
 export async function requireWritableCustomer() {
   const ctx = await requireCustomer();
+  if (ctx.viewing) redirect("/");
   if (READ_ONLY.has(ctx.company.status)) redirect("/");
   return ctx;
 }

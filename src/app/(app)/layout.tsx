@@ -15,9 +15,10 @@ import { MEETING_LABEL, fmtMeeting, safeMeetingUrl } from "@/lib/meetings";
 import { SideNav } from "@/components/SideNav";
 import { RouteTracker } from "@/components/RouteTracker";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { exitView } from "@/app/(admin)/admin/view-actions";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
-  const { company, profile, supabase } = await requireCustomer();
+  const { company, profile, supabase, viewing } = await requireCustomer();
   // 契約前（適合診断済み）はキックオフ以外の面談を見せない。枠は残して「——」
   let meetingQ = supabase.from("company_meetings").select("kind, scheduled_at, meeting_url").eq("company_id", company.id).is("held_at", null).gte("scheduled_at", new Date(Date.now() - 3 * 3600_000).toISOString());
   if (company.status === "diagnosed") meetingQ = meetingQ.eq("kind", "kickoff");
@@ -88,7 +89,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <SideNav brand={<Link href="/" className="block"><ReasonLogo width={180} /></Link>}>
         <Link href="/" className="hidden md:block"><ReasonLogo width={212} /></Link>
         <p className="serif text-[16px] leading-snug md:mt-6">{company.name}</p>
-        <p className="text-[13px] text-ink-2 mt-1">{profile.display_name} <span className="text-ink-3">さん</span></p>
+        {viewing ? <p className="text-[13px] text-warm mt-1 font-semibold">ベレネッツ閲覧モード（読み取り専用）</p> : <p className="text-[13px] text-ink-2 mt-1">{profile.display_name} <span className="text-ink-3">さん</span></p>}
         <div className="mt-3 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-3.5 py-2.5">
           <p className="text-[11px] font-semibold text-navy tracking-wide">現在のフェーズ</p>
           <p className="text-[13px] text-ink mt-0.5">{company.status === "diagnosed" ? (kickoffDone ? "キックオフ終了（STEP 1 の準備中）" : company.paid_at ? "キックオフ前（日程調整）" : company.applied_at || company.contracted_at ? "お申し込み済み（契約手続き中）" : "適合診断の結果をご確認ください") : STATUS_LABEL[company.status] ?? company.status}</p>
@@ -168,6 +169,13 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </SideNav>
       <main className="flex-1 min-w-0 px-4 py-6 md:px-10 md:py-10">
+        {viewing && (
+          <div data-print-hide className="sticky top-0 z-20 -mx-4 -mt-6 mb-6 md:-mx-10 md:-mt-10 md:mb-8 px-4 md:px-10 py-2.5 bg-warm-soft border-b border-warm flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]">
+            <span className="font-semibold text-warm">ベレネッツ閲覧モード</span>
+            <span className="text-ink-2">{company.name} のお客様画面を、お客様と同じ形で見ています。ボタンや入力欄は出ません（お客様のデータは変わりません）。</span>
+            <form action={exitView} data-keep className="ml-auto"><button type="submit" className="underline underline-offset-4 hover:text-ink">管理画面へ戻る →</button></form>
+          </div>
+        )}
         {/* 印刷時だけ出るヘッダ（ロゴ・運営・会社名・日付）。画面では非表示 */}
         <div className="hidden print:flex items-center justify-between pb-4 mb-8 border-b hairline">
           <ReasonLogo width={180} />
@@ -187,7 +195,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         {profile.role === "customer_member" && !["grace", "locked", "cancelled"].includes(company.status) && (
           <p className="max-w-[1120px] mb-6 rounded-[var(--radius)] bg-paper-2 px-4 py-2.5 text-[13px] text-ink-2">メンバーとして参加しています。書き出し・修正・AIへの依頼はできます。承認・確定・面談日程の選択は担当者が行います（メンバーが直したものは、担当者の承認待ちになります）。</p>
         )}
-        <div className="max-w-[1120px]" data-readonly={company.status === "grace" ? "" : undefined} data-member={profile.role === "customer_member" ? "" : undefined}>{children}</div>
+        <div className="max-w-[1120px]" data-readonly={company.status === "grace" || viewing ? "" : undefined} data-member={profile.role === "customer_member" ? "" : undefined}>{children}</div>
         <footer className="print:hidden max-w-[1120px] mt-20 pt-5 border-t hairline flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 text-[12px] text-ink-3">
           <div className="space-y-1">
             <p className="text-ink-2">選ばれる理由AI <span className="mx-1.5">·</span> 運営 株式会社ベレネッツ</p>
