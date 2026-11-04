@@ -89,10 +89,10 @@ export function CounterBoard({ rows, brakes }: { rows: CounterRow[]; brakes: Cou
                         <form action={async (fd) => { await saveCounter(fd); setEditing(null); }} className="space-y-2">
                           <input type="hidden" name="id" value={b.id} /><input type="hidden" name="action" value="fix" />
                           <label className="block"><span className="text-[11px] text-ink-3">⑤ 先回りの答え</span>
-                            <textarea name="counter" defaultValue={b.counter_message ?? ""} rows={3} required className="w-full border-b hairline py-1 text-[14px] bg-transparent" placeholder="お客様の言葉に、御社の言葉で答える（数字・条件・固有名詞を入れる）" /></label>
+                            <textarea name="counter" data-sealed data-seal-base={b.counter_message ?? ""} defaultValue={b.counter_message ?? ""} rows={3} required className="w-full border-b hairline py-1 text-[14px] bg-transparent" placeholder="お客様の言葉に、御社の言葉で答える（数字・条件・固有名詞を入れる）" /></label>
                           <label className="block"><span className="text-[11px] text-ink-3">⑥ なぜなら</span>
-                            <textarea name="because" defaultValue={b.because ?? ""} rows={2} className="w-full border-b hairline py-1 text-[14px] bg-transparent" placeholder="その答えが本当だと言える根拠（手順・体制・数字・資格・保証・実績）" /></label>
-                          <select name="tag" defaultValue={b.because_tag} className="border-b hairline py-1 text-[13px] bg-transparent">
+                            <textarea name="because" data-sealed data-seal-base={b.because ?? ""} defaultValue={b.because ?? ""} rows={2} className="w-full border-b hairline py-1 text-[14px] bg-transparent" placeholder="その答えが本当だと言える根拠（手順・体制・数字・資格・保証・実績）" /></label>
+                          <select name="tag" data-sealed={b.because_tag === "fact" ? "" : undefined} data-seal-base={b.because_tag ?? "hypothesis"} defaultValue={b.because_tag} className="border-b hairline py-1 text-[13px] bg-transparent">
                             <option value="fact">事実（確認済み）</option><option value="verify">要確認（数字・条件を確かめたい）</option><option value="hypothesis">仮説（根拠なし）</option>
                           </select>
                           <p className="text-[11px] text-ink-3">分からない数字・固有名詞は「○」のまま残してください。○ が残っている答えは、まだ完成扱いになりません。</p>

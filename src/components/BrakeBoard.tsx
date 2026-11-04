@@ -13,7 +13,7 @@ const tagText: Record<string, string> = { fact: "text-fact", verify: "text-verif
 function Fields({ words, source, tag }: { words?: string; source?: string; tag?: string }) {
   return (
     <>
-      <textarea name="words" defaultValue={words ?? ""} rows={2} required placeholder="お客様の心の声（例：本当にうちの規模でも同じ結果が出るのか）" className="w-full border-b hairline py-1 text-[14px] bg-transparent" />
+      <textarea name="words" data-sealed data-seal-base={words ?? ""} defaultValue={words ?? ""} rows={2} required placeholder="お客様の心の声（例：本当にうちの規模でも同じ結果が出るのか）" className="w-full border-b hairline py-1 text-[14px] bg-transparent" />
       <div className="flex flex-wrap gap-3 items-center text-[12px] mt-2">
         <select name="source" defaultValue={source ?? "own"} className="border-b hairline py-1 bg-transparent">
           {BRAKE_SOURCES.filter((s) => s.key !== "ai").map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
