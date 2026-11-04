@@ -124,6 +124,8 @@ async function fetchUrlText(url: string) {
 }
 
 const MAX_PDF_PAGES = 200;
+/** 読めなかったPDF（資料id → 時刻と理由） */
+const PDF_FAILED = new Map<string, { at: number; error: string }>();
 const MAX_DOCX_UNZIPPED = 60 * 1024 * 1024;
 /**
  * Word の XML 部品（本文・スタイル・番号付けなど mammoth が読み込むもの）の要素数の上限。
@@ -256,6 +258,13 @@ async function docxSafeToOpen(buf: Buffer): Promise<{ ok: true } | { ok: false; 
 }
 
 export async function pdfText(buf: Buffer): Promise<{ text: string; error?: string }> {
+  // ふだんは別スレッドで、時間とメモリを区切って読む（重いPDFでサーバ本体を止めない）
+  const { extractPdfText } = await import("@/server/pdfWorker");
+  const r = await extractPdfText(buf, MAX_PDF_PAGES);
+  if ("text" in r) return r.pages ? { text: r.text, error: `先頭${MAX_PDF_PAGES}ページまで読みました（全${r.pages}ページ）` } : { text: r.text };
+  if (r.error === "timeout") return { text: "", error: "PDFの読み取りに時間がかかりすぎたため、本文を取り出せませんでした（ページを減らすか、文字を選べるPDFにして上げ直すと読めることがあります）" };
+  if (r.error === "failed") return { text: "", error: `PDFから文字を取り出せませんでした${r.detail ? `（${r.detail.slice(0, 120)}）` : ""}` };
+  // 別スレッドが使えない環境だけ、これまでどおりサーバ本体で読む
   try {
     const { extractText, getDocumentProxy } = await import("unpdf");
     const pdf = await getDocumentProxy(new Uint8Array(buf));
@@ -346,9 +355,16 @@ export async function extractCompanyDocs(companyId: string): Promise<{ docs: { t
     if (!text) {
       if (d.url) text = await fetchUrlText(d.url);
       else if (d.storage_path && d.mime_type === "application/pdf") {
-        const { data: f, error: dlErr } = await admin.storage.from("company-docs").download(d.storage_path);
+        // 読めなかったPDFは、しばらく読み直さない（下書きのたびに重いPDFを開き直さない。同じサーバ内で1時間）
+        const failedAt = PDF_FAILED.get(d.id);
+        const { data: f, error: dlErr } = failedAt && Date.now() - failedAt.at < 3600_000 ? { data: null, error: null } : await admin.storage.from("company-docs").download(d.storage_path);
         if (dlErr) errs.push(`${d.title}: download ${dlErr.message}`);
-        if (f) { const r = await pdfText(Buffer.from(await f.arrayBuffer())); text = r.text; if (r.error) errs.push(`${d.title}: ${r.error}`); }
+        if (failedAt && !f && !dlErr) errs.push(`${d.title}: ${failedAt.error}`);
+        else if (f) {
+          const r = await pdfText(Buffer.from(await f.arrayBuffer())); text = r.text;
+          if (r.error) errs.push(`${d.title}: ${r.error}`);
+          if (!r.text) { PDF_FAILED.set(d.id, { at: Date.now(), error: r.error ?? "PDFから文字を取り出せませんでした" }); if (PDF_FAILED.size > 500) PDF_FAILED.delete(PDF_FAILED.keys().next().value!); }
+        }
       } else if (d.storage_path && d.mime_type === "text/plain") {
         const { data: f } = await admin.storage.from("company-docs").download(d.storage_path);
         if (f) {
