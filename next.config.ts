@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   // Word の本文取り出しは別スレッドで node_modules の mammoth を直接読み込む（src/server/docxWorker.ts）。
   // バンドルに含めず、本番にもファイルとして配置されるようにする
   serverExternalPackages: ["mammoth", "unpdf"], // PDFも同じく別スレッドで node_modules の unpdf を読む（src/server/pdfWorker.ts）
+  // 別スレッドは require で unpdf の CommonJS 版を読む。自動の依存の追跡では .mjs しか含まれないので、明示して本番に置く
+  outputFileTracingIncludes: { "/**": ["./node_modules/unpdf/dist/index.cjs", "./node_modules/unpdf/dist/pdfjs.mjs", "./node_modules/unpdf/package.json"] },
   experimental: { serverActions: { bodySizeLimit: "25mb" } },
   partialPrefetching: true,
   // 他サイトへの埋め込み（クリックジャッキング）を防ぐなどの基本ヘッダ
