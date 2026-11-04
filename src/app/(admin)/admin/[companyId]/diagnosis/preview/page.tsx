@@ -9,8 +9,11 @@ import { STATUS_LABEL } from "@/lib/stages";
 import { ProgramOutline } from "@/components/ProgramOutline";
 
 /** お客様に見える「適合診断の結果」を、公開前にそのまま見る（保存した内容。ボタンは押せない） */
-export default async function DiagnosisPreview({ params }: PageProps<"/admin/[companyId]/diagnosis/preview">) {
+export default async function DiagnosisPreview({ params, searchParams }: PageProps<"/admin/[companyId]/diagnosis/preview">) {
   const { companyId } = await params;
+  const sp = await searchParams;
+  // ?as=before ：申込前（判定直後）の状態で見る。金額・1か月の期限・申込ボタンが出る
+  const before = sp?.as === "before";
   const { supabase } = await requireOperator();
   const [{ data: c }, { data: d }, kickoff] = await Promise.all([
     supabase.from("companies").select("id, name, status, applied_at, contracted_at, paid_at").eq("id", companyId).single(),
@@ -18,11 +21,16 @@ export default async function DiagnosisPreview({ params }: PageProps<"/admin/[co
     loadKickoff(companyId),
   ]);
   if (!c) notFound();
+  const shown = before ? { ...c, status: "diagnosed", applied_at: null, contracted_at: null, paid_at: null } : c;
   return (
     <div>
       <div data-print-hide className="sticky top-0 z-10 -mx-10 -mt-10 mb-8 px-10 py-3 bg-warm-soft border-b border-warm flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
         <span className="font-semibold text-warm">プレビュー</span>
         <span className="text-ink-2">お客様にはこのように見えます（「保存する」を押した内容。申込・日程のボタンは押せません）。{d?.published_at ? "公開済みです。" : "まだ公開していません。"}</span>
+        <span className="inline-flex rounded-full border border-warm overflow-hidden text-[12px]">
+          <Link href={`/admin/${c.id}/diagnosis/preview`} className={`px-3 py-1 ${before ? "text-ink-2" : "bg-warm text-on-accent font-semibold"}`}>いまの状態</Link>
+          <Link href={`/admin/${c.id}/diagnosis/preview?as=before`} className={`px-3 py-1 ${before ? "bg-warm text-on-accent font-semibold" : "text-ink-2"}`}>申込前の状態で見る</Link>
+        </span>
         <Link href={`/admin/${c.id}/diagnosis`} className="ml-auto underline underline-offset-4">← 結果を書く画面へ戻る</Link>
       </div>
       {!d ? (
@@ -36,7 +44,7 @@ export default async function DiagnosisPreview({ params }: PageProps<"/admin/[co
             <p className="text-[13px] text-ink-2 mt-1">担当者 <span className="text-ink-3">さん</span></p>
             <div className="mt-3 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-3.5 py-2.5">
               <p className="text-[11px] font-semibold text-navy tracking-wide">現在のフェーズ</p>
-              <p className="text-[13px] text-ink mt-0.5">{c.status === "diagnosed" ? "適合診断の結果をご確認ください" : STATUS_LABEL[c.status] ?? c.status}</p>
+              <p className="text-[13px] text-ink mt-0.5">{shown.status === "diagnosed" ? "適合診断の結果をご確認ください" : STATUS_LABEL[shown.status] ?? shown.status}</p>
             </div>
             <nav className="mt-6">
               <p className="block text-[14px] py-[7px] pl-3 -ml-3 border-l-2 border-navy">適合診断の結果</p>
@@ -46,7 +54,7 @@ export default async function DiagnosisPreview({ params }: PageProps<"/admin/[co
             <p className="mt-1.5 text-[11px] text-ink-3 text-center">ベレネッツからの回答は、質問と同じ画面に表示されます。</p>
           </aside>
           <div className="flex-1 min-w-0 px-6 sm:px-10 py-10">
-            <DiagnosisView company={c} d={d} preview kickoff={kickoff} />
+            <DiagnosisView company={shown} d={d} preview kickoff={kickoff} />
           </div>
         </div>
       )}
