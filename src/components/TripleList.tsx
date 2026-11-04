@@ -35,13 +35,13 @@ export function TripleList({ rows }: { rows: Row[] }) {
                     <label className="block"><span className="text-[11px] text-ink-3">だから、お客様は</span>
                       <textarea name="experience" data-sealed data-seal-base={r.experience_value ?? ""} defaultValue={exp ?? ""} rows={2} placeholder="〜と感じることができる" className="w-full border-b hairline py-1 text-[15px]" /></label>
                     <label className="block"><span className="text-[11px] text-ink-3">なぜなら</span>
-                      <textarea name="because" data-sealed data-seal-base={r.because_phrase ?? ""} defaultValue={r.because_phrase ?? ""} rows={2} placeholder="〜だから（プロセス・数字・資格・体制・保証など、御社がどうやってそれを実現するか）" className="w-full border-b hairline py-1 text-[15px]" /></label>
+                      <textarea name="because" data-sealed={r.because_by !== "ai" && r.because_tag === "fact" ? "" : undefined} data-seal-base={r.because_phrase ?? ""} defaultValue={r.because_phrase ?? ""} rows={2} placeholder="〜だから（プロセス・数字・資格・体制・保証など、御社がどうやってそれを実現するか）" className="w-full border-b hairline py-1 text-[15px]" /></label>
                     <div className="flex flex-wrap gap-4 items-center text-[13px]">
                       <select name="type" defaultValue={r.trust_axis ?? ""} className="border-b hairline py-1">
                         <option value="">根拠の種類</option>
                         {BECAUSE_TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
                       </select>
-                      <select name="tag" data-sealed={r.because_tag === "fact" ? "" : undefined} data-seal-base={r.because_tag ?? "hypothesis"} defaultValue={r.because_tag ?? "hypothesis"} className="border-b hairline py-1">
+                      <select name="tag" data-sealed={r.because_by !== "ai" && r.because_tag === "fact" ? "" : undefined} data-seal-base={r.because_tag ?? "hypothesis"} defaultValue={r.because_tag ?? "hypothesis"} className="border-b hairline py-1">
                         <option value="fact">事実</option><option value="verify">要確認</option><option value="hypothesis">仮説</option>
                       </select>
                       <label className="flex items-center gap-1.5"><input type="checkbox" name="only_us" value="1" defaultChecked={r.because_only_us} />「当社しかありません」と言える</label>

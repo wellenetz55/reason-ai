@@ -21,15 +21,20 @@ export function SealReason({ label, optional = false }: { label?: string; option
     // 「お待ちください」の表示（PendingBar・document で受ける）より先に止めるため、window で先に受ける
     const onSubmit = (e: Event) => {
       if (e.target !== form) return;
-      const changed = fields().some((el) => base(el) !== "" && base(el) !== norm(el.value)); // 空だった欄を埋めるのは変更ではない（サーバと同じ）
+      // 空だった欄を埋めるのは変更ではない（サーバと同じ）。data-seal-empty-keeps の欄は、空にすると元の文のまま保存される
+      const changed = fields().some((el) => base(el) !== "" && base(el) !== norm(el.value) && !(norm(el.value) === "" && el.dataset.sealEmptyKeeps !== undefined));
       if (!changed || ta.value.trim()) { ta.setCustomValidity(""); return; }
       e.preventDefault();
       e.stopImmediatePropagation();
       ta.setCustomValidity("変更の理由を書いてください");
       ta.reportValidity();
     };
+    // 一度「理由が要る」と出たあと、封の欄を元に戻したら送れるように、フォームのどこかを変えたら合図を消す（送るときに改めて確かめる）
+    const clear = () => ta.setCustomValidity("");
+    form.addEventListener("input", clear);
+    form.addEventListener("change", clear);
     window.addEventListener("submit", onSubmit, true);
-    return () => window.removeEventListener("submit", onSubmit, true);
+    return () => { window.removeEventListener("submit", onSubmit, true); form.removeEventListener("input", clear); form.removeEventListener("change", clear); };
   }, [optional]);
   return (
     <label className="block mt-2 rounded-[var(--radius)] border border-navy/30 bg-navy-soft px-3 py-2">
