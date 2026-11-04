@@ -43,7 +43,11 @@ export async function saveDiagnosis(formData: FormData) {
   let expiresAt: string | null = expiresLocal ? jst(expiresLocal) : null;
   if (!expiresAt) {
     const { data: cur } = await createAdminClient().from("diagnosis_results").select("published_at").eq("company_id", companyId).maybeSingle();
-    if (cur?.published_at) expiresAt = oneMonthLaterJst(cur.published_at);
+    if (cur?.published_at) {
+      // 公開から1か月がもう過ぎていれば、いまから1か月にする（公開し直したときと同じ。空にして保存＝締め切りを開け直す）
+      const cand = oneMonthLaterJst(cur.published_at);
+      expiresAt = new Date(cand) < new Date() ? oneMonthLaterJst(new Date().toISOString()) : cand;
+    }
   }
   const { error: se } = await createAdminClient().from("diagnosis_results").upsert({ // 列の権限（SQL 0044）に左右されないよう service role で書く（ベレネッツの確認は済み）
     company_id: companyId,
