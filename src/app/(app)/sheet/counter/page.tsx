@@ -34,7 +34,9 @@ export default async function Page() {
   ]);
   const gate = stepGate("counter", ctx);
   const aiErr = await lastAiError(supabase, company.id, "counter.draft");
-  const loadErr = bErr ? `ブレーキを読み込めませんでした${/because_tag|counter_/.test(bErr.message) ? "（SQL 0035 が未実行の可能性があります）" : ""}：${bErr.message}` : null;
+  // DBのエラー文はお客様に見せない（サーバのログにだけ残す）
+  if (bErr) console.error("sheet/counter load", bErr.code, bErr.message);
+  const loadErr = bErr ? "ブレーキを読み込めませんでした。時間をおいて読み込み直してください。続く場合は、左下の「エラーレポート」からお知らせください。" : null;
   const list = (rows ?? []).map((r) => ({ id: r.id, seq: r.seq, value_raw: r.value_raw, experience: r.experience_value ?? r.experience_value_v1 }));
   const seals = await loadSeals(supabase, company.id);
   const blist: CounterBrake[] = (brakes ?? []).map((b) => {

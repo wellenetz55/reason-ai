@@ -147,7 +147,8 @@ export async function requestEvidenceCandidates() {
     const { error } = await supabase.from("evidences").insert(fresh);
     if (error) {
       // 保存できなかったときは「探した」印をつけない（次にもう一度探せるように）
-      await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "evidence.draft.error", payload: { msg: `保存できませんでした：${error.message}`.slice(0, 300) } });
+      await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "evidence.draft.error", payload: { msg: "保存できませんでした。時間をおいてもう一度お試しください。" } });
+      console.error("evidence.draft save", error.code, error.message);
       back(); return;
     }
   }

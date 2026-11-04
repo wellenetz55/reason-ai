@@ -34,7 +34,9 @@ export default async function Page() {
   ]);
   const gate = stepGate("evidence", ctx);
   const aiErr = await lastAiError(supabase, company.id, "evidence.draft");
-  const loadErr = evErr ? `証拠を読み込めませんでした${/status|claim_ref|created_by/.test(evErr.message) ? "（SQL 0041 が未実行の可能性があります）" : ""}：${evErr.message}` : null;
+  // DBのエラー文はお客様に見せない（サーバのログにだけ残す）
+  if (evErr) console.error("sheet/evidence load", evErr.code, evErr.message);
+  const loadErr = evErr ? "証拠を読み込めませんでした。時間をおいて読み込み直してください。続く場合は、左下の「エラーレポート」からお知らせください。" : null;
 
   // 並びは、確認セッション②で確定した順位の順。順位の無い組はそのあとに番号順
   const list: EvRow[] = (rows ?? []).filter((r) => r.value_raw)

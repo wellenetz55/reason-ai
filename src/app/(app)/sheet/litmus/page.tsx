@@ -36,7 +36,9 @@ export default async function Page() {
   ]);
   const gate = stepGate("litmus", ctx);
   const aiErr = await lastAiError(supabase, company.id, "litmus.draft");
-  const loadErr = nErr ? `読み込めませんでした${/ai_q1|ai_note/.test(nErr.message) ? "（SQL 0038 が未実行の可能性があります）" : ""}：${nErr.message}` : null;
+  // DBのエラー文はお客様に見せない（サーバのログにだけ残す）
+  if (nErr) console.error("sheet/litmus load", nErr.code, nErr.message);
+  const loadErr = nErr ? "読み込めませんでした。時間をおいて読み込み直してください。続く場合は、左下の「エラーレポート」からお知らせください。" : null;
   const seals = await loadSeals(supabase, company.id);
   // 封（確認セッション②）：封の時点であった組の点数は、理由を書いたときだけ直せる
   const sealLabel = (column: string, at: string) => { const x = sealOn(seals, column, at); return x ? SEAL_LABEL[x.session] : null; };

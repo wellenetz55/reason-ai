@@ -31,7 +31,9 @@ export default async function Page() {
   ]);
   const gate = stepGate("brakes", ctx);
   const aiErr = await lastAiError(supabase, company.id, "brakes.draft");
-  const loadErr = bErr ? `ブレーキを読み込めませんでした${/approved_at/.test(bErr.message) ? "（SQL 0029 が未実行の可能性があります）" : ""}：${bErr.message}` : null;
+  // DBのエラー文はお客様に見せない（サーバのログにだけ残す）
+  if (bErr) console.error("sheet/brakes load", bErr.code, bErr.message);
+  const loadErr = bErr ? "ブレーキを読み込めませんでした。時間をおいて読み込み直してください。続く場合は、左下の「エラーレポート」からお知らせください。" : null;
   const list = (rows ?? []).map((r) => ({ id: r.id, seq: r.seq, value_raw: r.value_raw, experience: r.experience_value ?? r.experience_value_v1 }));
   const seals = await loadSeals(supabase, company.id);
   const blist: Brake[] = (brakes ?? []).map((b) => { const x = sealOn(seals, "brakes.customer_words", b.created_at); return { id: b.id, row_id: b.row_id, kind: b.kind, customer_words: b.customer_words, source_tag: b.source_tag, evidence_tag: b.evidence_tag, status: b.status, created_by: b.created_by, approved_at: b.approved_at, sealed: x ? SEAL_LABEL[x.session] : null }; });
