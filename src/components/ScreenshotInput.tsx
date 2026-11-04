@@ -53,7 +53,7 @@ export function ScreenshotInput({ name }: { name: string }) {
 
   return (
     <>
-      <input ref={ref} type="file" name={name} accept="image/*" onChange={onChange} className="block mt-1 text-sm file:mr-3 file:rounded-full file:border file:border-ink-3 file:bg-transparent file:px-3 file:py-1 file:text-[12px]" />
+      <input ref={ref} type="file" name={name} accept="image/png,image/jpeg,image/webp" onChange={onChange} className="block mt-1 text-sm file:mr-3 file:rounded-full file:border file:border-ink-3 file:bg-transparent file:px-3 file:py-1 file:text-[12px]" />
       {note && <span className="block text-[12px] text-ink-2 mt-1">{note}</span>}
     </>
   );
