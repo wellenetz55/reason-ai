@@ -1,5 +1,5 @@
 "use server";
-import { isSealed } from "@/server/seals";
+import { isSealed, recordSealChange } from "@/server/seals";
 import { revalidatePath } from "next/cache";
 import { requireStage } from "@/server/stageGuard";
 import { isMember } from "@/lib/session";
@@ -100,9 +100,14 @@ export async function markClaimFact(formData: FormData) {
   const { count } = await supabase.from("evidences").select("id", { count: "exact", head: true }).eq("row_id", rowId).eq("claim_ref", claimKey(claim.ref, claim.text)).eq("status", "adopted");
   if (!count) { back(); return; }
   if (ref === "row") {
+    const { data: r } = await supabase.from("sheet_rows").select("because_tag, created_at").eq("id", rowId).eq("company_id", company.id).maybeSingle();
     await supabase.from("sheet_rows").update({ because_tag: "fact" }).eq("id", rowId).eq("company_id", company.id);
+    // 「事実」になると封の対象に入る。いつ・なぜ封の中に入ったかを、封の記録に残す
+    if (r && r.because_tag !== "fact") await recordSealChange(supabase, company.id, user.id, { column: "sheet_rows.because_tag", rowId, createdAt: r.created_at, before: r.because_tag, after: "fact", tag: "fact" }, "証拠がそろったため「事実」に変更");
   } else {
+    const { data: br } = await supabase.from("brakes").select("because_tag, created_at").eq("id", ref.slice(6)).eq("row_id", rowId).maybeSingle();
     await supabase.from("brakes").update({ because_tag: "fact" }).eq("id", ref.slice(6)).eq("row_id", rowId);
+    if (br && br.because_tag !== "fact") await recordSealChange(supabase, company.id, user.id, { column: "brakes.because_tag", rowId, createdAt: br.created_at, before: br.because_tag, after: "fact", tag: "fact" }, "証拠がそろったため「事実」に変更");
   }
   await supabase.from("activity_log").insert({ company_id: company.id, user_id: user.id, event: "evidence.fact", payload: { ref } });
   back();

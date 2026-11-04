@@ -12,6 +12,7 @@ const COLUMN_LABEL: Record<string, string> = {
   "sheet_rows.target": "ターゲット", "sheet_rows.value_raw": "提供価値", "sheet_rows.experience_value_v1": "体験価値（STEP 1）", "sheet_rows.status": "組を外す・保留",
   "brakes.customer_words": "ブレーキ", "brakes.counter_message": "先回りの答え", "brakes.because": "答えの根拠", "brakes.status": "ブレーキを外す",
   "sheet_rows.experience_value": "体験価値（STEP 5）", "sheet_rows.because_phrase": "なぜなら", "sheet_rows.rank": "順位", "evidences.*": "証拠",
+  "sheet_rows.because_tag": "なぜならの根拠（事実・確認中・仮説）", "brakes.because_tag": "答えの根拠（事実・確認中・仮説）", "evidences.status": "証拠の採用・取り下げ",
   "litmus_niche.answer": "見込み客の切実さ（2問）", "litmus_market.score": "市場で通用するか（御社の点数）",
 };
 
@@ -72,7 +73,7 @@ export default async function SealsAdmin({ params, searchParams }: PageProps<"/a
               <div className="mt-3 flex flex-wrap gap-3 items-center">
                 <form action={sealSession}>
                   <input type="hidden" name="company_id" value={c.id} /><input type="hidden" name="session" value={s.key} />
-                  <button className="btn-primary" type="submit">{l ? "いまの内容で封をし直す" : `${s.label}の封をする`}</button>
+                  <button className="btn-primary" type="submit" data-confirm={l ? "いまの内容で封をし直します。前回の封のあとに増えた組・ブレーキも封の対象に入り、以後は理由なしに変えられなくなります。よろしいですか？" : undefined}>{l ? "いまの内容で封をし直す" : `${s.label}の封をする`}</button>
                 </form>
                 {l && (
                   <form action={unsealSession} className="flex flex-wrap items-center gap-2">
