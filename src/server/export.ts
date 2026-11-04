@@ -117,7 +117,7 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
     })));
   }
 
-  // STEP 6 選ばれる理由の見極め
+  // STEP 6 選ばれる理由を見極める
   if (has("litmus")) {
     const [{ data: ln }, { data: lm }] = await Promise.all([
       supabase.from("litmus_niche").select("*, sheet_rows!inner(company_id)").eq("sheet_rows.company_id", companyId),
@@ -128,7 +128,7 @@ export async function buildExport(supabase: SupabaseClient, companyId: string, c
     const op = new Map((lm ?? []).filter((x) => x.scored_by === "operator").map((x) => [x.row_id, x]));
     const ids = new Set([...(ln ?? []).map((x) => x.row_id), ...m.keys(), ...op.keys()]);
     const mk = (v: unknown) => (v === null || v === undefined || v === "" ? "" : (MARK_LABEL[Number(v)] ?? ""));
-    if (ids.size) addSheet("6 選ばれる理由の見極め", [
+    if (ids.size) addSheet("6 選ばれる理由を見極める", [
       { header: "行No", key: "seq", width: 6 }, { header: "提供価値", key: "raw", width: 36 },
       { header: "痛みは切実か", key: "q1", width: 12 }, { header: "探しているか", key: "q2", width: 12 },
       ...MARKET_AXES.map((a) => ({ header: a.label, key: a.key, width: 10 })),

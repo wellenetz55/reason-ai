@@ -53,8 +53,8 @@ export default async function LitmusAdmin({ params, searchParams }: PageProps<"/
   return (
     <div>
       <ClearQuery keys={["error", "notice"]} />
-      <p className="text-xs text-ink-3"><Link href={`/admin/${c.id}`} className="hover:text-ink">{c.name}</Link> / 選ばれる理由の見極め（ベレネッツの採点）</p>
-      <h1 className="serif text-[28px] leading-tight mt-1">選ばれる理由の見極め：ベレネッツの採点</h1>
+      <p className="text-xs text-ink-3"><Link href={`/admin/${c.id}`} className="hover:text-ink">{c.name}</Link> / 選ばれる理由を見極める（ベレネッツの採点）</p>
+      <h1 className="serif text-[28px] leading-tight mt-1">選ばれる理由を見極める：ベレネッツの採点</h1>
       <p className="text-sm text-ink-2 mt-2 max-w-[44em]">
         {STATUS_LABEL[c.status]} · 組 {list.length} · 御社の自己評価 {cuScored}/{list.length} · ベレネッツの採点 {opScored}/{list.length} · お客様のシートに確定した順位 {confirmed}組
       </p>

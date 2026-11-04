@@ -23,9 +23,9 @@ export const STAGES: Stage[] = [
     }, step: "STEP 3", label: "お客様のブレーキ", href: "/sheet/brakes", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
   { key: "counter", guide: { lead: "書き出したブレーキを、一つずつ外していく段階です。", body: "ブレーキごとに「それならこう答えます」という言葉を用意します。前の段階で出した「できること」が、ここで答えの材料になります。答えには「事実」「要確認」「仮説」の印をつけて、どこまで確かかを分けておきます。" }, step: "STEP 4", label: "ブレーキを外す", href: "/sheet/counter", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
   { key: "trust", guide: { lead: "STEP 1 の組に「なぜなら」を足して、三連にする段階です。", body: "御社は〜できる。だから、お客様は〜と感じられる。なぜなら、〜だから。ここまで言い切って1組です。「なぜなら」は、御社がどうやってそれを実現しているかの根拠（プロセス・数字・資格・体制・保証など）。根拠がない約束は、どんなに良い言葉でも浮ついて聞こえます。体験価値も、お客様の気持ちの変化になっているか、ここでもう一度磨きます。「当社しかありません」と言える根拠には印をつけます。" }, step: "STEP 5", label: "体験価値を磨く", href: "/sheet/trust", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
-  { key: "litmus", guide: { lead: "残した言葉が、本当に選ばれる理由になるかを見極める段階です。", body: "まず、見込み客がその悩みに切実さを感じているか、自分から解決策を探しているかを2問で確かめます。次に、市場で通用するか（業界の常識をくつがえすか・投資する価値・強み・実現できるか・競合に勝てるか・社内の熱意・ブランドの目的）を◎○△×で自己評価します。ここで弱い言葉に気づけば、あとで大きく直さずに済みます。" }, step: "STEP 6", label: "選ばれる理由の見極め", href: "/sheet/litmus", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
+  { key: "litmus", guide: { lead: "残した言葉が、本当に選ばれる理由になるかを見極める段階です。", body: "まず、見込み客がその悩みに切実さを感じているか、自分から解決策を探しているかを2問で確かめます。次に、市場で通用するか（業界の常識をくつがえすか・投資する価値・強み・実現できるか・競合に勝てるか・社内の熱意・ブランドの目的）を◎○△×で自己評価します。ここで弱い言葉に気づけば、あとで大きく直さずに済みます。" }, step: "STEP 6", label: "選ばれる理由を見極める", href: "/sheet/litmus", statuses: ["week3_5", "week6_8", "extended", "grace", "advisor"] },
   { key: "evidence", guide: { lead: "「なぜなら」の裏づけを集める段階です。", body: "STEP 5 で書いた「なぜなら」が本当だと示せるもの（お客様の声・数字・実績・第三者の評価）を探して、組ごとにつけていきます。AIが会社の資料や面談の記録から候補を探すので、採用するかどうかを決めてください。裏づけがついた「なぜなら」は、ボタンで「仮説」から「事実」に変えられ、営業やWebで安心して使える言葉になります。" }, step: "STEP 7", label: "証拠を集める", href: "/sheet/evidence", statuses: ["week6_8", "extended", "grace", "advisor"] },
-  { key: "deploy", guide: { lead: "完成した言葉を、営業トーク・価格の説明・Webなど、実際に使う場面の形に変える段階です。", body: "ここまでで作った提供価値シートが材料です。場面を選ぶと、その場面に合った文章の下書きが出ます。それを御社の言葉に直して、すぐ使える形にします。" }, step: "FINAL", label: "接点に展開する", href: "/deploy", statuses: ["week6_8", "extended", "grace", "advisor"] },
+  { key: "deploy", guide: { lead: "完成した言葉を、営業トーク・価格の説明・Webなど、実際に使う場面の形に変える段階です。", body: "ここまでで作った提供価値シートが材料です。場面を選ぶと、その場面に合った文章の下書きが出ます。それを御社の言葉に直して、すぐ使える形にします。" }, step: "FINAL", label: "顧客接点に展開する", href: "/deploy", statuses: ["week6_8", "extended", "grace", "advisor"] },
 ];
 
 export const STATUS_LABEL: Record<string, string> = {
@@ -84,7 +84,7 @@ export function week35Step(done: { brakes: boolean; counter: boolean; trust: boo
   if (!done.brakes) return { key: "brakes", title: "お客様のブレーキ", body: "お客様が御社を選ぶのをためらう理由（不信・不要・不適・不急）を、残した組ごとに書き出す段階です。4種類そろうと次に進めます。" };
   if (!done.counter) return { key: "counter", title: "ブレーキを外す", body: "書き出したブレーキに、一つずつ先回りの答えをつける段階です。すべてのブレーキに答えがそろうと次に進めます。" };
   if (!done.trust) return { key: "trust", title: "体験価値を磨く", body: "残した組に「なぜなら」（実現している根拠）を足して、三連にする段階です。すべての組に「なぜなら」が入ると次に進めます。" };
-  if (!done.litmus) return { key: "litmus", title: "選ばれる理由の見極め", body: "残した言葉が本当に選ばれる理由になるかを、2問と◎○△×で見極める段階です。" };
-  return { key: "litmus", title: "選ばれる理由の見極め", body: "すべての組を見極めました。確認セッション②で、ベレネッツと一緒に残す言葉の順位を決めます。日程はベレネッツからご連絡します。" };
+  if (!done.litmus) return { key: "litmus", title: "選ばれる理由を見極める", body: "残した言葉が本当に選ばれる理由になるかを、2問と◎○△×で見極める段階です。" };
+  return { key: "litmus", title: "選ばれる理由を見極める", body: "すべての組を見極めました。確認セッション②で、ベレネッツと一緒に残す言葉の順位を決めます。日程はベレネッツからご連絡します。" };
 }
 

@@ -4,7 +4,7 @@ import { THEME_SCRIPT } from "@/lib/themeScript";
 
 export const metadata: Metadata = {
   title: "選ばれる理由AI",
-  description: "提供価値シートを8週間で完成させ、接点に展開する",
+  description: "提供価値シートを8週間で完成させ、顧客接点に展開する",
 };
 
 const FONTS =

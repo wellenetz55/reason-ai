@@ -9,7 +9,7 @@ export default async function Page() {
   if (!isStageOpen(STAGES.find((x) => x.key === "deploy")!, company.status)) return <ClosedStage stageKey="deploy" status={company.status} />;
   return (
     <div>
-      <h1 className="serif text-[28px] leading-tight">接点に展開する</h1>
+      <h1 className="serif text-[28px] leading-tight">顧客接点に展開する</h1>
       {/* 準備中のあいだは「場面を選ぶと下書きが出ます」などの案内を出さない（下の「準備中」と食い違うため） */}
       {!NOT_READY.has("deploy") && <StepGuide stageKey="deploy" />}
       <div className="mt-3"><ExportButton stageKey="deploy" /></div>

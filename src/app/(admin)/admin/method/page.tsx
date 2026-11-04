@@ -13,7 +13,7 @@ const PROMPT_KEYS: { key: string; label: string }[] = [
   { key: "brakes_draft", label: "STEP 3 お客様のブレーキの下書き" },
   { key: "counter_draft", label: "STEP 4 先回りの答えの下書き" },
   { key: "because_draft", label: "STEP 5 なぜなら（根拠）の下書き" },
-  { key: "litmus_draft", label: "STEP 6 選ばれる理由の見極め（AIの仮判定）" },
+  { key: "litmus_draft", label: "STEP 6 選ばれる理由を見極める（AIの仮判定）" },
   { key: "evidence_draft", label: "STEP 7 証拠の候補探し" },
 ];
 const FIXED_KEYS: { key: string; label: string; stage?: string }[] = [
