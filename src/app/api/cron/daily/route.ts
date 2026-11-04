@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { cronAuthorized } from "@/server/cronAuth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { changeStatus } from "@/server/statusChange";
+import { pruneSigninAttempts } from "@/server/signinThrottle";
 
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization");
   if (!cronAuthorized(auth)) return NextResponse.json({ ok: false }, { status: 401 });
   const admin = createAdminClient();
+  await pruneSigninAttempts().catch(() => {}); // サインイン回数の記録は1日で消す（SQL 0051。表が無い間は何もしない）
   const now = new Date();
   const iso = now.toISOString();
   // grace -> locked（ベレネッツの操作と同じ本体を通し、アラート整理などの後処理も行う）
