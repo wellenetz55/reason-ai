@@ -50,6 +50,12 @@ export async function snapshotCompany(admin: SupabaseClient, companyId: string, 
   for (const t of RESET_PARTS.flatMap((p) => p.tables)) data[t] = await selectAll(admin, t, "company_id", [companyId]);
   const rowIds = (data.sheet_rows as { id: string }[]).map((r) => r.id);
   for (const t of ROW_TABLES) data[t] = rowIds.length ? await selectAll(admin, t, "row_id", rowIds) : [];
+  // 解いた封の記録（行とのつながりが切れたもの）も控えに入れる（SQL 0052 の列が無い間は何もしない）
+  try {
+    const orphan = await selectAll(admin, "sheet_lock_history", "company_id", [companyId]);
+    const seen = new Set((data.sheet_lock_history as { id: string }[]).map((h) => h.id));
+    (data.sheet_lock_history as unknown[]).push(...orphan.filter((h) => !seen.has((h as { id: string }).id)));
+  } catch { /* 列が無い */ }
   const path = `resets/${companyId}/${stamp}.json`;
   const { error } = await admin.storage.from("backups").upload(path, Buffer.from(JSON.stringify(data, null, 1)), { contentType: "application/json", upsert: false });
   if (error) throw new Error("控えを保存できませんでした：" + error.message);
