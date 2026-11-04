@@ -63,7 +63,8 @@ export async function requireCustomer() {
     // サーバアクション（書き込み）は閲覧モードでは止める。JSからの呼び出しには next-action ヘッダが、
     // JSが読み込まれる前のフォーム送信（ふつうのPOST）には content-type が付く。画面の表示（GET）にはどちらも無い
     const h = await headers();
-    if (h.get("next-action") || h.get("content-type")) redirect("/");
+    // サーバアクションの redirect のあと、同じリクエストで次の画面を作るときは content-type が残るが RSC ヘッダが付く（これは表示なので通す）
+    if (h.get("next-action") || (h.get("content-type") && !h.get("rsc"))) redirect("/");
     const { data } = await ctx.supabase.from("companies").select("*").eq("id", id).maybeSingle();
     if (!data) redirect("/admin");
     return { ...ctx, profile: { ...ctx.profile, company_id: id }, company: data as Company, viewing: true as const };

@@ -39,6 +39,12 @@ export async function saveDiagnosis(formData: FormData) {
   const competitor = compName && claims.length ? { name: compName, claims } : null;
   const dates = [1, 2, 3].map((i) => jst(s(formData, `date${i}`))).filter(Boolean);
   const expiresLocal = s(formData, "expires_at");
+  // 公開中に期限を空にして保存したときは、締め切りが無くならないよう、公開から1か月を入れ直す（画面の「◯月◯日まで」と申し込みの締め切りを同じにする）
+  let expiresAt: string | null = expiresLocal ? jst(expiresLocal) : null;
+  if (!expiresAt) {
+    const { data: cur } = await createAdminClient().from("diagnosis_results").select("published_at").eq("company_id", companyId).maybeSingle();
+    if (cur?.published_at) expiresAt = oneMonthLaterJst(cur.published_at);
+  }
   const { error: se } = await createAdminClient().from("diagnosis_results").upsert({ // 列の権限（SQL 0044）に左右されないよう service role で書く（ベレネッツの確認は済み）
     company_id: companyId,
     summary: s(formData, "summary").slice(0, 2000) || null,
@@ -46,7 +52,7 @@ export async function saveDiagnosis(formData: FormData) {
     seeds, brakes, fit_reasons: fit, competitor, candidate_dates: dates,
     operator_note: s(formData, "operator_note") || null,
     risk_line: cut(s(formData, "risk_line"), 400) || null,
-    expires_at: expiresLocal ? jst(expiresLocal) : null,
+    expires_at: expiresAt,
     created_by: user.id,
     updated_at: new Date().toISOString(),
   });
@@ -91,8 +97,9 @@ export async function publishDiagnosis(formData: FormData) {
   }
   const nowIso = new Date().toISOString();
   await supabase.from("diagnosis_results").update({ published_at: nowIso }).eq("company_id", companyId);
-  // 申し込み・閲覧の期限が空なら、公開から1か月（日本時間のその日の23:59）を入れる。画面の「◯月◯日まで」と、申し込みの締め切りを同じ日にするため
-  await supabase.from("diagnosis_results").update({ expires_at: oneMonthLaterJst(nowIso) }).eq("company_id", companyId).is("expires_at", null);
+  // 申し込み・閲覧の期限が空か過ぎていれば、公開から1か月（日本時間のその日の23:59）を入れる。画面の「◯月◯日まで」と、申し込みの締め切りを同じ日にするため
+  // 空、または過ぎている（いったん非公開にして公開し直した等）ときは入れ直す。開いた瞬間に締め切り、を防ぐ
+  await supabase.from("diagnosis_results").update({ expires_at: oneMonthLaterJst(nowIso) }).eq("company_id", companyId).or(`expires_at.is.null,expires_at.lt.${nowIso}`);
   revalidatePath(`/admin/${companyId}/diagnosis`);
   revalidatePath(`/admin/${companyId}`);
   redirect(`/admin/${companyId}/diagnosis?notice=${encodeURIComponent(email ? "公開しました。招待メールを送りました" : "公開しました")}`);

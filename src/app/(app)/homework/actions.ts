@@ -17,7 +17,6 @@ export async function answerHomework(formData: FormData) {
     return;
   }
   if (!askedWhom || !answer) {
-    const { redirect } = await import("next/navigation");
     redirect(`/homework?e=${!askedWhom ? "whom" : mode === "pass" ? "pass" : "answer"}`);
   }
   await supabase
