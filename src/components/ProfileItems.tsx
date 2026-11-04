@@ -29,7 +29,7 @@ export function ProfileItems({ items, bq, oneLiner, review, drafted = true }: {
       <li key={def.key} className={`py-5 ${status === "held" ? "opacity-50" : ""}`}>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <h3 className="serif text-[15px]">{def.label}</h3>
-          <span className="text-[11px] text-ink-3">{STATUS_LABEL_ITEM[status]}</span>
+          <span className="text-[11px] text-ink-3">{status === "draft" && it?.source === "御社が書いた文" ? "御社の修正案（承認待ち）" : STATUS_LABEL_ITEM[status]}</span>
           {status !== "empty" && !def.fixed && <span className="text-[11px] text-ink-3">· {TAG[tag] ?? tag}</span>}
           {it?.source && status !== "empty" && <span className="text-[11px] text-ink-3 truncate max-w-[40ch]">· {it.source}</span>}
         </div>
