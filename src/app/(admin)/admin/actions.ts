@@ -1,4 +1,5 @@
 "use server";
+import { stripHonorific } from "@/lib/personName";
 import { listAllUsers } from "@/server/users";
 import { MEETING_LABEL, safeMeetingUrl } from "@/lib/meetings";
 import { STATUS_LABEL } from "@/lib/stages";
@@ -29,7 +30,7 @@ export async function inviteCustomer(formData: FormData) {
   const { supabase } = await requireOperator();
   const companyId = String(formData.get("company_id"));
   const email = String(formData.get("email") || "").trim().toLowerCase();
-  const name = String(formData.get("display_name") || "").trim();
+  const name = stripHonorific(String(formData.get("display_name") || "")); // 「様」はアプリが付ける
   const { redirect } = await import("next/navigation");
   if (!email) return;
   const { data: co } = await supabase.from("companies").select("status").eq("id", companyId).single();

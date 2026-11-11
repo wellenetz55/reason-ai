@@ -311,7 +311,7 @@ export default async function CompanyAdmin({ params, searchParams }: PageProps<"
           <form action={inviteCustomer} className="mt-3 flex flex-wrap gap-3 items-center">
             <input type="hidden" name="company_id" value={c.id} />
             <input type="email" name="email" required placeholder="メールアドレス" className="border-b hairline py-1 text-sm num w-72" />
-            <input name="display_name" placeholder="お名前（任意）" className="border-b hairline py-1 text-sm w-40" />
+            <input name="display_name" placeholder="お名前（任意・「様」は不要）" className="border-b hairline py-1 text-sm w-40" />
             <button className="btn-primary" type="submit">追加して招待する</button>
           </form>
         ) : (

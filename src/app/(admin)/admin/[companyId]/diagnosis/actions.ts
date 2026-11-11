@@ -1,4 +1,5 @@
 "use server";
+import { stripHonorific } from "@/lib/personName";
 import { listAllUsers } from "@/server/users";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -74,7 +75,7 @@ export async function publishDiagnosis(formData: FormData) {
   const { supabase } = await requireOperator();
   const companyId = s(formData, "company_id");
   const email = s(formData, "email").toLowerCase();
-  const name = s(formData, "display_name");
+  const name = stripHonorific(s(formData, "display_name")); // 「様」はアプリが付ける
   const admin = createAdminClient();
   const back = (msg: string) => redirect(`/admin/${companyId}/diagnosis?error=${encodeURIComponent(msg)}`);
   const { data: co } = await supabase.from("companies").select("status").eq("id", companyId).single();

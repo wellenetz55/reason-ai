@@ -152,7 +152,7 @@ export default async function DiagnosisAdmin({ params, searchParams }: PageProps
           <form action={publishDiagnosis} className="mt-4 flex flex-wrap gap-3 items-end">
             <input type="hidden" name="company_id" value={c.id} />
             <label className="flex-1 min-w-[240px]"><span className="text-xs text-ink-2">担当者メール</span><input type="email" name="email" className={inp} /></label>
-            <label className="w-48"><span className="text-xs text-ink-2">お名前</span><input name="display_name" className={inp} /></label>
+            <label className="w-48"><span className="text-xs text-ink-2">お名前（「様」は不要）</span><input name="display_name" placeholder="例：山田 太郎" className={inp} /></label>
             <button className="btn-primary" type="submit" disabled={!d}>{d?.published_at ? "招待を送る（内容は「保存する」の時点で反映済み）" : "公開して招待する"}</button>
             {!d && <p className="w-full text-xs text-warm">先に上の内容を「保存する」で保存してください。</p>}
           </form>
